@@ -11,15 +11,9 @@ public class AppLauncher
             Stage stage
     ) {
 
-        System.out.println(
-                "StoreManagerFX Started"
-        );
+        stage.setTitle("StoreManagerFX");
 
-        stage.setTitle(
-                "StoreManagerFX"
-        );
-
-        stage.show();
+        AppBootstrap.start(stage);
     }
 
     public static void main(
