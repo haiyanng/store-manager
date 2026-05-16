@@ -2,6 +2,12 @@ package com.storemanager.core.database;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import com.storemanager.core.security.PasswordHasher;
+import com.storemanager.domain.user.model.RoleType;
+import com.storemanager.domain.user.model.User;
+import com.storemanager.domain.user.repository.UserRepository;
+
+
 
 public class DatabaseInitializer {
 
@@ -27,7 +33,7 @@ public class DatabaseInitializer {
                     )
                     """
             );
-
+            createDefaultAdmin();
             System.out.println("Database initialized successfully");
 
         } catch (Exception e) {
@@ -39,5 +45,41 @@ public class DatabaseInitializer {
                     e
             );
         }
+    }
+
+    private static void createDefaultAdmin() {
+
+        UserRepository repository =
+                new UserRepository();
+
+        boolean exists =
+                repository
+                        .findByUsername("admin")
+                        .isPresent();
+
+        if (exists) {
+            return;
+        }
+
+        User admin =
+                new User();
+
+        admin.setUsername("admin");
+
+        admin.setPassword(
+                PasswordHasher.hash("123456")
+        );
+
+        admin.setRole(
+                RoleType.DEVELOPER
+        );
+
+        admin.setActive(true);
+
+        repository.save(admin);
+
+        System.out.println(
+                "Default admin created"
+        );
     }
 }

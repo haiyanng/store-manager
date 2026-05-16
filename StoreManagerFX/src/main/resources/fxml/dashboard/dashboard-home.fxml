@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      alignment="CENTER"
+      spacing="10">
+    <padding>
+        <Insets top="0"
+                right="0"
+                bottom="0"
+                left="0"/>
+    </padding>
+
+    <Label text="Dashboard"
+           styleClass="content-title"/>
+
+    <Label text="Dashboard overview"
+           styleClass="content-description"/>
+</VBox>

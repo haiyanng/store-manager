@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.user.view.UserManagementController"
+      spacing="18">
+
+    <Label text="User Management"
+           styleClass="content-title"/>
+
+    <Label text="Create test users for dashboard runtime"
+           styleClass="content-description"/>
+
+    <HBox spacing="10">
+        <TextField fx:id="usernameField"
+                   promptText="Username"
+                   HBox.hgrow="ALWAYS"/>
+
+        <PasswordField fx:id="passwordField"
+                       promptText="Password"
+                       HBox.hgrow="ALWAYS"/>
+
+        <ComboBox fx:id="roleComboBox"
+                  prefWidth="150"/>
+
+        <Button fx:id="createButton"
+                text="Create"
+                onAction="#onCreateUser"/>
+
+        <Button fx:id="editButton"
+                text="Edit"
+                onAction="#onEditUser"/>
+
+        <Button fx:id="deleteButton"
+                text="Delete"
+                onAction="#onDeleteUser"/>
+    </HBox>
+
+    <TableView fx:id="usersTable"
+               VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn"
+                         text="ID"
+                         prefWidth="80"/>
+
+            <TableColumn fx:id="usernameColumn"
+                         text="Username"
+                         prefWidth="220"/>
+
+            <TableColumn fx:id="roleColumn"
+                         text="Role"
+                         prefWidth="180"/>
+
+            <TableColumn fx:id="activeColumn"
+                         text="Active"
+                         prefWidth="120"/>
+        </columns>
+    </TableView>
+
+    <padding>
+        <Insets top="0"
+                right="0"
+                bottom="0"
+                left="0"/>
+    </padding>
+</VBox>

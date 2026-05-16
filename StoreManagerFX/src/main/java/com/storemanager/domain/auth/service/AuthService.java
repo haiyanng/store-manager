@@ -1,4 +1,59 @@
 package com.storemanager.domain.auth.service;
 
+import com.storemanager.core.security.PasswordHasher;
+import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.user.model.User;
+import com.storemanager.domain.user.repository.UserRepository;
+
+import java.util.Optional;
+
 public class AuthService {
+
+    private final UserRepository userRepository =
+            new UserRepository();
+
+    public boolean login(
+            String username,
+            String rawPassword
+    ) {
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(
+                        username
+                );
+
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
+
+        User user =
+                optionalUser.get();
+
+        String hashedPassword =
+                PasswordHasher.hash(
+                        rawPassword
+                );
+
+        boolean matched =
+                hashedPassword.equals(
+                        user.getPassword()
+                );
+
+        if (!matched) {
+            return false;
+        }
+
+        if (!user.isActive()) {
+            return false;
+        }
+
+        AppSession.setCurrentUser(user);
+
+        return true;
+    }
+
+    public void logout() {
+
+        AppSession.clear();
+    }
 }

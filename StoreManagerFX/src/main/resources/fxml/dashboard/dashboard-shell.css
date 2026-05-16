@@ -1,0 +1,106 @@
+.app-shell {
+    -fx-font-family: "SF Mono", "Menlo", "Consolas", "DejaVu Sans Mono", monospace;
+    -fx-background-color:
+            radial-gradient(center 50% 46%, radius 82%, #fafafa 0%, #f7f4ee 45%, #eef4f7 100%),
+            linear-gradient(from 0% 0% to 100% 100%, #f4ded2 0%, #f7f7f4 48%, #dbe8ee 100%);
+}
+
+.topbar {
+    -fx-background-color: rgba(255, 255, 255, 0.56);
+    -fx-border-color: rgba(24, 31, 42, 0.08);
+    -fx-border-width: 0 0 1 0;
+}
+
+.topbar-title {
+    -fx-text-fill: #151923;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+
+.topbar-subtitle,
+.meta-label {
+    -fx-text-fill: #7b828e;
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+}
+
+.meta-value {
+    -fx-text-fill: #222832;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.sidebar {
+    -fx-background-color: rgba(255, 255, 255, 0.68);
+    -fx-background-radius: 22px;
+    -fx-border-color: rgba(255, 255, 255, 0.78), rgba(34, 44, 57, 0.08);
+    -fx-border-radius: 22px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(44, 52, 64, 0.14), 24, 0.18, 0, 10);
+}
+
+.sidebar-title {
+    -fx-text-fill: #161b23;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.sidebar-kicker {
+    -fx-text-fill: #8a929e;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 0 12px 0;
+}
+
+.nav-button,
+.logout-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 14px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 14px;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #303743;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12px 14px;
+}
+
+.nav-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.76);
+    -fx-text-fill: #111827;
+}
+
+.nav-button:pressed {
+    -fx-background-color: rgba(226, 234, 238, 0.88);
+}
+
+.logout-button {
+    -fx-text-fill: #8c3434;
+}
+
+.logout-button:hover {
+    -fx-background-color: rgba(255, 246, 244, 0.86);
+    -fx-text-fill: #742424;
+}
+
+.content-area {
+    -fx-background-color: rgba(255, 255, 255, 0.54);
+    -fx-background-radius: 24px;
+    -fx-border-color: rgba(255, 255, 255, 0.72), rgba(31, 41, 55, 0.07);
+    -fx-border-radius: 24px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(45, 55, 72, 0.10), 26, 0.14, 0, 12);
+}
+
+.content-title {
+    -fx-text-fill: #111827;
+    -fx-font-size: 30px;
+    -fx-font-weight: 800;
+}
+
+.content-description {
+    -fx-text-fill: #5d6673;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+}

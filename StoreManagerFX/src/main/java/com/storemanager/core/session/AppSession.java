@@ -1,18 +1,30 @@
 package com.storemanager.core.session;
 
+import com.storemanager.domain.user.model.User;
+
 public class AppSession {
 
-    private static String currentUsername;
+    private static User currentUser;
 
-    public static void setCurrentUsername(
-            String username
+    public static void setCurrentUser(
+            User user
     ) {
 
-        currentUsername = username;
+        currentUser = user;
     }
 
-    public static String getCurrentUsername() {
+    public static User getCurrentUser() {
 
-        return currentUsername;
+        return currentUser;
+    }
+
+    public static boolean isLoggedIn() {
+
+        return currentUser != null;
+    }
+
+    public static void clear() {
+
+        currentUser = null;
     }
 }
