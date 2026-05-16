@@ -120,6 +120,12 @@
                     maxWidth="Infinity"
                     onAction="#onOrder"/>
 
+            <Button fx:id="systemToolsButton"
+                    text="System Tools"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"
+                    onAction="#onSystemTools"/>
+
             <Region VBox.vgrow="ALWAYS"/>
 
             <Button text="Logout"

@@ -81,6 +81,12 @@ public class PermissionGuard {
                 || isOwner();
     }
 
+    public static boolean canAccessSystemTools() {
+
+        return isDeveloper()
+                || isOwner();
+    }
+
     public static boolean isRootDeveloper(
             User user
     ) {

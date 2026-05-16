@@ -38,6 +38,9 @@ public class DashboardShellController {
     private Button orderButton;
 
     @FXML
+    private Button systemToolsButton;
+
+    @FXML
     private StackPane contentArea;
 
     @FXML
@@ -126,6 +129,14 @@ public class DashboardShellController {
     }
 
     @FXML
+    public void onSystemTools() {
+
+        ContentManager.loadContent(
+                "/fxml/system_tool/system-tool.fxml"
+        );
+    }
+
+    @FXML
     public void onLogout() {
 
         AppSession.clear();
@@ -165,6 +176,11 @@ public class DashboardShellController {
         setButtonVisible(
                 orderButton,
                 PermissionGuard.canViewOrder()
+        );
+
+        setButtonVisible(
+                systemToolsButton,
+                PermissionGuard.canAccessSystemTools()
         );
     }
 

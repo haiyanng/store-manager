@@ -1,9 +1,7 @@
 package com.storemanager.domain.employee.view;
 
 import com.storemanager.domain.employee.model.Employee;
-import com.storemanager.domain.employee.service.EmployeeService;
-import com.storemanager.domain.user.model.User;
-import com.storemanager.domain.user.repository.UserRepository;
+import com.storemanager.domain.employee.presenter.EmployeePresenter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -13,8 +11,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.List;
 
 public class EmployeeListController {
 
@@ -51,19 +48,15 @@ public class EmployeeListController {
     @FXML
     private Button deleteButton;
 
-    private final EmployeeService employeeService =
-            new EmployeeService();
-
-    private final UserRepository userRepository =
-            new UserRepository();
-
-    private Map<Long, User> usersById =
-            Map.of();
-
-    private Employee selectedEmployee;
+    private EmployeePresenter presenter;
 
     @FXML
     public void initialize() {
+
+        presenter =
+                new EmployeePresenter(
+                        this
+                );
 
         idColumn.setCellValueFactory(
                 new PropertyValueFactory<>("id")
@@ -84,7 +77,7 @@ public class EmployeeListController {
         linkedUsernameColumn.setCellValueFactory(
                 cellData ->
                         new SimpleStringProperty(
-                                getLinkedUsername(
+                                presenter.getLinkedUsername(
                                         cellData.getValue()
                                 )
                         )
@@ -93,7 +86,7 @@ public class EmployeeListController {
         linkedRoleColumn.setCellValueFactory(
                 cellData ->
                         new SimpleStringProperty(
-                                getLinkedRole(
+                                presenter.getLinkedRole(
                                         cellData.getValue()
                                 )
                         )
@@ -108,182 +101,95 @@ public class EmployeeListController {
                 .selectedItemProperty()
                 .addListener(
                         (observable, oldValue, newValue) ->
-                                onEmployeeSelected(newValue)
+                                presenter.selectEmployee(newValue)
                 );
 
-        refreshTable();
-        updateActionState();
+        presenter.initialize();
     }
 
     @FXML
     public void onCreate() {
 
-        try {
-
-            boolean success =
-                    employeeService.create(
-                            employeeFormController.readEmployee()
-                    );
-
-            if (!success) {
-                showError("Cannot create employee");
-                return;
-            }
-
-            clearSelection();
-            refreshTable();
-
-        } catch (Exception e) {
-
-            showError(
-                    e.getMessage()
-            );
-        }
+        presenter.saveEmployee(
+                employeeFormController.readEmployee()
+        );
     }
 
     @FXML
     public void onUpdate() {
 
-        if (selectedEmployee == null) {
-            showError("Select an employee to update");
-            return;
-        }
-
-        try {
-
-            Employee editedEmployee =
-                    employeeFormController.readEmployee();
-
-            editedEmployee.setId(
-                    selectedEmployee.getId()
-            );
-
-            editedEmployee.setUserId(
-                    selectedEmployee.getUserId()
-            );
-
-            boolean success =
-                    employeeService.update(
-                            editedEmployee
-                    );
-
-            if (!success) {
-                showError("Cannot update employee");
-                return;
-            }
-
-            clearSelection();
-            refreshTable();
-
-        } catch (Exception e) {
-
-            showError(
-                    e.getMessage()
-            );
-        }
+        presenter.saveEmployee(
+                employeeFormController.readEmployee()
+        );
     }
 
     @FXML
     public void onDelete() {
 
-        if (selectedEmployee == null) {
-            showError("Select an employee to delete");
-            return;
-        }
-
-        try {
-
-            boolean success =
-                    employeeService.delete(
-                            selectedEmployee
-                    );
-
-            if (!success) {
-                showError("Cannot delete employee");
-                return;
-            }
-
-            clearSelection();
-            refreshTable();
-
-        } catch (Exception e) {
-
-            showError(
-                    e.getMessage()
-            );
-        }
+        presenter.deleteEmployee();
     }
 
     @FXML
     public void onRefresh() {
 
-        refreshTable();
+        presenter.refreshTable();
     }
 
     @FXML
     public void onClear() {
 
-        clearSelection();
+        presenter.clearForm();
     }
 
-    private void refreshTable() {
-
-        usersById =
-                userRepository
-                        .findAll()
-                        .stream()
-                        .collect(
-                                Collectors.toMap(
-                                        User::getId,
-                                        user -> user
-                                )
-                        );
+    public void setEmployees(
+            List<Employee> employees
+    ) {
 
         employeeTable.setItems(
                 FXCollections.observableArrayList(
-                        employeeService.findAll()
+                        employees
                 )
         );
-
-        updateActionState();
     }
 
-    private void onEmployeeSelected(
+    public void showEmployee(
             Employee employee
     ) {
-
-        selectedEmployee = employee;
 
         employeeFormController.showEmployee(
                 employee
         );
-
-        updateActionState();
     }
 
-    private void clearSelection() {
+    public void clearSelection() {
 
-        selectedEmployee = null;
         employeeTable.getSelectionModel().clearSelection();
-        employeeFormController.clear();
-        updateActionState();
     }
 
-    private void updateActionState() {
+    public void clearEmployeeForm() {
 
-        boolean hasSelection =
-                selectedEmployee != null;
+        employeeFormController.clear();
+    }
+
+    public void setUpdateEnabled(
+            boolean enabled
+    ) {
 
         updateButton.setDisable(
-                !hasSelection
-        );
-
-        deleteButton.setDisable(
-                !hasSelection
+                !enabled
         );
     }
 
-    private void showError(
+    public void setDeleteEnabled(
+            boolean enabled
+    ) {
+
+        deleteButton.setDisable(
+                !enabled
+        );
+    }
+
+    public void showError(
             String message
     ) {
 
@@ -295,46 +201,5 @@ public class EmployeeListController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private String getLinkedUsername(
-            Employee employee
-    ) {
-
-        User user =
-                getLinkedUser(employee);
-
-        if (user == null) {
-            return "";
-        }
-
-        return user.getUsername();
-    }
-
-    private String getLinkedRole(
-            Employee employee
-    ) {
-
-        User user =
-                getLinkedUser(employee);
-
-        if (user == null) {
-            return "";
-        }
-
-        return user.getRole().name();
-    }
-
-    private User getLinkedUser(
-            Employee employee
-    ) {
-
-        if (employee == null || employee.getUserId() == null) {
-            return null;
-        }
-
-        return usersById.get(
-                employee.getUserId()
-        );
     }
 }
