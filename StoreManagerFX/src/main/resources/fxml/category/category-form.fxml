@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.category.view.CategoryFormController"
+      spacing="10">
+
+    <HBox spacing="10"
+          alignment="CENTER_LEFT">
+        <ImageView fx:id="imagePreview"
+                   fitWidth="96"
+                   fitHeight="96"
+                   preserveRatio="true"
+                   smooth="true"/>
+
+        <VBox spacing="8">
+            <Button text="Select Image"
+                    onAction="#onSelectImage"
+                    styleClass="module-secondary-button"/>
+
+            <Button text="Remove Image"
+                    onAction="#onRemoveImage"
+                    styleClass="module-secondary-button"/>
+        </VBox>
+    </HBox>
+
+    <TextField fx:id="nameField"
+               promptText="Category name"
+               maxWidth="Infinity"
+               styleClass="module-input"/>
+
+    <CheckBox fx:id="activeCheckBox"
+              text="Active"/>
+</VBox>

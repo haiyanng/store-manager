@@ -26,13 +26,28 @@ public class DashboardShellController {
     private Button employeeButton;
 
     @FXML
+    private Button attendanceButton;
+
+    @FXML
+    private Button payrollButton;
+
+    @FXML
+    private Button branchButton;
+
+    @FXML
     private Button userManagementButton;
 
     @FXML
     private Button productButton;
 
     @FXML
+    private Button categoryButton;
+
+    @FXML
     private Button inventoryButton;
+
+    @FXML
+    private Button importButton;
 
     @FXML
     private Button orderButton;
@@ -97,6 +112,30 @@ public class DashboardShellController {
     }
 
     @FXML
+    public void onAttendance() {
+
+        ContentManager.loadContent(
+                "/fxml/attendance/attendance.fxml"
+        );
+    }
+
+    @FXML
+    public void onPayroll() {
+
+        ContentManager.loadContent(
+                "/fxml/payroll/payroll.fxml"
+        );
+    }
+
+    @FXML
+    public void onBranch() {
+
+        ContentManager.loadContent(
+                "/fxml/branch/branch.fxml"
+        );
+    }
+
+    @FXML
     public void onUserManagement() {
 
         ContentManager.loadContent(
@@ -108,7 +147,15 @@ public class DashboardShellController {
     public void onProduct() {
 
         ContentManager.loadContent(
-                "/fxml/product/product-placeholder.fxml"
+                "/fxml/product/product-list.fxml"
+        );
+    }
+
+    @FXML
+    public void onCategory() {
+
+        ContentManager.loadContent(
+                "/fxml/category/category-list.fxml"
         );
     }
 
@@ -116,7 +163,15 @@ public class DashboardShellController {
     public void onInventory() {
 
         ContentManager.loadContent(
-                "/fxml/inventory/inventory-placeholder.fxml"
+                "/fxml/inventory/inventory-list.fxml"
+        );
+    }
+
+    @FXML
+    public void onImport() {
+
+        ContentManager.loadContent(
+                "/fxml/importing/import.fxml"
         );
     }
 
@@ -124,7 +179,7 @@ public class DashboardShellController {
     public void onOrder() {
 
         ContentManager.loadContent(
-                "/fxml/order/order-placeholder.fxml"
+                "/fxml/sale/sale.fxml"
         );
     }
 
@@ -159,6 +214,21 @@ public class DashboardShellController {
         );
 
         setButtonVisible(
+                attendanceButton,
+                PermissionGuard.canViewEmployee()
+        );
+
+        setButtonVisible(
+                payrollButton,
+                PermissionGuard.canViewEmployee()
+        );
+
+        setButtonVisible(
+                branchButton,
+                PermissionGuard.canViewEmployee()
+        );
+
+        setButtonVisible(
                 userManagementButton,
                 PermissionGuard.canViewUserManagement()
         );
@@ -169,7 +239,17 @@ public class DashboardShellController {
         );
 
         setButtonVisible(
+                categoryButton,
+                PermissionGuard.canViewProduct()
+        );
+
+        setButtonVisible(
                 inventoryButton,
+                PermissionGuard.canViewInventory()
+        );
+
+        setButtonVisible(
+                importButton,
                 PermissionGuard.canViewInventory()
         );
 

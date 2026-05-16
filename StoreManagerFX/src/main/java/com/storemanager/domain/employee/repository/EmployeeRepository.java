@@ -76,9 +76,10 @@ public class EmployeeRepository {
                                     address,
                                     position,
                                     user_id,
+                                    image_path,
                                     active
                                 )
-                                VALUES (?, ?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
                                 """
                         )
 
@@ -117,6 +118,7 @@ public class EmployeeRepository {
                                     address = ?,
                                     position = ?,
                                     user_id = ?,
+                                    image_path = ?,
                                     active = ?
                                 WHERE id = ?
                                 """
@@ -130,7 +132,7 @@ public class EmployeeRepository {
             );
 
             statement.setLong(
-                    7,
+                    8,
                     employee.getId()
             );
 
@@ -340,6 +342,7 @@ public class EmployeeRepository {
                         address VARCHAR(255),
                         position VARCHAR(100) NOT NULL,
                         user_id BIGINT NULL,
+                        image_path VARCHAR(255) NULL,
                         active BOOLEAN NOT NULL DEFAULT TRUE,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -347,6 +350,7 @@ public class EmployeeRepository {
             );
 
             addUserIdColumnIfMissing(connection);
+            addImagePathColumnIfMissing(connection);
             addUserIdUniqueIndexIfMissing(connection);
 
         } catch (Exception e) {
@@ -356,6 +360,42 @@ public class EmployeeRepository {
             throw new RuntimeException(
                     "Employee table initialization failed",
                     e
+            );
+        }
+    }
+
+    private void addImagePathColumnIfMissing(
+            Connection connection
+    ) throws Exception {
+
+        DatabaseMetaData metaData =
+                connection.getMetaData();
+
+        try (
+                ResultSet columns =
+                        metaData.getColumns(
+                                null,
+                                null,
+                                "employees",
+                                "image_path"
+                        )
+        ) {
+
+            if (columns.next()) {
+                return;
+            }
+        }
+
+        try (
+                Statement statement =
+                        connection.createStatement()
+        ) {
+
+            statement.execute(
+                    """
+                    ALTER TABLE employees
+                    ADD COLUMN image_path VARCHAR(255) NULL
+                    """
             );
         }
     }
@@ -483,8 +523,13 @@ public class EmployeeRepository {
             );
         }
 
-        statement.setBoolean(
+        statement.setString(
                 6,
+                employee.getImagePath()
+        );
+
+        statement.setBoolean(
+                7,
                 employee.isActive()
         );
     }
@@ -524,6 +569,10 @@ public class EmployeeRepository {
         } else {
             employee.setUserId(userId);
         }
+
+        employee.setImagePath(
+                resultSet.getString("image_path")
+        );
 
         employee.setActive(
                 resultSet.getBoolean("active")

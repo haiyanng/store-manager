@@ -76,6 +76,10 @@ public class UserManagementController {
             return;
         }
 
+        passwordField.setOnAction(
+                event -> event.consume()
+        );
+
         roleComboBox.setItems(
                 FXCollections.observableArrayList(
                         RoleType.OWNER,

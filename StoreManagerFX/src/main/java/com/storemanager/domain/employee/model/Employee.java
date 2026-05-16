@@ -16,6 +16,8 @@ public class Employee {
 
     private Long userId;
 
+    private String imagePath;
+
     public Employee() {
     }
 
@@ -87,6 +89,16 @@ public class Employee {
             Long userId
     ) {
         this.userId = userId;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(
+            String imagePath
+    ) {
+        this.imagePath = imagePath;
     }
 
     @Override

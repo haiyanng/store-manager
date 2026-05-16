@@ -111,6 +111,10 @@ public class EmployeeService {
         employee.setPosition(
                 employee.getPosition().trim()
         );
+
+        employee.setImagePath(
+                cleanNullable(employee.getImagePath())
+        );
     }
 
     private String clean(
@@ -119,6 +123,17 @@ public class EmployeeService {
 
         if (value == null) {
             return "";
+        }
+
+        return value.trim();
+    }
+
+    private String cleanNullable(
+            String value
+    ) {
+
+        if (value == null || value.trim().isEmpty()) {
+            return null;
         }
 
         return value.trim();

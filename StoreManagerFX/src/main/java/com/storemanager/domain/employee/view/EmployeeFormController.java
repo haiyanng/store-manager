@@ -1,11 +1,22 @@
 package com.storemanager.domain.employee.view;
 
+import com.storemanager.core.storage.ImageStorageService;
 import com.storemanager.domain.employee.model.Employee;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.stage.FileChooser;
+
+import java.io.File;
 
 public class EmployeeFormController {
+
+    private final ImageStorageService imageStorageService =
+            new ImageStorageService();
+
+    private String imagePath;
 
     @FXML
     private TextField fullNameField;
@@ -23,9 +34,54 @@ public class EmployeeFormController {
     private CheckBox activeCheckBox;
 
     @FXML
+    private ImageView imagePreview;
+
+    @FXML
     public void initialize() {
 
         activeCheckBox.setSelected(true);
+    }
+
+    @FXML
+    private void onSelectImage() {
+
+        FileChooser fileChooser =
+                new FileChooser();
+
+        fileChooser.setTitle("Choose employee image");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter(
+                        "Image files",
+                        "*.png",
+                        "*.jpg",
+                        "*.jpeg",
+                        "*.gif",
+                        "*.bmp"
+                )
+        );
+
+        File selectedFile =
+                fileChooser.showOpenDialog(
+                        imagePreview.getScene().getWindow()
+                );
+
+        if (selectedFile == null) {
+            return;
+        }
+
+        imagePath =
+                imageStorageService.saveEmployeeImage(
+                        selectedFile
+                );
+
+        showImage(imagePath);
+    }
+
+    @FXML
+    private void onRemoveImage() {
+
+        imagePath = null;
+        imagePreview.setImage(null);
     }
 
     public Employee readEmployee() {
@@ -52,6 +108,8 @@ public class EmployeeFormController {
         employee.setActive(
                 activeCheckBox.isSelected()
         );
+
+        employee.setImagePath(imagePath);
 
         return employee;
     }
@@ -84,6 +142,11 @@ public class EmployeeFormController {
         activeCheckBox.setSelected(
                 employee.isActive()
         );
+
+        imagePath =
+                employee.getImagePath();
+
+        showImage(imagePath);
     }
 
     public void clear() {
@@ -93,5 +156,31 @@ public class EmployeeFormController {
         addressField.clear();
         positionField.clear();
         activeCheckBox.setSelected(true);
+        imagePath = null;
+        imagePreview.setImage(null);
+    }
+
+    private void showImage(
+            String path
+    ) {
+
+        File imageFile =
+                imageStorageService.resolveImageFile(path);
+
+        if (imageFile == null || !imageFile.isFile()) {
+            imagePreview.setImage(null);
+            return;
+        }
+
+        imagePreview.setImage(
+                new Image(
+                        imageFile.toURI().toString(),
+                        96,
+                        96,
+                        true,
+                        true,
+                        true
+                )
+        );
     }
 }

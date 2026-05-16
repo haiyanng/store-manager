@@ -9,9 +9,23 @@ import javafx.stage.Stage;
 
 public class AppBootstrap {
 
+    private static final double DEFAULT_WIDTH =
+            1400;
+
+    private static final double DEFAULT_HEIGHT =
+            900;
+
+    private static final double MIN_WIDTH =
+            1200;
+
+    private static final double MIN_HEIGHT =
+            750;
+
     public static void start(
             Stage stage
     ) {
+
+        configureStage(stage);
 
         SceneManager.initialize(stage);
 
@@ -53,5 +67,15 @@ public class AppBootstrap {
                     "/fxml/database_setup/database-setup.fxml"
             );
         }
+    }
+
+    private static void configureStage(
+            Stage stage
+    ) {
+
+        stage.setWidth(DEFAULT_WIDTH);
+        stage.setHeight(DEFAULT_HEIGHT);
+        stage.setMinWidth(MIN_WIDTH);
+        stage.setMinHeight(MIN_HEIGHT);
     }
 }

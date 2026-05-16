@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.branch.view.BranchController"
+      spacing="18">
+
+    <VBox spacing="6">
+        <Label text="Branch"
+               styleClass="content-title"/>
+
+        <Label text="Manage branches and employee branch authorization."
+               styleClass="content-description"/>
+    </VBox>
+
+    <HBox spacing="12">
+        <TextField fx:id="nameField"
+                   promptText="Branch name"
+                   prefWidth="220"
+                   styleClass="module-input"/>
+
+        <TextField fx:id="addressField"
+                   promptText="Address"
+                   prefWidth="320"
+                   styleClass="module-input"/>
+
+        <CheckBox fx:id="activeCheckBox"
+                  text="Active"/>
+
+        <Button text="Create"
+                styleClass="module-button"
+                onAction="#onCreateBranch"/>
+
+        <Button text="Update"
+                styleClass="module-button"
+                onAction="#onUpdateBranch"/>
+
+        <Button text="Clear"
+                styleClass="module-button"
+                onAction="#onClearBranch"/>
+    </HBox>
+
+    <TableView fx:id="branchTable"
+               prefHeight="230">
+        <columns>
+            <TableColumn fx:id="branchIdColumn"
+                         text="ID"
+                         prefWidth="70"/>
+
+            <TableColumn fx:id="branchNameColumn"
+                         text="Name"
+                         prefWidth="220"/>
+
+            <TableColumn fx:id="branchAddressColumn"
+                         text="Address"
+                         prefWidth="340"/>
+
+            <TableColumn fx:id="branchActiveColumn"
+                         text="Active"
+                         prefWidth="90"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="12">
+        <ComboBox fx:id="employeeComboBox"
+                  promptText="Employee"
+                  prefWidth="300"/>
+
+        <ComboBox fx:id="branchComboBox"
+                  promptText="Branch"
+                  prefWidth="260"/>
+
+        <Button text="Assign"
+                styleClass="module-button"
+                onAction="#onAssignEmployee"/>
+
+        <Button text="Deactivate Assignment"
+                styleClass="module-button"
+                onAction="#onDeactivateAssignment"/>
+
+        <Button text="Refresh"
+                styleClass="module-button"
+                onAction="#onRefresh"/>
+    </HBox>
+
+    <VBox spacing="8">
+        <Label text="Assignment history"
+               styleClass="content-description"/>
+
+        <TableView fx:id="assignmentTable"
+                   prefHeight="300">
+            <columns>
+                <TableColumn fx:id="assignmentEmployeeColumn"
+                             text="Employee"
+                             prefWidth="220"/>
+
+                <TableColumn fx:id="assignmentBranchColumn"
+                             text="Branch"
+                             prefWidth="200"/>
+
+                <TableColumn fx:id="assignmentActiveColumn"
+                             text="Active"
+                             prefWidth="90"/>
+
+                <TableColumn fx:id="assignmentAssignedAtColumn"
+                             text="Assigned at"
+                             prefWidth="190"/>
+
+                <TableColumn fx:id="assignmentUserColumn"
+                             text="User ID"
+                             prefWidth="100"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <Label fx:id="statusLabel"
+           text="Ready"
+           styleClass="content-description"/>
+
+    <padding>
+        <Insets top="0"
+                right="0"
+                bottom="0"
+                left="0"/>
+    </padding>
+</VBox>
