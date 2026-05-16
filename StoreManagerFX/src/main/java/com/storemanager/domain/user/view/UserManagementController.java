@@ -1,11 +1,13 @@
 package com.storemanager.domain.user.view;
 
 import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.domain.user.service.UserManagementService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -27,6 +29,9 @@ public class UserManagementController {
     private ComboBox<RoleType> roleComboBox;
 
     @FXML
+    private ComboBox<Employee> employeeComboBox;
+
+    @FXML
     private Button createButton;
 
     @FXML
@@ -34,6 +39,9 @@ public class UserManagementController {
 
     @FXML
     private Button deleteButton;
+
+    @FXML
+    private Button clearLinkButton;
 
     @FXML
     private TableView<User> usersTable;
@@ -46,6 +54,9 @@ public class UserManagementController {
 
     @FXML
     private TableColumn<User, RoleType> roleColumn;
+
+    @FXML
+    private TableColumn<User, String> employeeColumn;
 
     @FXML
     private TableColumn<User, Boolean> activeColumn;
@@ -89,6 +100,15 @@ public class UserManagementController {
                 new PropertyValueFactory<>("role")
         );
 
+        employeeColumn.setCellValueFactory(
+                cellData ->
+                        new SimpleStringProperty(
+                                getLinkedEmployeeText(
+                                        cellData.getValue()
+                                )
+                        )
+        );
+
         activeColumn.setCellValueFactory(
                 new PropertyValueFactory<>("active")
         );
@@ -102,6 +122,7 @@ public class UserManagementController {
                 );
 
         updateActionState();
+        refreshEmployeeChoices();
 
         refreshUsers();
     }
@@ -114,13 +135,8 @@ public class UserManagementController {
             userManagementService.createUser(
                     usernameField.getText(),
                     passwordField.getText(),
-                    roleComboBox.getValue()
-            );
-
-            usernameField.clear();
-            passwordField.clear();
-            roleComboBox.setValue(
-                    RoleType.EMPLOYEE
+                    roleComboBox.getValue(),
+                    employeeComboBox.getValue()
             );
 
             refreshUsers();
@@ -154,7 +170,8 @@ public class UserManagementController {
                             selectedUser,
                             usernameField.getText(),
                             passwordField.getText(),
-                            updatedRole
+                            updatedRole,
+                            employeeComboBox.getValue()
                     );
 
             if (!success) {
@@ -204,6 +221,12 @@ public class UserManagementController {
         }
     }
 
+    @FXML
+    public void onClearEmployeeLink() {
+
+        employeeComboBox.setValue(null);
+    }
+
     private void refreshUsers() {
 
         usersTable.setItems(
@@ -212,6 +235,7 @@ public class UserManagementController {
                 )
         );
 
+        refreshEmployeeChoices();
         updateActionState();
     }
 
@@ -245,6 +269,22 @@ public class UserManagementController {
                 )
         );
 
+        refreshEmployeeChoices();
+
+        employeeComboBox.setValue(
+                userManagementService.findLinkedEmployee(
+                        selectedUser
+                )
+        );
+
+        employeeComboBox.setDisable(
+                PermissionGuard.isRootDeveloper(selectedUser)
+        );
+
+        clearLinkButton.setDisable(
+                PermissionGuard.isRootDeveloper(selectedUser)
+        );
+
         updateActionState();
     }
 
@@ -259,6 +299,10 @@ public class UserManagementController {
         roleComboBox.setValue(
                 RoleType.EMPLOYEE
         );
+        employeeComboBox.setDisable(false);
+        employeeComboBox.setValue(null);
+        clearLinkButton.setDisable(false);
+        refreshEmployeeChoices();
 
         updateActionState();
     }
@@ -271,6 +315,10 @@ public class UserManagementController {
         roleComboBox.setValue(
                 RoleType.EMPLOYEE
         );
+        employeeComboBox.setDisable(false);
+        employeeComboBox.setValue(null);
+        clearLinkButton.setDisable(false);
+        refreshEmployeeChoices();
     }
 
     private void updateActionState() {
@@ -300,6 +348,47 @@ public class UserManagementController {
         createButton.setDisable(disabled);
         editButton.setDisable(disabled);
         deleteButton.setDisable(disabled);
+        employeeComboBox.setDisable(disabled);
+        clearLinkButton.setDisable(disabled);
+    }
+
+    private void refreshEmployeeChoices() {
+
+        Long selectedUserId =
+                selectedUser == null
+                        ? null
+                        : selectedUser.getId();
+
+        employeeComboBox.setItems(
+                FXCollections.observableArrayList(
+                        userManagementService
+                                .findEmployees()
+                                .stream()
+                                .filter(employee ->
+                                        employee.getUserId() == null
+                                                || employee
+                                                .getUserId()
+                                                .equals(selectedUserId)
+                                )
+                                .toList()
+                )
+        );
+    }
+
+    private String getLinkedEmployeeText(
+            User user
+    ) {
+
+        Employee employee =
+                userManagementService.findLinkedEmployee(
+                        user
+                );
+
+        if (employee == null) {
+            return "";
+        }
+
+        return employee.toString();
     }
 
     private void showError(

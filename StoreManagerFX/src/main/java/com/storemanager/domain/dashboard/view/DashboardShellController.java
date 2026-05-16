@@ -89,7 +89,7 @@ public class DashboardShellController {
     public void onEmployee() {
 
         ContentManager.loadContent(
-                "/fxml/employee/employee-placeholder.fxml"
+                "/fxml/employee/employee-list.fxml"
         );
     }
 

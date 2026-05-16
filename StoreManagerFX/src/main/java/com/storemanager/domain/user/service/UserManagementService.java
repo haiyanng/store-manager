@@ -3,6 +3,8 @@ package com.storemanager.domain.user.service;
 import com.storemanager.core.security.PasswordHasher;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.employee.model.Employee;
+import com.storemanager.domain.employee.repository.EmployeeRepository;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.domain.user.repository.UserRepository;
@@ -14,15 +16,51 @@ public class UserManagementService {
     private final UserRepository userRepository =
             new UserRepository();
 
+    private final EmployeeRepository employeeRepository =
+            new EmployeeRepository();
+
     public List<User> findAll() {
 
         return userRepository.findAll();
+    }
+
+    public List<Employee> findEmployees() {
+
+        return employeeRepository.findAll();
+    }
+
+    public Employee findLinkedEmployee(
+            User user
+    ) {
+
+        if (user == null || user.getId() == null) {
+            return null;
+        }
+
+        return employeeRepository.findByUserId(
+                user.getId()
+        );
     }
 
     public void createUser(
             String username,
             String rawPassword,
             RoleType role
+    ) {
+
+        createUser(
+                username,
+                rawPassword,
+                role,
+                null
+        );
+    }
+
+    public void createUser(
+            String username,
+            String rawPassword,
+            RoleType role,
+            Employee linkedEmployee
     ) {
 
         if (!PermissionGuard.canViewUserManagement()) {
@@ -82,6 +120,22 @@ public class UserManagementService {
         user.setActive(true);
 
         userRepository.save(user);
+
+        User createdUser =
+                userRepository
+                        .findByUsername(
+                                user.getUsername()
+                        )
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Created user cannot be loaded"
+                                )
+                        );
+
+        updateEmployeeLink(
+                createdUser,
+                linkedEmployee
+        );
     }
 
     public boolean updateUser(
@@ -89,6 +143,23 @@ public class UserManagementService {
             String username,
             String rawPassword,
             RoleType role
+    ) {
+
+        return updateUser(
+                target,
+                username,
+                rawPassword,
+                role,
+                findLinkedEmployee(target)
+        );
+    }
+
+    public boolean updateUser(
+            User target,
+            String username,
+            String rawPassword,
+            RoleType role,
+            Employee linkedEmployee
     ) {
 
         if (target == null) {
@@ -157,7 +228,19 @@ public class UserManagementService {
 
         target.setRole(role);
 
-        return userRepository.updateUser(target);
+        boolean updated =
+                userRepository.updateUser(target);
+
+        if (!updated) {
+            return false;
+        }
+
+        updateEmployeeLink(
+                target,
+                linkedEmployee
+        );
+
+        return true;
     }
 
     public boolean deleteUser(
@@ -201,7 +284,56 @@ public class UserManagementService {
             );
         }
 
+        employeeRepository.clearUserLink(
+                target.getId()
+        );
+
         return userRepository.deleteUser(target);
+    }
+
+    private void updateEmployeeLink(
+            User user,
+            Employee linkedEmployee
+    ) {
+
+        if (user == null || user.getId() == null) {
+            throw new RuntimeException(
+                    "User is required"
+            );
+        }
+
+        if (user.getRole() == RoleType.DEVELOPER
+                && linkedEmployee != null) {
+            throw new RuntimeException(
+                    "Developer account cannot link to employee"
+            );
+        }
+
+        if (linkedEmployee == null) {
+            employeeRepository.clearUserLink(
+                    user.getId()
+            );
+            return;
+        }
+
+        if (linkedEmployee.getUserId() != null
+                && !linkedEmployee.getUserId().equals(user.getId())) {
+            throw new RuntimeException(
+                    "Employee is already linked to another account"
+            );
+        }
+
+        boolean linked =
+                employeeRepository.linkUserToEmployee(
+                        user.getId(),
+                        linkedEmployee.getId()
+                );
+
+        if (!linked) {
+            throw new RuntimeException(
+                    "Cannot link account to employee"
+            );
+        }
     }
 
     private long countDevelopers() {

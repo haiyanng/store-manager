@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.employee.view.EmployeeFormController"
+      spacing="10">
+
+    <TextField fx:id="fullNameField"
+               promptText="Full name"
+               maxWidth="Infinity"
+               styleClass="module-input"/>
+
+    <TextField fx:id="phoneField"
+               promptText="Phone"
+               maxWidth="Infinity"
+               styleClass="module-input"/>
+
+    <TextField fx:id="addressField"
+               promptText="Address"
+               maxWidth="Infinity"
+               styleClass="module-input"/>
+
+    <TextField fx:id="positionField"
+               promptText="Position"
+               maxWidth="Infinity"
+               styleClass="module-input"/>
+
+    <CheckBox fx:id="activeCheckBox"
+              text="Active"/>
+</VBox>

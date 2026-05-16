@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.employee.view.EmployeeListController"
+      spacing="18">
+
+    <VBox spacing="6">
+        <Label text="Employee"
+               styleClass="content-title"/>
+
+        <Label text="Create, update, and manage employees"
+               styleClass="content-description"/>
+    </VBox>
+
+    <HBox spacing="16">
+        <fx:include fx:id="employeeForm"
+                    source="employee-form.fxml"/>
+
+        <VBox spacing="10">
+            <Button text="Create"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onCreate"/>
+
+            <Button fx:id="updateButton"
+                    text="Update"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onUpdate"/>
+
+            <Button fx:id="deleteButton"
+                    text="Delete"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onDelete"/>
+
+            <Button text="Clear"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onClear"/>
+
+            <Button text="Refresh"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onRefresh"/>
+        </VBox>
+    </HBox>
+
+    <TableView fx:id="employeeTable"
+               VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn"
+                         text="ID"
+                         prefWidth="70"/>
+
+            <TableColumn fx:id="fullNameColumn"
+                         text="Full name"
+                         prefWidth="220"/>
+
+            <TableColumn fx:id="phoneColumn"
+                         text="Phone"
+                         prefWidth="140"/>
+
+            <TableColumn fx:id="positionColumn"
+                         text="Position"
+                         prefWidth="160"/>
+
+            <TableColumn fx:id="linkedUsernameColumn"
+                         text="Linked username"
+                         prefWidth="180"/>
+
+            <TableColumn fx:id="linkedRoleColumn"
+                         text="Linked role"
+                         prefWidth="130"/>
+
+            <TableColumn fx:id="activeColumn"
+                         text="Active"
+                         prefWidth="100"/>
+        </columns>
+    </TableView>
+
+    <padding>
+        <Insets top="0"
+                right="0"
+                bottom="0"
+                left="0"/>
+    </padding>
+</VBox>

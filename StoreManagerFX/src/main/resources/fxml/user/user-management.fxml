@@ -35,6 +35,14 @@
         <ComboBox fx:id="roleComboBox"
                   prefWidth="150"/>
 
+        <ComboBox fx:id="employeeComboBox"
+                  prefWidth="220"
+                  promptText="Linked employee"/>
+
+        <Button fx:id="clearLinkButton"
+                text="Clear Link"
+                onAction="#onClearEmployeeLink"/>
+
         <Button fx:id="createButton"
                 text="Create"
                 onAction="#onCreateUser"/>
@@ -62,6 +70,10 @@
             <TableColumn fx:id="roleColumn"
                          text="Role"
                          prefWidth="180"/>
+
+            <TableColumn fx:id="employeeColumn"
+                         text="Employee"
+                         prefWidth="220"/>
 
             <TableColumn fx:id="activeColumn"
                          text="Active"
