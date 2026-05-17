@@ -3,6 +3,7 @@ package com.storemanager.domain.user.service;
 import com.storemanager.core.security.PasswordHasher;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
 import com.storemanager.domain.user.model.RoleType;
@@ -18,6 +19,9 @@ public class UserManagementService {
 
     private final EmployeeRepository employeeRepository =
             new EmployeeRepository();
+
+    private final AuditService auditService =
+            new AuditService();
 
     public List<User> findAll() {
 
@@ -64,6 +68,13 @@ public class UserManagementService {
     ) {
 
         if (!PermissionGuard.canViewUserManagement()) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "USER",
+                    null,
+                    "User management access denied",
+                    null
+            );
             throw new RuntimeException(
                     "Current user cannot manage users"
             );
@@ -136,6 +147,14 @@ public class UserManagementService {
                 createdUser,
                 linkedEmployee
         );
+
+        auditService.record(
+                "USER_CREATED",
+                "USER",
+                createdUser.getId(),
+                "User account created",
+                null
+        );
     }
 
     public boolean updateUser(
@@ -169,6 +188,13 @@ public class UserManagementService {
         }
 
         if (!PermissionGuard.canEditUser(target)) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "USER",
+                    target.getId(),
+                    "User edit denied",
+                    null
+            );
             throw new RuntimeException(
                     "Current user cannot edit this user"
             );
@@ -265,6 +291,13 @@ public class UserManagementService {
         }
 
         if (!PermissionGuard.canDeleteUser(target)) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "USER",
+                    target.getId(),
+                    "User delete denied",
+                    null
+            );
             throw new RuntimeException(
                     "Current user cannot delete this user"
             );
@@ -287,8 +320,20 @@ public class UserManagementService {
         employeeRepository.clearUserLink(
                 target.getId()
         );
+        boolean deleted =
+                userRepository.deleteUser(target);
 
-        return userRepository.deleteUser(target);
+        if (deleted) {
+            auditService.record(
+                    "USER_DELETED",
+                    "USER",
+                    target.getId(),
+                    "User account deleted",
+                    null
+            );
+        }
+
+        return deleted;
     }
 
     private void updateEmployeeLink(

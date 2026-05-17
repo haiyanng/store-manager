@@ -20,6 +20,14 @@
 
         <Label text="Track employee work sessions before payroll."
                styleClass="content-description"/>
+
+        <Label fx:id="branchContextLabel"
+               text="Current branch: -"
+               styleClass="content-description"/>
+
+        <Label fx:id="sessionStatusLabel"
+               text="Session: no active session"
+               styleClass="content-description"/>
     </VBox>
 
     <HBox spacing="12">

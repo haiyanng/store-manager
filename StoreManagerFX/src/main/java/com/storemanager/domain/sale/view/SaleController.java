@@ -1,6 +1,7 @@
 package com.storemanager.domain.sale.view;
 
 import com.storemanager.domain.product.model.Product;
+import com.storemanager.domain.product.view.ProductLookupComboBoxSupport;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.presenter.SalePresenter;
@@ -15,7 +16,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -68,6 +68,8 @@ public class SaleController {
     @FXML
     private Label statusLabel;
 
+    private ProductLookupComboBoxSupport productLookupSupport;
+
     private SalePresenter presenter;
 
     @FXML
@@ -78,7 +80,8 @@ public class SaleController {
                         this
                 );
 
-        configureProductComboBox();
+        productLookupSupport =
+                new ProductLookupComboBoxSupport(productComboBox);
         configureCartTable();
         configureOrderTable();
 
@@ -88,8 +91,11 @@ public class SaleController {
     @FXML
     public void onAddToCart() {
 
+        Product selectedProduct =
+                productLookupSupport.resolveSelectionFromEditor();
+
         presenter.addProductToCart(
-                productComboBox.getValue(),
+                selectedProduct,
                 parseQuantity()
         );
     }
@@ -126,11 +132,7 @@ public class SaleController {
             List<Product> products
     ) {
 
-        productComboBox.setItems(
-                FXCollections.observableArrayList(
-                        products
-                )
-        );
+        productLookupSupport.setProducts(products);
     }
 
     public void setCartItems(
@@ -168,7 +170,7 @@ public class SaleController {
 
     public void clearEntryForm() {
 
-        productComboBox.setValue(null);
+        productLookupSupport.clearSelection();
         quantityField.clear();
         cartTable.getSelectionModel().clearSelection();
     }
@@ -202,35 +204,6 @@ public class SaleController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private void configureProductComboBox() {
-
-        productComboBox.setConverter(
-                new StringConverter<>() {
-                    @Override
-                    public String toString(
-                            Product product
-                    ) {
-
-                        if (product == null) {
-                            return "";
-                        }
-
-                        return product.getName()
-                                + " / "
-                                + product.getSku();
-                    }
-
-                    @Override
-                    public Product fromString(
-                            String value
-                    ) {
-
-                        return null;
-                    }
-                }
-        );
     }
 
     private void configureCartTable() {

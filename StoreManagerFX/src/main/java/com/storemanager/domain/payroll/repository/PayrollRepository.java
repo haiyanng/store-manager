@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -153,6 +155,142 @@ public class PayrollRepository {
         } catch (Exception e) {
             e.printStackTrace();
             return records;
+        }
+    }
+
+    public List<PayrollRecord> findPayrollRecordsByEmployeeId(
+            Long employeeId
+    ) {
+
+        List<PayrollRecord> records = new ArrayList<>();
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT *
+                                FROM payroll_records
+                                WHERE employee_id = ?
+                                ORDER BY year DESC, month DESC
+                                """
+                        )
+        ) {
+
+            statement.setLong(1, employeeId);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                records.add(mapPayrollRecord(resultSet));
+            }
+
+            return records;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return records;
+        }
+    }
+
+    public BigDecimal findTotalPayrollCost() {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                Statement statement =
+                        connection.createStatement();
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT COALESCE(SUM(total_salary), 0) AS total_payroll_cost
+                                FROM payroll_records
+                                """
+                        )
+        ) {
+
+            if (resultSet.next()) {
+                return resultSet.getBigDecimal("total_payroll_cost");
+            }
+
+            return BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public BigDecimal findPayrollCostForPeriod(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT COALESCE(SUM(total_salary), 0) AS total_payroll_cost
+                                FROM payroll_records
+                                WHERE generated_at >= ?
+                                  AND generated_at < ?
+                                """
+                        )
+        ) {
+
+            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getBigDecimal("total_payroll_cost");
+            }
+
+            return BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public long countPayrollRecordsForPeriod(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT COUNT(*) AS payroll_count
+                                FROM payroll_records
+                                WHERE generated_at >= ?
+                                  AND generated_at < ?
+                                """
+                        )
+        ) {
+
+            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getLong("payroll_count");
+            }
+
+            return 0L;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
         }
     }
 

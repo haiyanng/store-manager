@@ -72,6 +72,28 @@ public class EmployeeService {
                 );
     }
 
+    public Employee findByUserId(
+            Long userId
+    ) {
+
+        if (userId == null) {
+            return null;
+        }
+
+        return employeeRepository.findByUserId(userId);
+    }
+
+    public Employee findById(
+            Long id
+    ) {
+
+        if (id == null) {
+            return null;
+        }
+
+        return employeeRepository.findById(id);
+    }
+
     private void validate(
             Employee employee
     ) {

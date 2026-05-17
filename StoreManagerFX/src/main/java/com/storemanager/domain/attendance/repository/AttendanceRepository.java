@@ -135,8 +135,7 @@ public class AttendanceRepository {
     }
 
     public AttendanceSession findOpenSessionByEmployeeId(
-            Long employeeId,
-            Long branchId
+            Long employeeId
     ) {
 
         try (
@@ -149,7 +148,6 @@ public class AttendanceRepository {
                                 SELECT *
                                 FROM attendance_sessions
                                 WHERE employee_id = ?
-                                  AND branch_id = ?
                                   AND check_out_time IS NULL
                                 ORDER BY check_in_time DESC, id DESC
                                 LIMIT 1
@@ -160,11 +158,7 @@ public class AttendanceRepository {
             statement.setLong(
                     1,
                     employeeId
-            );
-            statement.setLong(
-                    2,
-                    branchId
-            );
+                );
 
             ResultSet resultSet =
                     statement.executeQuery();

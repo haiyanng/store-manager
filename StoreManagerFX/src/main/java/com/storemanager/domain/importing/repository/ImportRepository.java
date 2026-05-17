@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,6 +103,106 @@ public class ImportRepository {
             e.printStackTrace();
 
             return receipts;
+        }
+    }
+
+    public BigDecimal findTotalImportCost() {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                Statement statement =
+                        connection.createStatement();
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT COALESCE(SUM(total_cost), 0) AS total_import_cost
+                                FROM import_receipts
+                                """
+                        )
+        ) {
+
+            if (resultSet.next()) {
+                return resultSet.getBigDecimal("total_import_cost");
+            }
+
+            return BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public BigDecimal findImportCostForPeriod(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT COALESCE(SUM(total_cost), 0) AS total_import_cost
+                                FROM import_receipts
+                                WHERE created_at >= ?
+                                  AND created_at < ?
+                                """
+                        )
+        ) {
+
+            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getBigDecimal("total_import_cost");
+            }
+
+            return BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public long countReceiptsForPeriod(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT COUNT(*) AS receipt_count
+                                FROM import_receipts
+                                WHERE created_at >= ?
+                                  AND created_at < ?
+                                """
+                        )
+        ) {
+
+            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getLong("receipt_count");
+            }
+
+            return 0L;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
         }
     }
 

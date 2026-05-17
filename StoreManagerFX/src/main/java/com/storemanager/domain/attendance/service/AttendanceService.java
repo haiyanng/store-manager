@@ -1,14 +1,18 @@
 package com.storemanager.domain.attendance.service;
 
-import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
+import com.storemanager.domain.attendance.model.AttendanceRuntimeStatus;
+import com.storemanager.domain.attendance.model.AttendanceState;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
 import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.branch.service.BranchService;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.service.EmployeeService;
+import com.storemanager.domain.notification.model.NotificationType;
+import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.User;
 
 import java.math.BigDecimal;
@@ -31,9 +35,26 @@ public class AttendanceService {
     private final BranchService branchService =
             new BranchService();
 
+    private final NotificationService notificationService =
+            new NotificationService();
+
+    private final AuditService auditService =
+            new AuditService();
+
     public List<Employee> findEmployees() {
 
         validateAttendanceAccess();
+
+        if (isEmployeeSelfService()) {
+            Employee currentEmployee =
+                    getCurrentEmployee();
+
+            if (currentEmployee == null) {
+                return List.of();
+            }
+
+            return List.of(currentEmployee);
+        }
 
         return employeeService.findAll();
     }
@@ -41,6 +62,20 @@ public class AttendanceService {
     public Map<Long, Employee> findEmployeesById() {
 
         validateAttendanceAccess();
+
+        if (isEmployeeSelfService()) {
+            Employee currentEmployee =
+                    getCurrentEmployee();
+
+            if (currentEmployee == null) {
+                return Map.of();
+            }
+
+            return Map.of(
+                    currentEmployee.getId(),
+                    currentEmployee
+            );
+        }
 
         return employeeService
                 .findAll()
@@ -57,12 +92,36 @@ public class AttendanceService {
 
         validateAttendanceAccess();
 
+        if (isEmployeeSelfService()) {
+            Employee currentEmployee =
+                    getCurrentEmployee();
+
+            if (currentEmployee == null) {
+                return List.of();
+            }
+
+            return branchService.findActiveBranchesForEmployeeId(
+                    currentEmployee.getId()
+            );
+        }
+
         return branchService.findBranches();
     }
 
     public Map<Long, Branch> findBranchesById() {
 
         validateAttendanceAccess();
+
+        if (isEmployeeSelfService()) {
+            return findBranches()
+                    .stream()
+                    .collect(
+                            Collectors.toMap(
+                                    Branch::getId,
+                                    branch -> branch
+                            )
+                    );
+        }
 
         return branchService.findBranchesById();
     }
@@ -71,12 +130,50 @@ public class AttendanceService {
 
         validateAttendanceAccess();
 
+        if (isEmployeeSelfService()) {
+            Employee currentEmployee =
+                    getCurrentEmployee();
+
+            if (currentEmployee == null) {
+                return List.of();
+            }
+
+            return attendanceRepository.findAllSessions()
+                    .stream()
+                    .filter(session ->
+                            currentEmployee.getId().equals(
+                                    session.getEmployeeId()
+                            )
+                    )
+                    .toList();
+        }
+
         return attendanceRepository.findAllSessions();
     }
 
     public List<AttendanceMonthlyTotal> findCurrentMonthTotals() {
 
         validateAttendanceAccess();
+
+        if (isEmployeeSelfService()) {
+            Employee currentEmployee =
+                    getCurrentEmployee();
+
+            if (currentEmployee == null) {
+                return List.of();
+            }
+
+            return attendanceRepository.findMonthlyTotals(
+                            LocalDate.now()
+                    )
+                    .stream()
+                    .filter(total ->
+                            currentEmployee.getId().equals(
+                                    total.getEmployeeId()
+                            )
+                    )
+                    .toList();
+        }
 
         return attendanceRepository.findMonthlyTotals(
                 LocalDate.now()
@@ -99,37 +196,148 @@ public class AttendanceService {
         );
     }
 
+    public List<AttendanceSession> findSessionsByEmployeeId(
+            Long employeeId
+    ) {
+
+        validateAttendanceAccess();
+
+        return attendanceRepository.findAllSessions()
+                .stream()
+                .filter(session ->
+                        employeeId != null
+                                && employeeId.equals(session.getEmployeeId())
+                )
+                .toList();
+    }
+
+    public AttendanceRuntimeStatus getCurrentRuntimeStatus() {
+
+        AttendanceRuntimeStatus status =
+                new AttendanceRuntimeStatus();
+
+        Employee currentEmployee =
+                getCurrentEmployee();
+
+        if (currentEmployee == null) {
+            status.setState(AttendanceState.NOT_WORKING);
+            status.setStatusLabel("Not working");
+            status.setTodayWorkedHours(BigDecimal.ZERO);
+            return status;
+        }
+
+        List<AttendanceSession> employeeSessions =
+                attendanceRepository.findAllSessions()
+                        .stream()
+                        .filter(session ->
+                                currentEmployee.getId().equals(
+                                        session.getEmployeeId()
+                                )
+                        )
+                        .toList();
+
+        AttendanceSession activeSession =
+                employeeSessions.stream()
+                        .filter(session -> session.getCheckOutTime() == null)
+                        .findFirst()
+                        .orElse(null);
+
+        status.setActiveSession(activeSession);
+        status.setActiveBranchName(resolveBranchName(activeSession));
+        status.setLatestCheckInTime(
+                resolveLatestCheckInTime(employeeSessions, activeSession)
+        );
+        status.setTodayWorkedHours(
+                calculateTodayWorkedHours(employeeSessions, activeSession)
+        );
+
+        if (activeSession != null) {
+            status.setState(AttendanceState.WORKING);
+            status.setStatusLabel("Currently Working");
+            return status;
+        }
+
+        status.setState(AttendanceState.NOT_WORKING);
+        status.setStatusLabel("Not working");
+        return status;
+    }
+
+    public boolean isEmployeeSelfService() {
+
+        User currentUser =
+                AppSession.getCurrentUser();
+
+        return currentUser != null
+                && currentUser.getRole() == com.storemanager.domain.user.model.RoleType.EMPLOYEE;
+    }
+
+    public Employee getCurrentEmployee() {
+
+        User currentUser =
+                AppSession.getCurrentUser();
+
+        if (currentUser == null) {
+            return null;
+        }
+
+        return employeeService.findByUserId(currentUser.getId());
+    }
+
     public boolean checkIn(
             Employee employee,
             Branch branch
     ) {
 
         validateAttendanceAccess();
-        validateEmployee(employee);
-        validateBranch(branch);
-        validateEmployeeBranchAssignment(employee, branch);
+        Employee targetEmployee =
+                resolveTargetEmployee(employee);
+        Branch targetBranch =
+                resolveTargetBranch(branch);
+        validateEmployee(targetEmployee);
+        validateBranch(targetBranch);
+        validateEmployeeBranchAssignment(targetEmployee, targetBranch);
 
         AttendanceSession openSession =
                 attendanceRepository.findOpenSessionByEmployeeId(
-                        employee.getId(),
-                        branch.getId()
+                        targetEmployee.getId()
                 );
 
         if (openSession != null) {
-            throw new RuntimeException(
-                    "Employee already has an open attendance session"
+            auditDenied(
+                    "Duplicate attendance check-in",
+                    targetEmployee,
+                    targetBranch
             );
+            throw new RuntimeException("You are already checked in.");
         }
 
         AttendanceSession session =
                 new AttendanceSession();
 
-        session.setEmployeeId(employee.getId());
-        session.setBranchId(branch.getId());
+        session.setEmployeeId(targetEmployee.getId());
+        session.setBranchId(targetBranch.getId());
         session.setCheckInTime(LocalDateTime.now());
         session.setCreatedByUserId(getCurrentUserId());
 
-        return attendanceRepository.checkIn(session);
+        boolean saved =
+                attendanceRepository.checkIn(session);
+
+        if (saved) {
+            auditService.record(
+                    AuditService.ACTION_ATTENDANCE_SELF_CHECK_IN,
+                    "ATTENDANCE_SESSION",
+                    targetEmployee.getId(),
+                    "Self check-in at branch " + targetBranch.getName(),
+                    targetBranch.getId()
+            );
+        }
+
+        return saved;
+    }
+
+    public boolean checkInSelf() {
+
+        return checkIn(null, null);
     }
 
     public boolean checkOut(
@@ -138,19 +346,39 @@ public class AttendanceService {
     ) {
 
         validateAttendanceAccess();
-        validateEmployee(employee);
-        validateBranch(branch);
-        validateEmployeeBranchAssignment(employee, branch);
+        Employee targetEmployee =
+                resolveTargetEmployee(employee);
+        Branch targetBranch =
+                resolveTargetBranch(branch);
+        validateEmployee(targetEmployee);
+        validateBranch(targetBranch);
+        validateEmployeeBranchAssignment(targetEmployee, targetBranch);
 
         AttendanceSession openSession =
                 attendanceRepository.findOpenSessionByEmployeeId(
-                        employee.getId(),
-                        branch.getId()
+                        targetEmployee.getId()
                 );
 
         if (openSession == null) {
+            auditDenied(
+                    "Missing active attendance session",
+                    targetEmployee,
+                    targetBranch
+            );
             throw new RuntimeException(
-                    "Employee has no open attendance session"
+                    "No active attendance session found."
+            );
+        }
+
+        if (openSession.getBranchId() != null
+                && !openSession.getBranchId().equals(targetBranch.getId())) {
+            auditDenied(
+                    "Attendance branch mismatch",
+                    targetEmployee,
+                    targetBranch
+            );
+            throw new RuntimeException(
+                    "Active attendance session belongs to another branch"
             );
         }
 
@@ -165,16 +393,117 @@ public class AttendanceService {
                 )
         );
 
-        return attendanceRepository.checkOut(openSession);
+        boolean saved =
+                attendanceRepository.checkOut(openSession);
+
+        if (saved) {
+            auditService.record(
+                    AuditService.ACTION_ATTENDANCE_SELF_CHECK_OUT,
+                    "ATTENDANCE_SESSION",
+                    targetEmployee.getId(),
+                    "Self check-out at branch " + targetBranch.getName(),
+                    targetBranch.getId()
+            );
+        }
+
+        return saved;
+    }
+
+    public boolean checkOutSelf() {
+
+        return checkOut(null, null);
     }
 
     private void validateAttendanceAccess() {
 
-        if (!PermissionGuard.canViewEmployee()) {
+        if (AppSession.getCurrentUser() == null) {
+            notifyCurrentUser(
+                    "Attendance denied",
+                    "Attendance access was denied for your account",
+                    NotificationType.ATTENDANCE
+            );
             throw new RuntimeException(
                     "Attendance access denied"
             );
         }
+    }
+
+    private BigDecimal calculateTodayWorkedHours(
+            List<AttendanceSession> employeeSessions,
+            AttendanceSession activeSession
+    ) {
+
+        BigDecimal total =
+                BigDecimal.ZERO;
+
+        LocalDate today = LocalDate.now();
+
+        for (AttendanceSession session : employeeSessions) {
+            if (session.getCheckInTime() == null) {
+                continue;
+            }
+
+            if (!session.getCheckInTime().toLocalDate().equals(today)) {
+                continue;
+            }
+
+            if (session.getCheckOutTime() == null) {
+                continue;
+            }
+
+            if (session.getWorkedHours() != null) {
+                total = total.add(session.getWorkedHours());
+            }
+        }
+
+        if (activeSession != null
+                && activeSession.getCheckInTime() != null) {
+            total = total.add(
+                    calculateWorkedHours(
+                            activeSession.getCheckInTime(),
+                            LocalDateTime.now()
+                    )
+            );
+        }
+
+        return total.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private LocalDateTime resolveLatestCheckInTime(
+            List<AttendanceSession> employeeSessions,
+            AttendanceSession activeSession
+    ) {
+
+        if (activeSession != null) {
+            return activeSession.getCheckInTime();
+        }
+
+        return employeeSessions.stream()
+                .map(AttendanceSession::getCheckInTime)
+                .filter(value -> value != null)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+    }
+
+    private String resolveBranchName(
+            AttendanceSession activeSession
+    ) {
+
+        if (activeSession == null || activeSession.getBranchId() == null) {
+            String branchName =
+                    AppSession.getActiveBranchName();
+
+            return branchName == null ? "-" : branchName;
+        }
+
+        Branch branch =
+                branchService.findBranchById(activeSession.getBranchId());
+
+        if (branch == null || branch.getName() == null) {
+            return "-";
+        }
+
+        return branch.getName();
     }
 
     private void validateEmployee(
@@ -214,10 +543,166 @@ public class AttendanceService {
                 employee.getId(),
                 branch.getId()
         )) {
+            notifyCurrentUser(
+                    "Attendance denied",
+                    "You are not assigned to branch "
+                            + branch.getName(),
+                    NotificationType.ATTENDANCE
+            );
+            auditDenied(
+                    "Employee not assigned to branch",
+                    employee,
+                    branch
+            );
             throw new RuntimeException(
                     "Employee is not assigned to this branch"
             );
         }
+    }
+
+    private Employee resolveTargetEmployee(
+            Employee employee
+    ) {
+
+        if (!isEmployeeSelfService()) {
+            return employee;
+        }
+
+        Employee currentEmployee =
+                getCurrentEmployee();
+
+        if (currentEmployee == null) {
+            throw new RuntimeException(
+                    "Current employee account was not found"
+            );
+        }
+
+        if (employee != null
+                && employee.getId() != null
+                && !currentEmployee.getId().equals(employee.getId())) {
+            auditDenied(
+                    "Attempted to act on another employee",
+                    employee,
+                    null
+            );
+            throw new RuntimeException(
+                    "Employees can only manage their own attendance"
+            );
+        }
+
+        return currentEmployee;
+    }
+
+    private Branch resolveTargetBranch(
+            Branch branch
+    ) {
+
+        if (isEmployeeSelfService()) {
+            Branch activeBranch =
+                    resolveCurrentActiveBranchForSelfService();
+
+            if (activeBranch == null) {
+                throw new RuntimeException(
+                        "No active branch selected."
+                );
+            }
+
+            if (branch != null
+                    && branch.getId() != null
+                    && !branch.getId().equals(activeBranch.getId())) {
+                auditDenied(
+                        "Attempted attendance on a non-active branch",
+                        getCurrentEmployee(),
+                        branch
+                );
+            }
+
+            return activeBranch;
+        }
+
+        if (branch != null && branch.getId() != null) {
+            return branch;
+        }
+
+        Long activeBranchId =
+                AppSession.getActiveBranchId();
+
+        if (activeBranchId != null) {
+            Branch activeBranch =
+                    branchService.findBranchById(activeBranchId);
+
+            if (activeBranch != null) {
+                return activeBranch;
+            }
+        }
+
+        if (isEmployeeSelfService()) {
+            Employee currentEmployee =
+                    getCurrentEmployee();
+
+            if (currentEmployee == null) {
+                return branch;
+            }
+
+            List<Branch> branches =
+                    branchService.findActiveBranchesForEmployeeId(
+                            currentEmployee.getId()
+                    );
+
+            if (!branches.isEmpty()) {
+                return branches.get(0);
+            }
+        }
+
+        return branch;
+    }
+
+    private Branch resolveCurrentActiveBranchForSelfService() {
+
+        Long activeBranchId =
+                AppSession.getActiveBranchId();
+
+        if (activeBranchId != null) {
+            Branch activeBranch =
+                    branchService.findBranchById(activeBranchId);
+
+            if (activeBranch != null) {
+                return activeBranch;
+            }
+        }
+
+        Employee currentEmployee =
+                getCurrentEmployee();
+
+        if (currentEmployee == null) {
+            return null;
+        }
+
+        List<Branch> branches =
+                branchService.findActiveBranchesForEmployeeId(
+                        currentEmployee.getId()
+                );
+
+        if (branches.isEmpty()) {
+            return null;
+        }
+
+        return branches.get(0);
+    }
+
+    private void auditDenied(
+            String details,
+            Employee employee,
+            Branch branch
+    ) {
+
+        auditService.recordPermissionDenied(
+                "ATTENDANCE_ATTEMPT",
+                "ATTENDANCE_SESSION",
+                employee == null ? null : employee.getId(),
+                details,
+                branch == null ? null : branch.getId()
+        );
     }
 
     private Long getCurrentUserId() {
@@ -256,9 +741,30 @@ public class AttendanceService {
         return BigDecimal
                 .valueOf(minutes)
                 .divide(
-                        BigDecimal.valueOf(60),
+                BigDecimal.valueOf(60),
                         2,
                         RoundingMode.HALF_UP
                 );
+    }
+
+    private void notifyCurrentUser(
+            String title,
+            String content,
+            NotificationType type
+    ) {
+
+        User currentUser =
+                AppSession.getCurrentUser();
+
+        if (currentUser == null) {
+            return;
+        }
+
+        notificationService.notifyUser(
+                currentUser.getId(),
+                title,
+                content,
+                type
+        );
     }
 }

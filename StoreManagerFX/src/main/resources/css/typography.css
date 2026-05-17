@@ -1,0 +1,88 @@
+.app-shell,
+.login-root {
+    -text-primary: #1d2430;
+    -text-secondary: #4f5966;
+    -text-muted: #7d8794;
+    -text-inverse: #f7f9fb;
+    -text-danger: #8f3737;
+    -fx-font-smoothing-type: lcd;
+}
+
+.login-root .label,
+.app-shell .label,
+.dashboard-home .label {
+    -fx-text-fill: -text-primary;
+}
+
+.content-title,
+.login-title,
+.sidebar-title,
+.dashboard-hero-title,
+.analytics-section-title {
+    -fx-text-fill: -text-primary;
+}
+
+.content-description,
+.login-subtitle,
+.meta-label,
+.dashboard-hero-subtitle,
+.dashboard-status,
+.analytics-card-detail,
+.analytics-section-text,
+.sidebar-kicker {
+    -fx-text-fill: -text-secondary;
+}
+
+.dashboard-home .content-title,
+.dashboard-home .content-description,
+.dashboard-home .analytics-section-title,
+.dashboard-home .analytics-section-text,
+.dashboard-home .analytics-card-title,
+.dashboard-home .analytics-card-detail,
+.dashboard-home .meta-label,
+.dashboard-home .meta-value {
+    -fx-font-smoothing-type: lcd;
+}
+
+.analytics-card-value,
+.meta-value {
+    -fx-text-fill: -text-primary;
+}
+
+.analytics-card-title {
+    -fx-text-fill: -text-secondary;
+}
+
+.analytics-table .column-header .label {
+    -fx-text-fill: -text-secondary;
+}
+
+.analytics-table .table-cell {
+    -fx-text-fill: -text-primary;
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: -text-secondary;
+}
+
+.module-input,
+.login-input,
+.combo-box-base {
+    -fx-text-fill: -text-primary;
+    -fx-prompt-text-fill: -text-muted;
+}
+
+.module-button,
+.module-secondary-button,
+.utility-button,
+.nav-button {
+    -fx-text-fill: -text-primary;
+}
+
+.logout-button {
+    -fx-text-fill: -text-danger;
+}
+
+.login-button {
+    -fx-text-fill: -text-inverse;
+}

@@ -123,20 +123,9 @@ public class ProductService {
 
         product.setName(product.getName().trim());
         product.setSku(product.getSku().trim());
-        product.setBarcode(clean(product.getBarcode()));
+        product.setBarcode(cleanNullable(product.getBarcode()));
         product.setUnit(product.getUnit().trim());
         product.setImagePath(cleanNullable(product.getImagePath()));
-    }
-
-    private String clean(
-            String value
-    ) {
-
-        if (value == null) {
-            return "";
-        }
-
-        return value.trim();
     }
 
     private String cleanNullable(

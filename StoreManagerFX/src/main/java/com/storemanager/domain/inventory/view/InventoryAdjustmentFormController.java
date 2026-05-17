@@ -3,11 +3,11 @@ package com.storemanager.domain.inventory.view;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.model.InventoryTransactionType;
 import com.storemanager.domain.product.model.Product;
+import com.storemanager.domain.product.view.ProductLookupComboBoxSupport;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
-import javafx.util.StringConverter;
 
 import java.util.List;
 
@@ -25,6 +25,8 @@ public class InventoryAdjustmentFormController {
     @FXML
     private TextField reasonField;
 
+    private ProductLookupComboBoxSupport productLookupSupport;
+
     @FXML
     public void initialize() {
 
@@ -38,31 +40,8 @@ public class InventoryAdjustmentFormController {
                 InventoryTransactionType.IMPORT
         );
 
-        productComboBox.setConverter(
-                new StringConverter<>() {
-                    @Override
-                    public String toString(
-                            Product product
-                    ) {
-
-                        if (product == null) {
-                            return "";
-                        }
-
-                        return product.getName()
-                                + " / "
-                                + product.getSku();
-                    }
-
-                    @Override
-                    public Product fromString(
-                            String value
-                    ) {
-
-                        return null;
-                    }
-                }
-        );
+        productLookupSupport =
+                new ProductLookupComboBoxSupport(productComboBox);
     }
 
     public InventoryTransaction readTransaction() {
@@ -71,7 +50,7 @@ public class InventoryAdjustmentFormController {
                 new InventoryTransaction();
 
         Product product =
-                productComboBox.getValue();
+                productLookupSupport.resolveSelectionFromEditor();
 
         transaction.setProductId(
                 product == null
@@ -98,16 +77,12 @@ public class InventoryAdjustmentFormController {
             List<Product> products
     ) {
 
-        productComboBox.setItems(
-                FXCollections.observableArrayList(
-                        products
-                )
-        );
+        productLookupSupport.setProducts(products);
     }
 
     public void clear() {
 
-        productComboBox.setValue(null);
+        productLookupSupport.clearSelection();
         typeComboBox.setValue(
                 InventoryTransactionType.IMPORT
         );

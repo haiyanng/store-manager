@@ -3,6 +3,9 @@ package com.storemanager.domain.system_tool.service;
 import com.storemanager.config.DatabaseSettings;
 import com.storemanager.core.database.ConnectionFactory;
 import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.notification.model.NotificationType;
+import com.storemanager.domain.notification.service.NotificationService;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -12,6 +15,12 @@ public class DatabaseBackupService {
 
     private static final DateTimeFormatter FILE_TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+
+    private final AuditService auditService =
+            new AuditService();
+
+    private final NotificationService notificationService =
+            new NotificationService();
 
     public String createBackupFileName() {
 
@@ -30,6 +39,13 @@ public class DatabaseBackupService {
     ) {
 
         if (!PermissionGuard.canAccessSystemTools()) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "BACKUP",
+                    null,
+                    "Backup access denied",
+                    null
+            );
             throw new RuntimeException(
                     "Current user cannot access system tools"
             );
@@ -75,7 +91,28 @@ public class DatabaseBackupService {
                 ProcessBuilder.Redirect.DISCARD
         );
 
-        return run(processBuilder);
+        boolean success =
+                run(processBuilder);
+
+        if (success) {
+            auditService.record(
+                    AuditService.ACTION_BACKUP,
+                    "DATABASE",
+                    null,
+                    "Database backup created at "
+                            + outputFile.getAbsolutePath(),
+                    null
+            );
+
+            notificationService.notifyCurrentUser(
+                    "Backup completed",
+                    "Backup created at "
+                            + outputFile.getAbsolutePath(),
+                    NotificationType.SYSTEM
+            );
+        }
+
+        return success;
     }
 
     private boolean run(

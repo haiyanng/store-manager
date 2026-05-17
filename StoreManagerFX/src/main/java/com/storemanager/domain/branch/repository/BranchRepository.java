@@ -47,6 +47,141 @@ public class BranchRepository {
         }
     }
 
+    public List<Branch> findActiveBranches() {
+
+        List<Branch> branches = new ArrayList<>();
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(
+                        """
+                        SELECT *
+                        FROM branches
+                        WHERE active = TRUE
+                        ORDER BY name
+                        """
+                )
+        ) {
+
+            while (resultSet.next()) {
+                branches.add(mapBranch(resultSet));
+            }
+
+            return branches;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return branches;
+        }
+    }
+
+    public List<Branch> findActiveBranchesForEmployeeId(
+            Long employeeId
+    ) {
+
+        List<Branch> branches = new ArrayList<>();
+
+        if (employeeId == null) {
+            return branches;
+        }
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        """
+                        SELECT DISTINCT b.*
+                        FROM branches b
+                        INNER JOIN employee_branch_assignments a
+                                ON a.branch_id = b.id
+                        WHERE a.employee_id = ?
+                          AND a.active = TRUE
+                          AND b.active = TRUE
+                        ORDER BY b.name
+                        """
+                )
+        ) {
+
+            statement.setLong(1, employeeId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    branches.add(mapBranch(resultSet));
+                }
+            }
+
+            return branches;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return branches;
+        }
+    }
+
+    public Branch findBranchById(
+            Long branchId
+    ) {
+
+        if (branchId == null) {
+            return null;
+        }
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        """
+                        SELECT *
+                        FROM branches
+                        WHERE id = ?
+                        LIMIT 1
+                        """
+                )
+        ) {
+
+            statement.setLong(1, branchId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapBranch(resultSet);
+                }
+            }
+
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public Branch findFirstActiveBranch() {
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(
+                        """
+                        SELECT *
+                        FROM branches
+                        WHERE active = TRUE
+                        ORDER BY id
+                        LIMIT 1
+                        """
+                )
+        ) {
+
+            if (resultSet.next()) {
+                return mapBranch(resultSet);
+            }
+
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public List<EmployeeBranchAssignment> findAllAssignments() {
 
         List<EmployeeBranchAssignment> assignments = new ArrayList<>();

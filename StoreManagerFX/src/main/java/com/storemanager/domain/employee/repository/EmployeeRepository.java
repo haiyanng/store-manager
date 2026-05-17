@@ -287,6 +287,48 @@ public class EmployeeRepository {
         }
     }
 
+    public Employee findById(
+            Long id
+    ) {
+
+        try (
+
+                Connection connection =
+                        ConnectionFactory.getConnection();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT *
+                                FROM employees
+                                WHERE id = ?
+                                """
+                        )
+
+        ) {
+
+            statement.setLong(
+                    1,
+                    id
+            );
+
+            ResultSet resultSet =
+                    statement.executeQuery();
+
+            if (resultSet.next()) {
+                return mapEmployee(resultSet);
+            }
+
+            return null;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return null;
+        }
+    }
+
     public boolean delete(
             Employee employee
     ) {

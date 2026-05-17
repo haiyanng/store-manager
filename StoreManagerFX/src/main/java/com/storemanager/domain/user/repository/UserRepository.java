@@ -59,6 +59,50 @@ public class UserRepository {
         }
     }
 
+    public Optional<User> findById(
+            Long id
+    ) {
+
+        try (
+
+                Connection connection =
+                        ConnectionFactory.getConnection();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT *
+                                FROM users
+                                WHERE id = ?
+                                """
+                        )
+
+        ) {
+
+            statement.setLong(
+                    1,
+                    id
+            );
+
+            ResultSet resultSet =
+                    statement.executeQuery();
+
+            if (resultSet.next()) {
+                return Optional.of(
+                        mapUser(resultSet)
+                );
+            }
+
+            return Optional.empty();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return Optional.empty();
+        }
+    }
+
     public void save(
             User user
     ) {

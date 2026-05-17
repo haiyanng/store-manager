@@ -3,10 +3,19 @@ package com.storemanager.domain.system_tool.service;
 import com.storemanager.config.DatabaseSettings;
 import com.storemanager.core.database.ConnectionFactory;
 import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.notification.model.NotificationType;
+import com.storemanager.domain.notification.service.NotificationService;
 
 import java.io.File;
 
 public class DatabaseRestoreService {
+
+    private final AuditService auditService =
+            new AuditService();
+
+    private final NotificationService notificationService =
+            new NotificationService();
 
     public boolean restore(
             String mysqlPath,
@@ -14,6 +23,13 @@ public class DatabaseRestoreService {
     ) {
 
         if (!PermissionGuard.canAccessSystemTools()) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "RESTORE",
+                    null,
+                    "Restore access denied",
+                    null
+            );
             throw new RuntimeException(
                     "Current user cannot access system tools"
             );
@@ -56,7 +72,26 @@ public class DatabaseRestoreService {
                 ProcessBuilder.Redirect.DISCARD
         );
 
-        return run(processBuilder);
+        boolean success =
+                run(processBuilder);
+
+        if (success) {
+            auditService.record(
+                    AuditService.ACTION_RESTORE,
+                    "DATABASE",
+                    null,
+                    "Database restored from " + inputFile.getAbsolutePath(),
+                    null
+            );
+
+            notificationService.notifyCurrentUser(
+                    "Restore completed",
+                    "Database restored from " + inputFile.getAbsolutePath(),
+                    NotificationType.SYSTEM
+            );
+        }
+
+        return success;
     }
 
     private boolean run(

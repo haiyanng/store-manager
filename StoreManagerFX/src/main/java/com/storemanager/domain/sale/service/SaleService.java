@@ -2,10 +2,13 @@ package com.storemanager.domain.sale.service;
 
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.inventory.model.InventoryItem;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.model.InventoryTransactionType;
 import com.storemanager.domain.inventory.service.InventoryService;
+import com.storemanager.domain.notification.model.NotificationType;
+import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.service.ProductService;
 import com.storemanager.domain.sale.model.SaleCartItem;
@@ -15,6 +18,7 @@ import com.storemanager.domain.sale.repository.SaleRepository;
 import com.storemanager.domain.user.model.User;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +35,12 @@ public class SaleService {
     private final InventoryService inventoryService =
             new InventoryService();
 
+    private final AuditService auditService =
+            new AuditService();
+
+    private final NotificationService notificationService =
+            new NotificationService();
+
     public List<Product> findProducts() {
 
         validateSaleAccess();
@@ -43,6 +53,35 @@ public class SaleService {
         validateSaleAccess();
 
         return saleRepository.findRecentOrders();
+    }
+
+    public BigDecimal findTotalRevenue() {
+
+        validateSaleAccess();
+
+        return saleRepository.findTotalRevenue();
+    }
+
+    public BigDecimal findRevenueForCurrentMonth() {
+
+        validateSaleAccess();
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.withDayOfMonth(1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return saleRepository.findRevenueForPeriod(startDate, endDate);
+    }
+
+    public long countOrdersForCurrentMonth() {
+
+        validateSaleAccess();
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.withDayOfMonth(1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return saleRepository.countOrdersForPeriod(startDate, endDate);
     }
 
     public Long finalizeSale(
@@ -77,6 +116,22 @@ public class SaleService {
                     item
             );
         }
+
+        auditService.record(
+                AuditService.ACTION_SALE_FINALIZED,
+                "SALE_ORDER",
+                orderId,
+                "Sale finalized with " + orderItems.size() + " items",
+                null
+        );
+
+        notificationService.notifyCurrentUser(
+                "Sale finalized",
+                "Sale order #"
+                        + orderId
+                        + " was saved",
+                NotificationType.INVENTORY
+        );
 
         return orderId;
     }
@@ -186,6 +241,13 @@ public class SaleService {
     private void validateSaleAccess() {
 
         if (!PermissionGuard.canViewOrder()) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "SALE",
+                    null,
+                    "Sale access denied",
+                    null
+            );
             throw new RuntimeException(
                     "Sale access denied"
             );

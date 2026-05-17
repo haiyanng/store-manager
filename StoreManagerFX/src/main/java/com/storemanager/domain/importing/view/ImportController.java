@@ -4,6 +4,7 @@ import com.storemanager.domain.importing.model.ImportCartItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
 import com.storemanager.domain.importing.presenter.ImportPresenter;
 import com.storemanager.domain.product.model.Product;
+import com.storemanager.domain.product.view.ProductLookupComboBoxSupport;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,7 +16,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -77,6 +77,8 @@ public class ImportController {
     @FXML
     private Label statusLabel;
 
+    private ProductLookupComboBoxSupport productLookupSupport;
+
     private ImportPresenter presenter;
 
     @FXML
@@ -87,7 +89,8 @@ public class ImportController {
                         this
                 );
 
-        configureProductComboBox();
+        productLookupSupport =
+                new ProductLookupComboBoxSupport(productComboBox);
         configureImportItemTable();
         configureReceiptTable();
 
@@ -97,8 +100,11 @@ public class ImportController {
     @FXML
     public void onAddItem() {
 
+        Product selectedProduct =
+                productLookupSupport.resolveSelectionFromEditor();
+
         presenter.addItem(
-                productComboBox.getValue(),
+                selectedProduct,
                 parseQuantity(),
                 parseUnitCost()
         );
@@ -138,11 +144,7 @@ public class ImportController {
             List<Product> products
     ) {
 
-        productComboBox.setItems(
-                FXCollections.observableArrayList(
-                        products
-                )
-        );
+        productLookupSupport.setProducts(products);
     }
 
     public void setImportItems(
@@ -180,7 +182,7 @@ public class ImportController {
 
     public void clearEntryForm() {
 
-        productComboBox.setValue(null);
+        productLookupSupport.clearSelection();
         quantityField.clear();
         unitCostField.clear();
         importItemTable.getSelectionModel().clearSelection();
@@ -222,35 +224,6 @@ public class ImportController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private void configureProductComboBox() {
-
-        productComboBox.setConverter(
-                new StringConverter<>() {
-                    @Override
-                    public String toString(
-                            Product product
-                    ) {
-
-                        if (product == null) {
-                            return "";
-                        }
-
-                        return product.getName()
-                                + " / "
-                                + product.getSku();
-                    }
-
-                    @Override
-                    public Product fromString(
-                            String value
-                    ) {
-
-                        return null;
-                    }
-                }
-        );
     }
 
     private void configureImportItemTable() {

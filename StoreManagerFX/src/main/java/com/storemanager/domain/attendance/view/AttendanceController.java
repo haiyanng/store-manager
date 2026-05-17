@@ -67,6 +67,12 @@ public class AttendanceController {
     @FXML
     private Label statusLabel;
 
+    @FXML
+    private Label branchContextLabel;
+
+    @FXML
+    private Label sessionStatusLabel;
+
     private AttendancePresenter presenter;
 
     @FXML
@@ -81,6 +87,7 @@ public class AttendanceController {
         configureBranchComboBox();
         configureSessionTable();
         configureMonthlyTable();
+        configureSelectionListeners();
 
         presenter.initialize();
     }
@@ -118,6 +125,21 @@ public class AttendanceController {
                         employees
                 )
         );
+
+        boolean selfService =
+                presenter.isSelfServiceMode();
+
+        employeeComboBox.setVisible(!selfService);
+        employeeComboBox.setManaged(!selfService);
+        employeeComboBox.setDisable(selfService);
+
+        if (selfService) {
+            employeeComboBox.setValue(
+                    presenter.getCurrentEmployee()
+            );
+        }
+
+        refreshSessionStatusLabel();
     }
 
     public void setBranches(
@@ -129,6 +151,29 @@ public class AttendanceController {
                         branches
                 )
         );
+
+        Branch activeBranch =
+                presenter.getActiveBranch();
+
+        if (activeBranch != null
+                && branches.stream().anyMatch(branch ->
+                branch.getId() != null
+                        && branch.getId().equals(
+                        activeBranch.getId()
+                ))) {
+            branchComboBox.setValue(activeBranch);
+        } else if (!branches.isEmpty()) {
+            branchComboBox.setValue(branches.get(0));
+        }
+
+        if (presenter.isSelfServiceMode()) {
+            branchComboBox.setDisable(true);
+        } else {
+            branchComboBox.setDisable(false);
+        }
+
+        refreshBranchContextLabel();
+        refreshSessionStatusLabel();
     }
 
     public void setSessions(
@@ -159,6 +204,7 @@ public class AttendanceController {
         branchComboBox.setValue(null);
         sessionTable.getSelectionModel().clearSelection();
         monthlyTable.getSelectionModel().clearSelection();
+        refreshSessionStatusLabel();
     }
 
     public void setBusy(
@@ -176,6 +222,37 @@ public class AttendanceController {
     ) {
 
         statusLabel.setText(status);
+    }
+
+    public void refreshBranchContextLabel() {
+
+        String branchName =
+                presenter.getActiveBranchName();
+
+        if (branchName == null || branchName.isBlank()) {
+            branchContextLabel.setText("Current branch: -");
+            return;
+        }
+
+        branchContextLabel.setText(
+                "Current branch: " + branchName
+        );
+    }
+
+    public void refreshSessionStatusLabel() {
+
+        Employee employee =
+                employeeComboBox.getValue();
+
+        Branch branch =
+                branchComboBox.getValue();
+
+        sessionStatusLabel.setText(
+                presenter.describeSessionStatus(
+                        employee,
+                        branch
+                )
+        );
     }
 
     public void showError(
@@ -244,6 +321,25 @@ public class AttendanceController {
                     }
                 }
         );
+    }
+
+    private void configureSelectionListeners() {
+
+        employeeComboBox
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) ->
+                                refreshSessionStatusLabel()
+                );
+
+        branchComboBox
+                .valueProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            refreshSessionStatusLabel();
+                            refreshBranchContextLabel();
+                        }
+                );
     }
 
     private void configureSessionTable() {

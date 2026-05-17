@@ -2,6 +2,7 @@ package com.storemanager.domain.importing.service;
 
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.importing.model.ImportCartItem;
 import com.storemanager.domain.importing.model.ImportItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
@@ -9,11 +10,14 @@ import com.storemanager.domain.importing.repository.ImportRepository;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.model.InventoryTransactionType;
 import com.storemanager.domain.inventory.service.InventoryService;
+import com.storemanager.domain.notification.model.NotificationType;
+import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.service.ProductService;
 import com.storemanager.domain.user.model.User;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +32,12 @@ public class ImportService {
     private final InventoryService inventoryService =
             new InventoryService();
 
+    private final AuditService auditService =
+            new AuditService();
+
+    private final NotificationService notificationService =
+            new NotificationService();
+
     public List<Product> findProducts() {
 
         validateImportAccess();
@@ -40,6 +50,35 @@ public class ImportService {
         validateImportAccess();
 
         return importRepository.findRecentReceipts();
+    }
+
+    public BigDecimal findTotalImportCost() {
+
+        validateImportAccess();
+
+        return importRepository.findTotalImportCost();
+    }
+
+    public BigDecimal findImportCostForCurrentMonth() {
+
+        validateImportAccess();
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.withDayOfMonth(1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return importRepository.findImportCostForPeriod(startDate, endDate);
+    }
+
+    public long countReceiptsForCurrentMonth() {
+
+        validateImportAccess();
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.withDayOfMonth(1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return importRepository.countReceiptsForPeriod(startDate, endDate);
     }
 
     public Long finalizeImport(
@@ -77,6 +116,22 @@ public class ImportService {
                     item
             );
         }
+
+        auditService.record(
+                AuditService.ACTION_IMPORT_FINALIZED,
+                "IMPORT_RECEIPT",
+                receiptId,
+                "Import finalized for supplier " + receipt.getSupplierName(),
+                null
+        );
+
+        notificationService.notifyCurrentUser(
+                "Import finalized",
+                "Import receipt #"
+                        + receiptId
+                        + " was saved",
+                NotificationType.INVENTORY
+        );
 
         return receiptId;
     }
@@ -189,6 +244,13 @@ public class ImportService {
     private void validateImportAccess() {
 
         if (!PermissionGuard.canViewInventory()) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "IMPORT",
+                    null,
+                    "Import access denied",
+                    null
+            );
             throw new RuntimeException(
                     "Import access denied"
             );

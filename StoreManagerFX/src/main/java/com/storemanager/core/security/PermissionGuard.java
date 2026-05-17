@@ -87,6 +87,12 @@ public class PermissionGuard {
                 || isOwner();
     }
 
+    public static boolean canViewAuditLogs() {
+
+        return isDeveloper()
+                || isOwner();
+    }
+
     public static boolean isRootDeveloper(
             User user
     ) {

@@ -6,15 +6,20 @@
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.auth.view.LoginController"
-      stylesheets="@login.css"
       styleClass="login-root"
       alignment="CENTER"
       prefWidth="880"
       prefHeight="560">
+
+    <stylesheets>
+        <URL value="@login.css"/>
+        <URL value="@../../css/typography.css"/>
+    </stylesheets>
 
     <padding>
         <Insets top="40"

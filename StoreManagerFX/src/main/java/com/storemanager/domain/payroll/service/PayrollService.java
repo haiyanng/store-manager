@@ -2,12 +2,16 @@ package com.storemanager.domain.payroll.service;
 
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
 import com.storemanager.domain.attendance.service.AttendanceService;
 import com.storemanager.domain.employee.model.Employee;
+import com.storemanager.domain.employee.service.EmployeeService;
 import com.storemanager.domain.payroll.model.EmployeeSalaryConfig;
 import com.storemanager.domain.payroll.model.PayrollRecord;
 import com.storemanager.domain.payroll.repository.PayrollRepository;
+import com.storemanager.domain.notification.model.NotificationType;
+import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.User;
 
 import java.math.BigDecimal;
@@ -21,6 +25,15 @@ public class PayrollService {
 
     private final AttendanceService attendanceService =
             new AttendanceService();
+
+    private final EmployeeService employeeService =
+            new EmployeeService();
+
+    private final NotificationService notificationService =
+            new NotificationService();
+
+    private final AuditService auditService =
+            new AuditService();
 
     public List<Employee> findEmployees() {
 
@@ -43,6 +56,33 @@ public class PayrollService {
         return payrollRepository.findPayrollRecords();
     }
 
+    public List<PayrollRecord> findPayrollRecordsByEmployeeId(
+            Long employeeId
+    ) {
+
+        validatePayrollAccess();
+
+        return payrollRepository.findPayrollRecordsByEmployeeId(employeeId);
+    }
+
+    public BigDecimal findTotalPayrollCost() {
+
+        validatePayrollAccess();
+
+        return payrollRepository.findTotalPayrollCost();
+    }
+
+    public BigDecimal findPayrollCostForCurrentMonth() {
+
+        validatePayrollAccess();
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.withDayOfMonth(1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return payrollRepository.findPayrollCostForPeriod(startDate, endDate);
+    }
+
     public boolean saveSalaryConfig(
             Employee employee,
             BigDecimal hourlyRate,
@@ -59,7 +99,27 @@ public class PayrollService {
         config.setHourlyRate(hourlyRate);
         config.setActive(active);
 
-        return payrollRepository.saveOrUpdateSalaryConfig(config);
+        boolean updated =
+                payrollRepository.saveOrUpdateSalaryConfig(config);
+
+        if (updated) {
+            auditService.record(
+                    AuditService.ACTION_SALARY_CONFIG_UPDATED,
+                    "SALARY_CONFIG",
+                    employee.getId(),
+                    "Salary configuration updated",
+                    null
+            );
+            notifyEmployee(
+                    employee,
+                    "Salary updated",
+                    "Your hourly rate was updated to "
+                            + hourlyRate.toPlainString(),
+                    NotificationType.PAYROLL
+            );
+        }
+
+        return updated;
     }
 
     public int generatePayroll(
@@ -99,7 +159,23 @@ public class PayrollService {
 
             if (payrollRepository.savePayrollRecord(record)) {
                 generatedCount++;
+                notifyPayrollGenerated(monthlyTotal.getEmployeeId(), year, month, record);
             }
+        }
+
+        if (generatedCount > 0) {
+            auditService.record(
+                    AuditService.ACTION_PAYROLL_GENERATED,
+                    "PAYROLL",
+                    null,
+                    "Generated payroll records: "
+                            + generatedCount
+                            + " for "
+                            + year
+                            + "-"
+                            + String.format("%02d", month),
+                    null
+            );
         }
 
         return generatedCount;
@@ -149,6 +225,13 @@ public class PayrollService {
     private void validatePayrollAccess() {
 
         if (!PermissionGuard.canViewEmployee()) {
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "PAYROLL",
+                    null,
+                    "Payroll access denied",
+                    null
+            );
             throw new RuntimeException(
                     "Payroll access denied"
             );
@@ -200,5 +283,49 @@ public class PayrollService {
         return currentUser == null
                 ? null
                 : currentUser.getId();
+    }
+
+    private void notifyPayrollGenerated(
+            Long employeeId,
+            int year,
+            int month,
+            PayrollRecord record
+    ) {
+
+        Employee employee = employeeService.findById(employeeId);
+        if (employee == null) {
+            return;
+        }
+
+        notifyEmployee(
+                employee,
+                "Payroll generated",
+                "Payroll for "
+                        + year
+                        + "-"
+                        + String.format("%02d", month)
+                        + " was generated: "
+                        + record.getTotalSalary().toPlainString(),
+                NotificationType.PAYROLL
+        );
+    }
+
+    private void notifyEmployee(
+            Employee employee,
+            String title,
+            String content,
+            NotificationType type
+    ) {
+
+        if (employee == null || employee.getUserId() == null) {
+            return;
+        }
+
+        notificationService.notifyUser(
+                employee.getUserId(),
+                title,
+                content,
+                type
+        );
     }
 }

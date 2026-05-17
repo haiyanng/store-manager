@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,6 +103,106 @@ public class SaleRepository {
             e.printStackTrace();
 
             return orders;
+        }
+    }
+
+    public BigDecimal findTotalRevenue() {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                Statement statement =
+                        connection.createStatement();
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT COALESCE(SUM(total_amount), 0) AS total_revenue
+                                FROM sale_orders
+                                """
+                        )
+        ) {
+
+            if (resultSet.next()) {
+                return resultSet.getBigDecimal("total_revenue");
+            }
+
+            return BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public BigDecimal findRevenueForPeriod(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT COALESCE(SUM(total_amount), 0) AS total_revenue
+                                FROM sale_orders
+                                WHERE created_at >= ?
+                                  AND created_at < ?
+                                """
+                        )
+        ) {
+
+            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getBigDecimal("total_revenue");
+            }
+
+            return BigDecimal.ZERO;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return BigDecimal.ZERO;
+        }
+    }
+
+    public long countOrdersForPeriod(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT COUNT(*) AS order_count
+                                FROM sale_orders
+                                WHERE created_at >= ?
+                                  AND created_at < ?
+                                """
+                        )
+        ) {
+
+            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getLong("order_count");
+            }
+
+            return 0L;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
         }
     }
 

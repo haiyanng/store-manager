@@ -2,6 +2,7 @@ package com.storemanager.domain.auth.service;
 
 import com.storemanager.core.security.PasswordHasher;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.domain.user.repository.UserRepository;
 
@@ -11,6 +12,9 @@ public class AuthService {
 
     private final UserRepository userRepository =
             new UserRepository();
+
+    private final AuditService auditService =
+            new AuditService();
 
     public boolean login(
             String username,
@@ -49,10 +53,17 @@ public class AuthService {
 
         AppSession.setCurrentUser(user);
 
+        auditService.recordLogin(user);
+
         return true;
     }
 
     public void logout() {
+
+        User currentUser =
+                AppSession.getCurrentUser();
+
+        auditService.recordLogout(currentUser);
 
         AppSession.clear();
     }

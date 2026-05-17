@@ -1,23 +1,194 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER"
-      spacing="10">
+      fx:controller="com.storemanager.domain.dashboard.view.DashboardHomeController"
+      spacing="18"
+      fillWidth="true"
+      styleClass="dashboard-home">
+
+    <VBox spacing="4"
+          styleClass="dashboard-header">
+        <Label fx:id="titleLabel"
+               text="Dashboard"
+               styleClass="dashboard-hero-title"/>
+
+        <Label fx:id="subtitleLabel"
+               text="Role aware business visibility"
+               styleClass="dashboard-hero-subtitle"/>
+
+        <Label fx:id="statusLabel"
+               text="Loading..."
+               styleClass="dashboard-status"/>
+    </VBox>
+
+    <FlowPane fx:id="metricsPane"
+              hgap="14"
+              vgap="14"
+              prefWrapLength="1200"
+              styleClass="analytics-grid">
+        <VBox fx:id="metricCard0" prefWidth="240" minWidth="220" styleClass="analytics-card">
+            <Label fx:id="metricTitle0" text="Metric" styleClass="analytics-card-title"/>
+            <Label fx:id="metricValue0" text="0" styleClass="analytics-card-value"/>
+            <Label fx:id="metricDetail0" text="Detail" styleClass="analytics-card-detail"/>
+        </VBox>
+        <VBox fx:id="metricCard1" prefWidth="240" minWidth="220" styleClass="analytics-card">
+            <Label fx:id="metricTitle1" text="Metric" styleClass="analytics-card-title"/>
+            <Label fx:id="metricValue1" text="0" styleClass="analytics-card-value"/>
+            <Label fx:id="metricDetail1" text="Detail" styleClass="analytics-card-detail"/>
+        </VBox>
+        <VBox fx:id="metricCard2" prefWidth="240" minWidth="220" styleClass="analytics-card">
+            <Label fx:id="metricTitle2" text="Metric" styleClass="analytics-card-title"/>
+            <Label fx:id="metricValue2" text="0" styleClass="analytics-card-value"/>
+            <Label fx:id="metricDetail2" text="Detail" styleClass="analytics-card-detail"/>
+        </VBox>
+        <VBox fx:id="metricCard3" prefWidth="240" minWidth="220" styleClass="analytics-card">
+            <Label fx:id="metricTitle3" text="Metric" styleClass="analytics-card-title"/>
+            <Label fx:id="metricValue3" text="0" styleClass="analytics-card-value"/>
+            <Label fx:id="metricDetail3" text="Detail" styleClass="analytics-card-detail"/>
+        </VBox>
+        <VBox fx:id="metricCard4" prefWidth="240" minWidth="220" styleClass="analytics-card">
+            <Label fx:id="metricTitle4" text="Metric" styleClass="analytics-card-title"/>
+            <Label fx:id="metricValue4" text="0" styleClass="analytics-card-value"/>
+            <Label fx:id="metricDetail4" text="Detail" styleClass="analytics-card-detail"/>
+        </VBox>
+        <VBox fx:id="metricCard5" prefWidth="240" minWidth="220" styleClass="analytics-card">
+            <Label fx:id="metricTitle5" text="Metric" styleClass="analytics-card-title"/>
+            <Label fx:id="metricValue5" text="0" styleClass="analytics-card-value"/>
+            <Label fx:id="metricDetail5" text="Detail" styleClass="analytics-card-detail"/>
+        </VBox>
+    </FlowPane>
+
+    <VBox fx:id="quickAttendanceSection"
+          spacing="12"
+          styleClass="analytics-section">
+        <Label text="Quick Attendance"
+               styleClass="analytics-section-title"/>
+
+        <Label fx:id="quickAttendanceStateLabel"
+               text="🟠 Not working"
+               styleClass="analytics-section-text"/>
+
+        <Label fx:id="quickAttendanceBranchLabel"
+               text="Branch: -"
+               styleClass="analytics-section-text"/>
+
+        <Label fx:id="quickAttendanceSessionLabel"
+               text="Session: no active session"
+               styleClass="analytics-section-text"/>
+
+        <Label fx:id="quickAttendanceTodayHoursLabel"
+               text="Today's worked hours: -"
+               styleClass="analytics-section-text"/>
+
+        <Label fx:id="quickAttendanceLatestCheckInLabel"
+               text="Check-in: -"
+               styleClass="analytics-section-text"/>
+
+        <FlowPane hgap="10"
+                  vgap="10">
+            <Button fx:id="quickCheckInButton"
+                    text="Check-In"
+                    styleClass="module-button"
+                    onAction="#onQuickCheckIn"/>
+
+            <Button fx:id="quickCheckOutButton"
+                    text="Check-Out"
+                    styleClass="module-button"
+                    onAction="#onQuickCheckOut"/>
+        </FlowPane>
+    </VBox>
+
+    <VBox fx:id="employeeSection" spacing="12" styleClass="analytics-section">
+        <Label text="My Work" styleClass="analytics-section-title"/>
+        <Label fx:id="todayHoursLabel" text="Today's worked hours: -" styleClass="analytics-section-text"/>
+        <Label fx:id="monthHoursLabel" text="Current month worked hours: -" styleClass="analytics-section-text"/>
+        <Label fx:id="assignedBranchesLabel" text="Assigned branches: -" styleClass="analytics-section-text"/>
+        <Label fx:id="latestPayrollLabel" text="Latest payroll: -" styleClass="analytics-section-text"/>
+
+        <TableView fx:id="attendanceHistoryTable" prefHeight="240" styleClass="analytics-table">
+            <columns>
+                <TableColumn fx:id="historyDateColumn" text="Date"/>
+                <TableColumn fx:id="historyBranchColumn" text="Branch"/>
+                <TableColumn fx:id="historyCheckInColumn" text="Check-in"/>
+                <TableColumn fx:id="historyCheckOutColumn" text="Check-out"/>
+                <TableColumn fx:id="historyHoursColumn" text="Hours"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <VBox fx:id="managerSection" spacing="12" styleClass="analytics-section">
+        <Label text="Branch Operations" styleClass="analytics-section-title"/>
+        <Label fx:id="branchEmployeeCountLabel" text="Branch employee count: -" styleClass="analytics-section-text"/>
+        <Label fx:id="checkedInLabel" text="Employees currently checked-in: -" styleClass="analytics-section-text"/>
+        <Label fx:id="attendanceOverviewLabel" text="Attendance overview: -" styleClass="analytics-section-text"/>
+        <Label fx:id="inventoryOverviewLabel" text="Branch inventory overview: -" styleClass="analytics-section-text"/>
+        <Label fx:id="salesOverviewLabel" text="Branch sales overview: -" styleClass="analytics-section-text"/>
+
+        <TableView fx:id="branchSummaryTable" prefHeight="220" styleClass="analytics-table">
+            <columns>
+                <TableColumn fx:id="branchNameColumn" text="Branch"/>
+                <TableColumn fx:id="branchSessionsColumn" text="Sessions"/>
+                <TableColumn fx:id="branchHoursColumn" text="Hours"/>
+                <TableColumn fx:id="branchEmployeesColumn" text="Employees"/>
+            </columns>
+        </TableView>
+
+        <TableView fx:id="locationTable" prefHeight="220" styleClass="analytics-table">
+            <columns>
+                <TableColumn fx:id="locationEmployeeColumn" text="Employee"/>
+                <TableColumn fx:id="locationBranchesColumn" text="Branches"/>
+                <TableColumn fx:id="locationAssignmentsColumn" text="Assignments"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <VBox fx:id="ownerSection" spacing="12" styleClass="analytics-section">
+        <Label text="Business Control" styleClass="analytics-section-title"/>
+        <Label fx:id="totalEmployeesLabel" text="Total employees: -" styleClass="analytics-section-text"/>
+        <Label fx:id="activeEmployeesLabel" text="Active employees: -" styleClass="analytics-section-text"/>
+        <Label fx:id="workingEmployeesLabel" text="Employees currently working: -" styleClass="analytics-section-text"/>
+        <Label fx:id="payrollTotalsLabel" text="Payroll totals: -" styleClass="analytics-section-text"/>
+        <Label fx:id="revenueTotalsLabel" text="Revenue totals: -" styleClass="analytics-section-text"/>
+        <Label fx:id="inventoryAlertsLabel" text="Inventory alerts: -" styleClass="analytics-section-text"/>
+
+        <TableView fx:id="payrollTable" prefHeight="220" styleClass="analytics-table">
+            <columns>
+                <TableColumn fx:id="payrollEmployeeColumn" text="Employee"/>
+                <TableColumn fx:id="payrollHoursColumn" text="Hours"/>
+                <TableColumn fx:id="payrollSalaryColumn" text="Salary"/>
+            </columns>
+        </TableView>
+
+        <TableView fx:id="cashFlowTable" prefHeight="220" styleClass="analytics-table">
+            <columns>
+                <TableColumn fx:id="cashFlowLabelColumn" text="Period"/>
+                <TableColumn fx:id="cashFlowRevenueColumn" text="Revenue"/>
+                <TableColumn fx:id="cashFlowImportColumn" text="Import cost"/>
+                <TableColumn fx:id="cashFlowProductColumn" text="Business cash flow"/>
+                <TableColumn fx:id="cashFlowPayrollColumn" text="Payroll cash flow"/>
+                <TableColumn fx:id="cashFlowFinalColumn" text="Final cash flow"/>
+            </columns>
+        </TableView>
+
+        <TableView fx:id="inventoryAlertTable" prefHeight="220" styleClass="analytics-table">
+            <columns>
+                <TableColumn fx:id="inventoryProductColumn" text="Product"/>
+                <TableColumn fx:id="inventoryQuantityColumn" text="Qty"/>
+                <TableColumn fx:id="inventoryAlertColumn" text="Alert"/>
+            </columns>
+        </TableView>
+    </VBox>
+
     <padding>
-        <Insets top="0"
-                right="0"
-                bottom="0"
-                left="0"/>
+        <Insets top="0" right="0" bottom="0" left="0"/>
     </padding>
-
-    <Label text="Dashboard"
-           styleClass="content-title"/>
-
-    <Label text="Dashboard overview"
-           styleClass="content-description"/>
 </VBox>
