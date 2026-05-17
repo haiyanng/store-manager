@@ -96,6 +96,49 @@ public class InventoryRepository {
         }
     }
 
+    public List<Long> findRecentProductIds(
+            int limit
+    ) {
+
+        List<Long> productIds =
+                new ArrayList<>();
+
+        if (limit <= 0) {
+            return productIds;
+        }
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT product_id
+                                FROM inventory_transactions
+                                GROUP BY product_id
+                                ORDER BY MAX(created_at) DESC,
+                                         MAX(id) DESC
+                                LIMIT ?
+                                """
+                        )
+        ) {
+
+            statement.setInt(1, limit);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    productIds.add(resultSet.getLong("product_id"));
+                }
+            }
+
+            return productIds;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return productIds;
+        }
+    }
+
     public boolean applyTransaction(
             InventoryTransaction transaction,
             int quantityDelta

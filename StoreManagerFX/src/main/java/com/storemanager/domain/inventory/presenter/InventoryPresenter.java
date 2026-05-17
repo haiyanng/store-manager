@@ -56,12 +56,14 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
                         inventoryService.findAllItems(),
                         inventoryService.findAllTransactions(),
                         inventoryService.findProducts(),
-                        inventoryService.findProductsById()
+                        inventoryService.findProductsById(),
+                        inventoryService.findQuickPickProducts(20)
                 ),
                 data -> {
                     productsById =
                             data.productsById();
                     view.setProducts(data.products());
+                    view.setQuickPickProducts(data.quickPickProducts());
                     view.setInventoryItems(data.items());
                     view.setTransactions(data.transactions());
                     loadingState =
@@ -161,7 +163,8 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
             List<InventoryItem> items,
             List<InventoryTransaction> transactions,
             List<Product> products,
-            Map<Long, Product> productsById
+            Map<Long, Product> productsById,
+            List<Product> quickPickProducts
     ) {
     }
 }

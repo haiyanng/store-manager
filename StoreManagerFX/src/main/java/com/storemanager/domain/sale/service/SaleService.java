@@ -48,6 +48,17 @@ public class SaleService {
         return productService.findAll();
     }
 
+    public List<Product> findQuickPickProducts(
+            int limit
+    ) {
+
+        validateSaleAccess();
+
+        return resolveProductsByIds(
+                saleRepository.findTopSellingProductIds(limit)
+        );
+    }
+
     public List<SaleOrder> findRecentOrders() {
 
         validateSaleAccess();
@@ -236,6 +247,38 @@ public class SaleService {
                             + item.getProductId()
             );
         }
+    }
+
+    private List<Product> resolveProductsByIds(
+            List<Long> productIds
+    ) {
+
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Product> productsById =
+                productService.findAll()
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Product::getId,
+                                        product -> product
+                                )
+                        );
+
+        List<Product> products =
+                new ArrayList<>();
+
+        for (Long productId : productIds) {
+            Product product =
+                    productsById.get(productId);
+            if (product != null) {
+                products.add(product);
+            }
+        }
+
+        return products;
     }
 
     private void validateSaleAccess() {

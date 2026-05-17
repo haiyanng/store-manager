@@ -50,10 +50,12 @@ public class SalePresenter extends BaseModulePresenter {
         AsyncTaskRunner.run(
                 () -> new SaleData(
                         saleService.findProducts(),
+                        saleService.findQuickPickProducts(20),
                         saleService.findRecentOrders()
                 ),
                 data -> {
                     view.setProducts(data.products());
+                    view.setQuickPickProducts(data.quickPickProducts());
                     view.setRecentOrders(data.orders());
                     loadingState =
                             LoadingState.SUCCESS;
@@ -202,6 +204,7 @@ public class SalePresenter extends BaseModulePresenter {
 
     private record SaleData(
             List<Product> products,
+            List<Product> quickPickProducts,
             List<SaleOrder> orders
     ) {
     }

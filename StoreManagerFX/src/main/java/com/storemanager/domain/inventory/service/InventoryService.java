@@ -53,6 +53,17 @@ public class InventoryService {
         return productService.findAll();
     }
 
+    public List<Product> findQuickPickProducts(
+            int limit
+    ) {
+
+        validateInventoryAccess();
+
+        return resolveProductsByIds(
+                inventoryRepository.findRecentProductIds(limit)
+        );
+    }
+
     public Map<Long, Product> findProductsById() {
 
         validateInventoryAccess();
@@ -283,5 +294,37 @@ public class InventoryService {
                     NotificationType.INVENTORY
             );
         }
+    }
+
+    private List<Product> resolveProductsByIds(
+            List<Long> productIds
+    ) {
+
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Product> productsById =
+                productService.findAll()
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Product::getId,
+                                        product -> product
+                                )
+                        );
+
+        List<Product> products =
+                new java.util.ArrayList<>();
+
+        for (Long productId : productIds) {
+            Product product =
+                    productsById.get(productId);
+            if (product != null) {
+                products.add(product);
+            }
+        }
+
+        return products;
     }
 }

@@ -106,6 +106,51 @@ public class ImportRepository {
         }
     }
 
+    public List<Long> findRecentProductIds(
+            int limit
+    ) {
+
+        List<Long> productIds =
+                new ArrayList<>();
+
+        if (limit <= 0) {
+            return productIds;
+        }
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT ii.product_id
+                                FROM import_items ii
+                                INNER JOIN import_receipts ir
+                                        ON ir.id = ii.import_receipt_id
+                                GROUP BY ii.product_id
+                                ORDER BY MAX(ir.created_at) DESC,
+                                         MAX(ii.id) DESC
+                                LIMIT ?
+                                """
+                        )
+        ) {
+
+            statement.setInt(1, limit);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    productIds.add(resultSet.getLong("product_id"));
+                }
+            }
+
+            return productIds;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return productIds;
+        }
+    }
+
     public BigDecimal findTotalImportCost() {
 
         try (

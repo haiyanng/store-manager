@@ -111,6 +111,15 @@ public class InventoryListController {
         );
     }
 
+    public void setQuickPickProducts(
+            List<Product> products
+    ) {
+
+        adjustmentFormController.setQuickPickProducts(
+                products
+        );
+    }
+
     public void setInventoryItems(
             List<InventoryItem> items
     ) {
@@ -142,6 +151,7 @@ public class InventoryListController {
             boolean busy
     ) {
 
+        adjustmentFormController.setBusy(busy);
         inventoryTable.setDisable(busy);
         transactionTable.setDisable(busy);
     }

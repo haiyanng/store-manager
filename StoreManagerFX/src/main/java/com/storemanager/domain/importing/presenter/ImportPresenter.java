@@ -50,10 +50,12 @@ public class ImportPresenter extends BaseModulePresenter {
         AsyncTaskRunner.run(
                 () -> new ImportData(
                         importService.findProducts(),
+                        importService.findQuickPickProducts(20),
                         importService.findRecentReceipts()
                 ),
                 data -> {
                     view.setProducts(data.products());
+                    view.setQuickPickProducts(data.quickPickProducts());
                     view.setRecentReceipts(data.receipts());
                     loadingState =
                             LoadingState.SUCCESS;
@@ -217,6 +219,7 @@ public class ImportPresenter extends BaseModulePresenter {
 
     private record ImportData(
             List<Product> products,
+            List<Product> quickPickProducts,
             List<ImportReceipt> receipts
     ) {
     }

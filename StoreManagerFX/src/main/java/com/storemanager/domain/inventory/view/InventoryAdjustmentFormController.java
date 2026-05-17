@@ -3,7 +3,7 @@ package com.storemanager.domain.inventory.view;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.model.InventoryTransactionType;
 import com.storemanager.domain.product.model.Product;
-import com.storemanager.domain.product.view.ProductLookupComboBoxSupport;
+import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
@@ -14,7 +14,7 @@ import java.util.List;
 public class InventoryAdjustmentFormController {
 
     @FXML
-    private ComboBox<Product> productComboBox;
+    private ProductSelectionWorkflowController productSelectionWorkflowController;
 
     @FXML
     private ComboBox<InventoryTransactionType> typeComboBox;
@@ -24,8 +24,6 @@ public class InventoryAdjustmentFormController {
 
     @FXML
     private TextField reasonField;
-
-    private ProductLookupComboBoxSupport productLookupSupport;
 
     @FXML
     public void initialize() {
@@ -40,8 +38,6 @@ public class InventoryAdjustmentFormController {
                 InventoryTransactionType.IMPORT
         );
 
-        productLookupSupport =
-                new ProductLookupComboBoxSupport(productComboBox);
     }
 
     public InventoryTransaction readTransaction() {
@@ -50,7 +46,7 @@ public class InventoryAdjustmentFormController {
                 new InventoryTransaction();
 
         Product product =
-                productLookupSupport.resolveSelectionFromEditor();
+                productSelectionWorkflowController.resolveSelectedProduct();
 
         transaction.setProductId(
                 product == null
@@ -77,17 +73,34 @@ public class InventoryAdjustmentFormController {
             List<Product> products
     ) {
 
-        productLookupSupport.setProducts(products);
+        productSelectionWorkflowController.setProducts(products);
+    }
+
+    public void setQuickPickProducts(
+            List<Product> products
+    ) {
+
+        productSelectionWorkflowController.setQuickPickProducts(products);
     }
 
     public void clear() {
 
-        productLookupSupport.clearSelection();
+        productSelectionWorkflowController.clearSelection();
         typeComboBox.setValue(
                 InventoryTransactionType.IMPORT
         );
         quantityField.clear();
         reasonField.clear();
+    }
+
+    public void setBusy(
+            boolean busy
+    ) {
+
+        productSelectionWorkflowController.setBusy(busy);
+        typeComboBox.setDisable(busy);
+        quantityField.setDisable(busy);
+        reasonField.setDisable(busy);
     }
 
     private int parseQuantity() {

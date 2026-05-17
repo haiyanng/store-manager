@@ -1,7 +1,7 @@
 package com.storemanager.domain.sale.view;
 
 import com.storemanager.domain.product.model.Product;
-import com.storemanager.domain.product.view.ProductLookupComboBoxSupport;
+import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.presenter.SalePresenter;
@@ -10,11 +10,9 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.math.BigDecimal;
@@ -24,10 +22,10 @@ import java.util.List;
 public class SaleController {
 
     @FXML
-    private ComboBox<Product> productComboBox;
+    private ProductSelectionWorkflowController productSelectionWorkflowController;
 
     @FXML
-    private TextField quantityField;
+    private javafx.scene.control.TextField quantityField;
 
     @FXML
     private TableView<SaleCartItem> cartTable;
@@ -68,8 +66,6 @@ public class SaleController {
     @FXML
     private Label statusLabel;
 
-    private ProductLookupComboBoxSupport productLookupSupport;
-
     private SalePresenter presenter;
 
     @FXML
@@ -80,8 +76,6 @@ public class SaleController {
                         this
                 );
 
-        productLookupSupport =
-                new ProductLookupComboBoxSupport(productComboBox);
         configureCartTable();
         configureOrderTable();
 
@@ -92,7 +86,7 @@ public class SaleController {
     public void onAddToCart() {
 
         Product selectedProduct =
-                productLookupSupport.resolveSelectionFromEditor();
+                productSelectionWorkflowController.resolveSelectedProduct();
 
         presenter.addProductToCart(
                 selectedProduct,
@@ -132,7 +126,14 @@ public class SaleController {
             List<Product> products
     ) {
 
-        productLookupSupport.setProducts(products);
+        productSelectionWorkflowController.setProducts(products);
+    }
+
+    public void setQuickPickProducts(
+            List<Product> products
+    ) {
+
+        productSelectionWorkflowController.setQuickPickProducts(products);
     }
 
     public void setCartItems(
@@ -170,7 +171,7 @@ public class SaleController {
 
     public void clearEntryForm() {
 
-        productLookupSupport.clearSelection();
+        productSelectionWorkflowController.clearSelection();
         quantityField.clear();
         cartTable.getSelectionModel().clearSelection();
     }
@@ -179,7 +180,7 @@ public class SaleController {
             boolean busy
     ) {
 
-        productComboBox.setDisable(busy);
+        productSelectionWorkflowController.setBusy(busy);
         quantityField.setDisable(busy);
         cartTable.setDisable(busy);
         orderTable.setDisable(busy);

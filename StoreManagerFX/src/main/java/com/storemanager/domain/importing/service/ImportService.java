@@ -45,6 +45,17 @@ public class ImportService {
         return productService.findAll();
     }
 
+    public List<Product> findQuickPickProducts(
+            int limit
+    ) {
+
+        validateImportAccess();
+
+        return resolveProductsByIds(
+                importRepository.findRecentProductIds(limit)
+        );
+    }
+
     public List<ImportReceipt> findRecentReceipts() {
 
         validateImportAccess();
@@ -294,5 +305,37 @@ public class ImportService {
                 );
             }
         }
+    }
+
+    private List<Product> resolveProductsByIds(
+            List<Long> productIds
+    ) {
+
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+
+        java.util.Map<Long, Product> productsById =
+                productService.findAll()
+                        .stream()
+                        .collect(
+                                java.util.stream.Collectors.toMap(
+                                        Product::getId,
+                                        product -> product
+                                )
+                        );
+
+        List<Product> products =
+                new ArrayList<>();
+
+        for (Long productId : productIds) {
+            Product product =
+                    productsById.get(productId);
+            if (product != null) {
+                products.add(product);
+            }
+        }
+
+        return products;
     }
 }

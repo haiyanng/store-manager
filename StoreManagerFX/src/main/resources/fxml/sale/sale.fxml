@@ -2,7 +2,6 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -24,28 +23,29 @@
                styleClass="content-description"/>
     </VBox>
 
-    <HBox spacing="12">
-        <ComboBox fx:id="productComboBox"
-                  promptText="Product"
-                  prefWidth="320"/>
+    <VBox spacing="14">
+        <fx:include fx:id="productSelectionWorkflow"
+                    source="../shared/product-selection-workflow.fxml"/>
 
-        <TextField fx:id="quantityField"
-                   promptText="Qty"
-                   prefWidth="90"
-                   styleClass="module-input"/>
+        <HBox spacing="12">
+            <TextField fx:id="quantityField"
+                       promptText="Qty"
+                       prefWidth="90"
+                       styleClass="module-input"/>
 
-        <Button text="Add"
-                styleClass="module-button"
-                onAction="#onAddToCart"/>
+            <Button text="Add"
+                    styleClass="module-button"
+                    onAction="#onAddToCart"/>
 
-        <Button text="Remove"
-                styleClass="module-button"
-                onAction="#onRemoveItem"/>
+            <Button text="Remove"
+                    styleClass="module-button"
+                    onAction="#onRemoveItem"/>
 
-        <Button text="Clear"
-                styleClass="module-button"
-                onAction="#onClearCart"/>
-    </HBox>
+            <Button text="Clear"
+                    styleClass="module-button"
+                    onAction="#onClearCart"/>
+        </HBox>
+    </VBox>
 
     <VBox spacing="8">
         <Label text="Cart"

@@ -4,17 +4,15 @@ import com.storemanager.domain.importing.model.ImportCartItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
 import com.storemanager.domain.importing.presenter.ImportPresenter;
 import com.storemanager.domain.product.model.Product;
-import com.storemanager.domain.product.view.ProductLookupComboBoxSupport;
+import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.math.BigDecimal;
@@ -24,16 +22,16 @@ import java.util.List;
 public class ImportController {
 
     @FXML
-    private TextField supplierField;
+    private javafx.scene.control.TextField supplierField;
 
     @FXML
-    private ComboBox<Product> productComboBox;
+    private ProductSelectionWorkflowController productSelectionWorkflowController;
 
     @FXML
-    private TextField quantityField;
+    private javafx.scene.control.TextField quantityField;
 
     @FXML
-    private TextField unitCostField;
+    private javafx.scene.control.TextField unitCostField;
 
     @FXML
     private TableView<ImportCartItem> importItemTable;
@@ -77,8 +75,6 @@ public class ImportController {
     @FXML
     private Label statusLabel;
 
-    private ProductLookupComboBoxSupport productLookupSupport;
-
     private ImportPresenter presenter;
 
     @FXML
@@ -89,8 +85,6 @@ public class ImportController {
                         this
                 );
 
-        productLookupSupport =
-                new ProductLookupComboBoxSupport(productComboBox);
         configureImportItemTable();
         configureReceiptTable();
 
@@ -101,7 +95,7 @@ public class ImportController {
     public void onAddItem() {
 
         Product selectedProduct =
-                productLookupSupport.resolveSelectionFromEditor();
+                productSelectionWorkflowController.resolveSelectedProduct();
 
         presenter.addItem(
                 selectedProduct,
@@ -144,7 +138,14 @@ public class ImportController {
             List<Product> products
     ) {
 
-        productLookupSupport.setProducts(products);
+        productSelectionWorkflowController.setProducts(products);
+    }
+
+    public void setQuickPickProducts(
+            List<Product> products
+    ) {
+
+        productSelectionWorkflowController.setQuickPickProducts(products);
     }
 
     public void setImportItems(
@@ -182,7 +183,7 @@ public class ImportController {
 
     public void clearEntryForm() {
 
-        productLookupSupport.clearSelection();
+        productSelectionWorkflowController.clearSelection();
         quantityField.clear();
         unitCostField.clear();
         importItemTable.getSelectionModel().clearSelection();
@@ -198,7 +199,7 @@ public class ImportController {
     ) {
 
         supplierField.setDisable(busy);
-        productComboBox.setDisable(busy);
+        productSelectionWorkflowController.setBusy(busy);
         quantityField.setDisable(busy);
         unitCostField.setDisable(busy);
         importItemTable.setDisable(busy);
