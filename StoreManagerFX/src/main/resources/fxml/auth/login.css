@@ -59,3 +59,30 @@
 .login-button:pressed {
     -fx-background-color: #171d26;
 }
+
+.license-status {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 8px 10px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+}
+
+.license-status-active {
+    -fx-text-fill: #295033;
+    -fx-background-color: rgba(224, 250, 231, 0.92);
+    -fx-border-color: rgba(106, 165, 118, 0.35);
+}
+
+.license-status-warning {
+    -fx-text-fill: #7a5410;
+    -fx-background-color: rgba(255, 244, 219, 0.96);
+    -fx-border-color: rgba(196, 148, 47, 0.38);
+}
+
+.license-status-blocked {
+    -fx-text-fill: #7d2020;
+    -fx-background-color: rgba(252, 229, 229, 0.98);
+    -fx-border-color: rgba(196, 74, 74, 0.35);
+}

@@ -250,7 +250,7 @@
             <content>
                 <StackPane fx:id="contentArea"
                            minHeight="520"
-                           styleClass="content-area">
+                           styleClass="content-area text-primary">
                     <padding>
                         <Insets top="36"
                                 right="38"

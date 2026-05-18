@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.system_tool.migration_export.view.MigrationExportController"
+      spacing="18">
+
+    <VBox spacing="6">
+        <Label text="Migration &amp; Export"
+               styleClass="content-title"/>
+
+        <Label text="Portable business snapshots for offline and future cloud migration."
+               styleClass="content-description"/>
+    </VBox>
+
+    <HBox spacing="18">
+        <VBox spacing="12"
+              styleClass="analytics-card"
+              minWidth="320"
+              prefWidth="360">
+            <Label text="Export Business Package"
+                   styleClass="analytics-card-title"/>
+
+            <CheckBox fx:id="productsCheckBox" text="Products"/>
+            <CheckBox fx:id="employeesCheckBox" text="Employees"/>
+            <CheckBox fx:id="salesCheckBox" text="Sales"/>
+            <CheckBox fx:id="attendanceCheckBox" text="Attendance"/>
+            <CheckBox fx:id="payrollCheckBox" text="Payroll"/>
+            <CheckBox fx:id="imagesCheckBox" text="Images"/>
+            <CheckBox fx:id="auditLogsCheckBox" text="Audit Logs"/>
+
+            <Button fx:id="exportPackageButton"
+                    text="Export Package"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onExportPackage"/>
+        </VBox>
+
+        <VBox spacing="12"
+              styleClass="analytics-card"
+              minWidth="360"
+              prefWidth="420">
+            <Label text="Import Business Package"
+                   styleClass="analytics-card-title"/>
+
+            <HBox spacing="8">
+                <TextField fx:id="selectedPackageField"
+                           promptText="Select package..."
+                           maxWidth="Infinity"
+                           styleClass="module-input"/>
+
+                <Button fx:id="selectPackageButton"
+                        text="Select Package"
+                        styleClass="module-button"
+                        onAction="#onSelectPackage"/>
+            </HBox>
+
+            <HBox spacing="8">
+                <Button fx:id="previewButton"
+                        text="Preview"
+                        styleClass="module-button"
+                        onAction="#onPreviewPackage"/>
+
+                <Button fx:id="validateButton"
+                        text="Validate"
+                        styleClass="module-button"
+                        onAction="#onValidatePackage"/>
+
+                <Button fx:id="importButton"
+                        text="Import"
+                        styleClass="module-button"
+                        onAction="#onImportPackage"/>
+            </HBox>
+
+            <Label text="Preview first. Never import without validation."
+                   styleClass="logout-button"/>
+        </VBox>
+    </HBox>
+
+    <VBox spacing="12"
+          styleClass="analytics-card">
+        <Label text="Preview Panel"
+               styleClass="analytics-card-title"/>
+
+        <GridPane hgap="14"
+                  vgap="8">
+            <Label fx:id="previewExportVersionLabel"
+                   text="Export Version: -"
+                   GridPane.rowIndex="0"
+                   GridPane.columnIndex="0"/>
+
+            <Label fx:id="previewSourceSystemLabel"
+                   text="Source: -"
+                   GridPane.rowIndex="0"
+                   GridPane.columnIndex="1"/>
+
+            <Label fx:id="previewBusinessNameLabel"
+                   text="Business: -"
+                   GridPane.rowIndex="1"
+                   GridPane.columnIndex="0"/>
+
+            <Label fx:id="previewRecordCountsLabel"
+                   text="Record Counts: -"
+                   GridPane.rowIndex="1"
+                   GridPane.columnIndex="1"/>
+
+            <Label fx:id="previewWarningCountLabel"
+                   text="Warnings: 0"
+                   GridPane.rowIndex="2"
+                   GridPane.columnIndex="0"/>
+
+            <Label fx:id="previewErrorCountLabel"
+                   text="Errors: 0"
+                   GridPane.rowIndex="2"
+                   GridPane.columnIndex="1"/>
+        </GridPane>
+
+        <HBox spacing="14">
+            <VBox spacing="6"
+                  HBox.hgrow="ALWAYS">
+                <Label text="Warnings"
+                       styleClass="meta-label"/>
+                <TextArea fx:id="previewWarningsArea"
+                          prefRowCount="4"
+                          wrapText="true"/>
+            </VBox>
+
+            <VBox spacing="6"
+                  HBox.hgrow="ALWAYS">
+                <Label text="Validation Errors"
+                       styleClass="meta-label"/>
+                <TextArea fx:id="previewErrorsArea"
+                          prefRowCount="4"
+                          wrapText="true"/>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="12"
+          styleClass="analytics-card">
+        <Label text="Migration History"
+               styleClass="analytics-card-title"/>
+
+        <TableView fx:id="historyTable"
+                   prefHeight="240">
+            <columns>
+                <TableColumn fx:id="dateColumn" text="Date" prefWidth="180"/>
+                <TableColumn fx:id="directionColumn" text="Direction" prefWidth="110"/>
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="110"/>
+                <TableColumn fx:id="recordCountColumn" text="Record Count" prefWidth="120"/>
+                <TableColumn fx:id="userColumn" text="User" prefWidth="160"/>
+            </columns>
+        </TableView>
+
+        <Label fx:id="migrationStatusLabel"
+               text="Ready"
+               styleClass="content-description"/>
+    </VBox>
+
+</VBox>

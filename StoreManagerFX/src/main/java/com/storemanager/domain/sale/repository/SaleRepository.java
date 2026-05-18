@@ -106,6 +106,78 @@ public class SaleRepository {
         }
     }
 
+    public List<SaleOrder> findAllOrders() {
+
+        List<SaleOrder> orders =
+                new ArrayList<>();
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                Statement statement =
+                        connection.createStatement();
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT *
+                                FROM sale_orders
+                                ORDER BY created_at DESC, id DESC
+                                """
+                        )
+        ) {
+
+            while (resultSet.next()) {
+                orders.add(
+                        mapOrder(resultSet)
+                );
+            }
+
+            return orders;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return orders;
+        }
+    }
+
+    public List<SaleOrderItem> findAllOrderItems() {
+
+        List<SaleOrderItem> items =
+                new ArrayList<>();
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                Statement statement =
+                        connection.createStatement();
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT *
+                                FROM sale_order_items
+                                ORDER BY order_id, id
+                                """
+                        )
+        ) {
+
+            while (resultSet.next()) {
+                items.add(
+                        mapOrderItem(resultSet)
+                );
+            }
+
+            return items;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return items;
+        }
+    }
+
     public List<Long> findTopSellingProductIds(
             int limit
     ) {
@@ -410,5 +482,22 @@ public class SaleRepository {
         }
 
         return order;
+    }
+
+    private SaleOrderItem mapOrderItem(
+            ResultSet resultSet
+    ) throws Exception {
+
+        SaleOrderItem item =
+                new SaleOrderItem();
+
+        item.setId(resultSet.getLong("id"));
+        item.setOrderId(resultSet.getLong("order_id"));
+        item.setProductId(resultSet.getLong("product_id"));
+        item.setQuantity(resultSet.getInt("quantity"));
+        item.setUnitPrice(resultSet.getBigDecimal("unit_price"));
+        item.setSubtotal(resultSet.getBigDecimal("subtotal"));
+
+        return item;
     }
 }

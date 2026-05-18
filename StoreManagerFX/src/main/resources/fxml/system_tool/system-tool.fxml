@@ -5,50 +5,95 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.system_tool.view.SystemToolController"
-      spacing="18">
+      spacing="24">
+
+    <stylesheets>
+        <URL value="@../dashboard/dashboard-shell.css"/>
+        <URL value="@../../css/typography.css"/>
+    </stylesheets>
 
     <VBox spacing="6">
         <Label text="System Tools"
                styleClass="content-title"/>
 
-        <Label text="Local MySQL backup and restore"
+        <Label text="Backup &amp; Restore for disaster recovery, and Migration &amp; Export for portable business snapshots."
                styleClass="content-description"/>
     </VBox>
 
-    <VBox spacing="10">
-        <Label text="mysql executable"
-               styleClass="meta-label"/>
+    <HBox spacing="18" fillHeight="true">
+        <VBox spacing="14"
+              styleClass="analytics-card"
+              minWidth="360"
+              prefWidth="420">
+            <Label text="Create Backup"
+                   styleClass="analytics-card-title"/>
 
-        <TextField fx:id="mysqlPathField"
-                   promptText="mysql"
-                   maxWidth="Infinity"
-                   styleClass="module-input"/>
+            <Label fx:id="latestBackupTimeLabel"
+                   text="No backup yet"
+                   styleClass="analytics-card-value"/>
 
-        <Label text="mysqldump executable"
-               styleClass="meta-label"/>
+            <Label fx:id="latestBackupSizeLabel"
+                   text="Size: -"
+                   styleClass="analytics-card-detail"/>
 
-        <TextField fx:id="mysqldumpPathField"
-                   promptText="mysqldump"
-                   maxWidth="Infinity"
-                   styleClass="module-input"/>
-    </VBox>
+            <Label fx:id="backupLocationLabel"
+                   text="Location: -"
+                   styleClass="analytics-card-detail"/>
 
-    <HBox spacing="10">
-        <Button fx:id="backupButton"
-                text="Backup"
-                styleClass="module-button"
-                onAction="#onBackup"/>
+            <VBox spacing="8">
+                <Label text="mysql executable"
+                       styleClass="meta-label"/>
 
-        <Button fx:id="restoreButton"
-                text="Restore"
-                styleClass="module-button"
-                onAction="#onRestore"/>
+                <TextField fx:id="mysqlPathField"
+                           promptText="mysql"
+                           maxWidth="Infinity"
+                           styleClass="module-input"/>
+
+                <Label text="mysqldump executable"
+                       styleClass="meta-label"/>
+
+                <TextField fx:id="mysqldumpPathField"
+                           promptText="mysqldump"
+                           maxWidth="Infinity"
+                           styleClass="module-input"/>
+            </VBox>
+
+            <Button fx:id="backupButton"
+                    text="Create Backup"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onBackup"/>
+        </VBox>
+
+        <VBox spacing="14"
+              styleClass="analytics-card"
+              minWidth="360"
+              prefWidth="420">
+            <Label text="Restore Backup"
+                   styleClass="analytics-card-title"/>
+
+            <Label fx:id="restoreWarningLabel"
+                   text="Restore replaces current local database."
+                   styleClass="logout-button"/>
+
+            <Button fx:id="restoreButton"
+                    text="Select Backup File"
+                    styleClass="module-button"
+                    maxWidth="Infinity"
+                    onAction="#onRestore"/>
+        </VBox>
+
+        <Region HBox.hgrow="ALWAYS"/>
     </HBox>
+
+    <fx:include source="migration-export.fxml"/>
 
     <Label fx:id="statusLabel"
            text="Ready"

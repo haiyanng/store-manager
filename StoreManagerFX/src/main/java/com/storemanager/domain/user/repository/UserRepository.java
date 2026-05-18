@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -315,6 +316,15 @@ public class UserRepository {
         user.setActive(
                 resultSet.getBoolean("active")
         );
+
+        Timestamp createdAt =
+                resultSet.getTimestamp("created_at");
+
+        if (createdAt != null) {
+            user.setCreatedAt(
+                    createdAt.toLocalDateTime()
+            );
+        }
 
         return user;
     }

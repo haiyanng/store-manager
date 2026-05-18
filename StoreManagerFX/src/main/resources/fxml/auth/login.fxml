@@ -59,7 +59,15 @@
                 maxWidth="Infinity"
                 styleClass="login-input"/>
 
+        <Label
+                fx:id="licenseStatusLabel"
+                text="License status"
+                wrapText="true"
+                maxWidth="Infinity"
+                styleClass="license-status"/>
+
         <Button
+                fx:id="loginButton"
                 text="Login"
                 maxWidth="Infinity"
                 styleClass="login-button"

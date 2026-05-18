@@ -42,7 +42,7 @@
 }
 
 .branch-selector .list-cell {
-    -fx-text-fill: -text-primary;
+    -fx-text-fill: -fx-text-primary;
 }
 
 .branch-selector .arrow-button {
@@ -80,7 +80,7 @@
 .badge-label {
     -fx-background-color: #d94848;
     -fx-background-radius: 999px;
-    -fx-text-fill: -text-inverse;
+    -fx-text-fill: -fx-text-on-dark;
     -fx-font-size: 10px;
     -fx-font-weight: 800;
     -fx-padding: 1px 6px;

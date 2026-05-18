@@ -6,6 +6,8 @@ import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.notification.model.NotificationType;
 import com.storemanager.domain.notification.service.NotificationService;
+import com.storemanager.domain.system_tool.backup.model.BackupSummary;
+import com.storemanager.domain.system_tool.backup.service.BackupHistoryStore;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -21,6 +23,9 @@ public class DatabaseBackupService {
 
     private final NotificationService notificationService =
             new NotificationService();
+
+    private final BackupHistoryStore backupHistoryStore =
+            new BackupHistoryStore();
 
     public String createBackupFileName() {
 
@@ -95,6 +100,14 @@ public class DatabaseBackupService {
                 run(processBuilder);
 
         if (success) {
+
+            BackupSummary summary =
+                    new BackupSummary();
+            summary.setCreatedAt(LocalDateTime.now());
+            summary.setSizeBytes(outputFile.length());
+            summary.setLocation(outputFile.getAbsolutePath());
+            backupHistoryStore.append(summary);
+
             auditService.record(
                     AuditService.ACTION_BACKUP,
                     "DATABASE",
@@ -113,6 +126,11 @@ public class DatabaseBackupService {
         }
 
         return success;
+    }
+
+    public BackupSummary getLatestBackupSummary() {
+
+        return backupHistoryStore.findLatest();
     }
 
     private boolean run(

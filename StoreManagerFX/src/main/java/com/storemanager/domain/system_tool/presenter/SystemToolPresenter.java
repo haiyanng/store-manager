@@ -6,6 +6,7 @@ import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.system_tool.service.DatabaseBackupService;
 import com.storemanager.domain.system_tool.service.DatabaseRestoreService;
 import com.storemanager.domain.system_tool.view.SystemToolController;
+import com.storemanager.domain.system_tool.backup.model.BackupSummary;
 
 import java.io.File;
 
@@ -43,6 +44,9 @@ public class SystemToolPresenter {
         loadingState =
                 LoadingState.IDLE;
         view.setStatus("Ready");
+        view.setBackupSummary(
+                backupService.getLatestBackupSummary()
+        );
     }
 
     public String createBackupFileName() {
@@ -69,6 +73,9 @@ public class SystemToolPresenter {
                     if (Boolean.TRUE.equals(success)) {
                         loadingState =
                                 LoadingState.SUCCESS;
+                        view.setBackupSummary(
+                                backupService.getLatestBackupSummary()
+                        );
                         String message =
                                 "Backup created: "
                                         + outputFile.getAbsolutePath();

@@ -5,6 +5,7 @@ import com.storemanager.config.DatabaseSettings;
 import com.storemanager.core.database.ConnectionFactory;
 import com.storemanager.core.database.DatabaseInitializer;
 import com.storemanager.core.navigation.SceneManager;
+import com.storemanager.domain.license.mock.LicenseServiceMock;
 import javafx.stage.Stage;
 
 public class AppBootstrap {
@@ -46,6 +47,12 @@ public class AppBootstrap {
                     ConnectionFactory.setSettings(settings);
 
                     DatabaseInitializer.initialize();
+
+                    try {
+                        new LicenseServiceMock().refreshOnStartup();
+                    } catch (Exception licenseException) {
+                        licenseException.printStackTrace();
+                    }
 
                     SceneManager.switchScene(
                             "/fxml/auth/login.fxml"

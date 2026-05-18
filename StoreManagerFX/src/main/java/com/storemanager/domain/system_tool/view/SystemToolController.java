@@ -1,6 +1,7 @@
 package com.storemanager.domain.system_tool.view;
 
 import com.storemanager.domain.system_tool.presenter.SystemToolPresenter;
+import com.storemanager.domain.system_tool.backup.model.BackupSummary;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -10,14 +11,30 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.time.format.DateTimeFormatter;
 
 public class SystemToolController {
+
+    private static final DateTimeFormatter BACKUP_TIME_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML
     private TextField mysqlPathField;
 
     @FXML
     private TextField mysqldumpPathField;
+
+    @FXML
+    private Label latestBackupTimeLabel;
+
+    @FXML
+    private Label latestBackupSizeLabel;
+
+    @FXML
+    private Label backupLocationLabel;
+
+    @FXML
+    private Label restoreWarningLabel;
 
     @FXML
     private Button backupButton;
@@ -88,7 +105,7 @@ public class SystemToolController {
                 new FileChooser();
 
         fileChooser.setTitle(
-                "Choose SQL restore file"
+                "Choose backup SQL file"
         );
 
         fileChooser
@@ -116,7 +133,7 @@ public class SystemToolController {
 
         confirm.setHeaderText("Restore database?");
         confirm.setContentText(
-                "This will import the selected SQL file into the current database."
+                "Restore replaces current local database."
         );
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL)
@@ -147,6 +164,33 @@ public class SystemToolController {
         statusLabel.setText(status);
     }
 
+    public void setBackupSummary(
+            BackupSummary summary
+    ) {
+
+        if (summary == null) {
+            latestBackupTimeLabel.setText("No backup yet");
+            latestBackupSizeLabel.setText("Size: -");
+            backupLocationLabel.setText("Location: -");
+            return;
+        }
+
+        latestBackupTimeLabel.setText(
+                summary.getCreatedAt() == null
+                        ? "No backup time"
+                        : "Latest: "
+                                + summary.getCreatedAt().format(
+                                        BACKUP_TIME_FORMAT
+                                )
+        );
+        latestBackupSizeLabel.setText(
+                "Size: " + formatBytes(summary.getSizeBytes())
+        );
+        backupLocationLabel.setText(
+                "Location: " + summary.getLocation()
+        );
+    }
+
     public void showInfo(
             String message
     ) {
@@ -173,5 +217,24 @@ public class SystemToolController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private String formatBytes(
+            long sizeBytes
+    ) {
+
+        if (sizeBytes < 1024) {
+            return sizeBytes + " B";
+        }
+
+        long kb = sizeBytes / 1024;
+
+        if (kb < 1024) {
+            return kb + " KB";
+        }
+
+        long mb = kb / 1024;
+
+        return mb + " MB";
     }
 }
