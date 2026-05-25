@@ -10,7 +10,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class BranchRepository {
 
@@ -90,14 +95,15 @@ public class BranchRepository {
                 Connection connection = ConnectionFactory.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         """
-                        SELECT DISTINCT b.*
+                        SELECT b.*
                         FROM branches b
                         INNER JOIN employee_branch_assignments a
                                 ON a.branch_id = b.id
                         WHERE a.employee_id = ?
                           AND a.active = TRUE
                           AND b.active = TRUE
-                        ORDER BY b.name
+                        ORDER BY a.assigned_at DESC, a.id DESC
+                        LIMIT 1
                         """
                 )
         ) {
@@ -115,6 +121,44 @@ public class BranchRepository {
         } catch (Exception e) {
             e.printStackTrace();
             return branches;
+        }
+    }
+
+    public EmployeeBranchAssignment findActiveAssignmentByEmployeeId(
+            Long employeeId
+    ) {
+
+        if (employeeId == null) {
+            return null;
+        }
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        """
+                        SELECT *
+                        FROM employee_branch_assignments
+                        WHERE employee_id = ?
+                          AND active = TRUE
+                        ORDER BY assigned_at DESC, id DESC
+                        LIMIT 1
+                        """
+                )
+        ) {
+
+            statement.setLong(1, employeeId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapAssignment(resultSet);
+                }
+            }
+
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -297,6 +341,149 @@ public class BranchRepository {
         }
     }
 
+    public boolean assignEmployeeToBranch(
+            Long employeeId,
+            Long branchId,
+            Long assignedByUserId
+    ) {
+
+        if (employeeId == null || branchId == null) {
+            return false;
+        }
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        """
+                        INSERT INTO employee_branch_assignments (
+                            employee_id,
+                            branch_id,
+                            active,
+                            assigned_by_user_id
+                        )
+                        VALUES (?, ?, TRUE, ?)
+                        """
+                )
+        ) {
+
+            statement.setLong(1, employeeId);
+            statement.setLong(2, branchId);
+
+            if (assignedByUserId == null) {
+                statement.setObject(3, null);
+            } else {
+                statement.setLong(3, assignedByUserId);
+            }
+
+            return statement.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int deactivateActiveAssignments(
+            Long employeeId
+    ) {
+
+        if (employeeId == null) {
+            return 0;
+        }
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        """
+                        UPDATE employee_branch_assignments
+                        SET active = FALSE
+                        WHERE employee_id = ?
+                          AND active = TRUE
+                        """
+                )
+        ) {
+
+            statement.setLong(1, employeeId);
+            return statement.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    public boolean transferEmployeeToBranch(
+            Long employeeId,
+            Long branchId,
+            Long assignedByUserId
+    ) {
+
+        if (employeeId == null || branchId == null) {
+            return false;
+        }
+
+        try (
+                Connection connection = ConnectionFactory.getConnection()
+        ) {
+
+            connection.setAutoCommit(false);
+
+            try (
+                    PreparedStatement deactivateStatement =
+                            connection.prepareStatement(
+                                    """
+                                    UPDATE employee_branch_assignments
+                                    SET active = FALSE
+                                    WHERE employee_id = ?
+                                      AND active = TRUE
+                                    """
+                            );
+                    PreparedStatement insertStatement =
+                            connection.prepareStatement(
+                                    """
+                                    INSERT INTO employee_branch_assignments (
+                                        employee_id,
+                                        branch_id,
+                                        active,
+                                        assigned_by_user_id
+                                    )
+                                    VALUES (?, ?, TRUE, ?)
+                                    """
+                            )
+            ) {
+
+                deactivateStatement.setLong(1, employeeId);
+                deactivateStatement.executeUpdate();
+
+                insertStatement.setLong(1, employeeId);
+                insertStatement.setLong(2, branchId);
+                if (assignedByUserId == null) {
+                    insertStatement.setObject(3, null);
+                } else {
+                    insertStatement.setLong(3, assignedByUserId);
+                }
+
+                boolean saved = insertStatement.executeUpdate() > 0;
+                if (saved) {
+                    connection.commit();
+                } else {
+                    connection.rollback();
+                }
+                return saved;
+
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean deactivateAssignment(EmployeeBranchAssignment assignment) {
 
         try (
@@ -381,9 +568,64 @@ public class BranchRepository {
                     """
             );
 
+            normalizeActiveAssignments();
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Branch table initialization failed", e);
+        }
+    }
+
+    private void normalizeActiveAssignments() {
+
+        try {
+            List<EmployeeBranchAssignment> activeAssignments =
+                    findAllAssignments()
+                            .stream()
+                            .filter(EmployeeBranchAssignment::isActive)
+                            .sorted(
+                                    Comparator.comparing(
+                                                    EmployeeBranchAssignment::getEmployeeId,
+                                                    Comparator.nullsLast(Comparator.naturalOrder())
+                                            )
+                                            .thenComparing(
+                                                    EmployeeBranchAssignment::getAssignedAt,
+                                                    Comparator.nullsLast(Comparator.reverseOrder())
+                                            )
+                                            .thenComparing(
+                                                    EmployeeBranchAssignment::getId,
+                                                    Comparator.nullsLast(Comparator.reverseOrder())
+                                            )
+                            )
+                            .toList();
+
+            Map<Long, List<EmployeeBranchAssignment>> assignmentsByEmployee =
+                    activeAssignments.stream()
+                            .collect(
+                                    Collectors.groupingBy(
+                                            EmployeeBranchAssignment::getEmployeeId,
+                                            LinkedHashMap::new,
+                                            Collectors.toList()
+                                    )
+                            );
+
+            for (List<EmployeeBranchAssignment> assignments : assignmentsByEmployee.values()) {
+                if (assignments.size() <= 1) {
+                    continue;
+                }
+
+                for (int i = 1; i < assignments.size(); i++) {
+                    EmployeeBranchAssignment assignment = assignments.get(i);
+                    if (assignment != null && assignment.getId() != null) {
+                        deactivateAssignment(assignment);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println(
+                    "[BRANCH_ASSIGNMENT_CLEANUP] Unable to normalize legacy active assignments"
+            );
+            e.printStackTrace();
         }
     }
 

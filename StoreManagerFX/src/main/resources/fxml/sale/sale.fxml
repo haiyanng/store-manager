@@ -6,8 +6,10 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
@@ -26,6 +28,66 @@
     <VBox spacing="14">
         <fx:include fx:id="productSelectionWorkflow"
                     source="../shared/product-selection-workflow.fxml"/>
+
+        <VBox spacing="12"
+              styleClass="analytics-card">
+            <Label text="Selected product"
+                   styleClass="analytics-card-title"/>
+
+            <HBox spacing="16">
+                <StackPane prefWidth="160"
+                           prefHeight="160"
+                           minWidth="160"
+                           minHeight="160"
+                           maxWidth="160"
+                           alignment="CENTER"
+                           maxHeight="160"
+                           style="-fx-background-color: rgba(255, 255, 255, 0.72);
+                                  -fx-background-radius: 12;
+                                  -fx-border-color: rgba(0, 0, 0, 0.08);
+                                  -fx-border-radius: 12;">
+                    <ImageView fx:id="selectedProductImageView"
+                               fitWidth="140"
+                               fitHeight="140"
+                               preserveRatio="true"
+                               smooth="true"
+                               pickOnBounds="true"/>
+
+                    <Label fx:id="selectedProductImagePlaceholderLabel"
+                           text="No image"
+                           visible="false"
+                           managed="false"
+                           styleClass="analytics-card-detail"/>
+                </StackPane>
+
+                <VBox spacing="4"
+                      HBox.hgrow="ALWAYS">
+                    <Label fx:id="selectedProductPreviewMessageLabel"
+                           text="Select a product to preview"
+                           styleClass="content-description"/>
+
+                    <Label fx:id="selectedProductPreviewNameLabel"
+                           text="Name: -"
+                           styleClass="content-title"/>
+
+                    <Label fx:id="selectedProductPreviewSkuLabel"
+                           text="SKU: -"
+                           styleClass="analytics-card-detail"/>
+
+                    <Label fx:id="selectedProductPreviewBarcodeLabel"
+                           text="Barcode: -"
+                           styleClass="analytics-card-detail"/>
+
+                    <Label fx:id="selectedProductPreviewPriceLabel"
+                           text="Unit price: 0.00"
+                           styleClass="analytics-card-detail"/>
+
+                    <Label fx:id="selectedProductPreviewStockLabel"
+                           text="Stock: N/A"
+                           styleClass="analytics-card-detail"/>
+                </VBox>
+            </HBox>
+        </VBox>
 
         <HBox spacing="12">
             <TextField fx:id="quantityField"

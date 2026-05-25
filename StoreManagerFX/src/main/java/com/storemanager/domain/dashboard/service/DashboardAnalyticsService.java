@@ -27,6 +27,7 @@ import com.storemanager.domain.payroll.service.PayrollService;
 import com.storemanager.domain.sale.service.SaleService;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
+import com.storemanager.core.util.TimeFormatUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -249,12 +250,14 @@ public class DashboardAnalyticsService {
         return List.of(
                 new DashboardMetricCard(
                         "Today's hours",
-                        formatHours(sumAttendanceHoursForEmployeeToday(employee)),
+                        formatDurationHours(
+                                sumAttendanceHoursForEmployeeToday(employee)
+                        ),
                         "Worked today in assigned branches"
                 ),
                 new DashboardMetricCard(
                         "Month hours",
-                        formatHours(attendanceHours),
+                        formatDurationHours(attendanceHours),
                         "Current month worked hours"
                 ),
                 new DashboardMetricCard(
@@ -293,7 +296,7 @@ public class DashboardAnalyticsService {
                 ),
                 new DashboardMetricCard(
                         "Branch attendance",
-                        formatHours(attendanceHours),
+                        formatDurationHours(attendanceHours),
                         "Current month across all branches"
                 ),
                 new DashboardMetricCard(
@@ -394,8 +397,8 @@ public class DashboardAnalyticsService {
                 countAttendanceSessionsForEmployeeCurrentMonth(employee);
 
         return "Current month: "
-                + formatHours(hours)
-                + " hours across "
+                + formatDurationHours(hours)
+                + " across "
                 + sessions
                 + " sessions";
     }
@@ -419,31 +422,25 @@ public class DashboardAnalyticsService {
             return "No assigned branches";
         }
 
-        List<EmployeeBranchAssignment> assignments =
-                branchService.findAssignmentsByEmployeeId(
+        List<Branch> assignedBranches =
+                branchService.findActiveBranchesForEmployeeId(
                         employee.getId()
                 );
 
-        Map<Long, Branch> branchesById =
-                branchService.findBranchesById();
-
-        String branches =
-                assignments
+        String branchNames =
+                assignedBranches
                         .stream()
-                        .filter(EmployeeBranchAssignment::isActive)
-                        .map(EmployeeBranchAssignment::getBranchId)
-                        .map(branchesById::get)
                         .filter(branch -> branch != null)
                         .filter(Branch::isActive)
                         .map(Branch::getName)
                         .distinct()
                         .collect(Collectors.joining(", "));
 
-        if (branches.isEmpty()) {
+        if (branchNames.isEmpty()) {
             return "No active branch assignments";
         }
 
-        return branches;
+        return branchNames;
     }
 
     private List<DashboardBranchSummary> buildBranchSummaries() {
@@ -751,12 +748,11 @@ public class DashboardAnalyticsService {
             return 0L;
         }
 
-        return branchService.findAssignmentsByEmployeeId(
+        return branchService.findActiveBranchesForEmployeeId(
                         employee.getId()
                 )
                 .stream()
-                .filter(EmployeeBranchAssignment::isActive)
-                .map(EmployeeBranchAssignment::getBranchId)
+                .map(Branch::getId)
                 .distinct()
                 .count();
     }
@@ -909,8 +905,7 @@ public class DashboardAnalyticsService {
 
         return sessions
                 + " sessions | "
-                + formatHours(hours)
-                + " hours";
+                + formatDurationHours(hours);
     }
 
     private String buildInventoryOverviewSummary() {
@@ -1015,15 +1010,7 @@ public class DashboardAnalyticsService {
         }
 
         Map<Long, String> branchesById =
-                branchService.findBranchesById()
-                        .entrySet()
-                        .stream()
-                        .collect(
-                                Collectors.toMap(
-                                        Map.Entry::getKey,
-                                        entry -> entry.getValue().getName()
-                                )
-                        );
+                resolveEmployeeBranchNamesById(employee);
 
         return attendanceService.findSessionsByEmployeeId(employee.getId())
                 .stream()
@@ -1052,22 +1039,51 @@ public class DashboardAnalyticsService {
                     row.setCheckInTime(
                             session.getCheckInTime() == null
                                     ? "-"
-                                    : session.getCheckInTime().toLocalTime().toString()
+                                    : TimeFormatUtil.formatTime(
+                                            session.getCheckInTime().toLocalTime()
+                                    )
                     );
                     row.setCheckOutTime(
                             session.getCheckOutTime() == null
                                     ? "Open"
-                                    : session.getCheckOutTime().toLocalTime().toString()
+                                    : TimeFormatUtil.formatTime(
+                                            session.getCheckOutTime().toLocalTime()
+                                    )
                     );
                     row.setWorkedHours(
                             session.getWorkedHours() == null
-                                    ? "0"
-                                    : formatHours(session.getWorkedHours())
+                                    ? "-"
+                                    : formatDurationHours(session.getWorkedHours())
                     );
 
                     return row;
                 })
                 .toList();
+    }
+
+    private Map<Long, String> resolveEmployeeBranchNamesById(
+            Employee employee
+    ) {
+
+        if (employee == null || employee.getId() == null) {
+            return Map.of();
+        }
+
+        return branchService.findActiveBranchesForEmployeeId(
+                        employee.getId()
+                )
+                .stream()
+                .filter(branch -> branch.getId() != null)
+                .collect(
+                        Collectors.toMap(
+                                Branch::getId,
+                                branch -> {
+                                    String name = branch.getName();
+                                    return name == null ? "Unknown branch" : name;
+                                },
+                                (left, right) -> left
+                        )
+                );
     }
 
     private BigDecimal sumAttendanceHoursForCurrentMonthByBranch() {
@@ -1145,6 +1161,13 @@ public class DashboardAnalyticsService {
                         : value.setScale(2, RoundingMode.HALF_UP);
 
         return normalized.toPlainString();
+    }
+
+    private String formatDurationHours(
+            BigDecimal value
+    ) {
+
+        return TimeFormatUtil.formatDurationHours(value);
     }
 
     private boolean isCurrentMonthSession(

@@ -7,6 +7,7 @@ import com.storemanager.domain.attendance.model.AttendanceRuntimeStatus;
 import com.storemanager.domain.attendance.model.AttendanceState;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
+import com.storemanager.domain.attendance_anomaly.service.AttendanceAnomalyService;
 import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.branch.service.BranchService;
 import com.storemanager.domain.employee.model.Employee;
@@ -14,6 +15,7 @@ import com.storemanager.domain.employee.service.EmployeeService;
 import com.storemanager.domain.notification.model.NotificationType;
 import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.User;
+import com.storemanager.core.util.TimeFormatUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -28,6 +30,9 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository =
             new AttendanceRepository();
+
+    private final AttendanceAnomalyService attendanceAnomalyService =
+            new AttendanceAnomalyService();
 
     private final EmployeeService employeeService =
             new EmployeeService();
@@ -254,11 +259,13 @@ public class AttendanceService {
         if (activeSession != null) {
             status.setState(AttendanceState.WORKING);
             status.setStatusLabel("Currently Working");
+            attendanceAnomalyService.scanOpenSessionsForMissingCheckout();
             return status;
         }
 
         status.setState(AttendanceState.NOT_WORKING);
         status.setStatusLabel("Not working");
+        attendanceAnomalyService.scanOpenSessionsForMissingCheckout();
         return status;
     }
 
@@ -316,7 +323,11 @@ public class AttendanceService {
 
         session.setEmployeeId(targetEmployee.getId());
         session.setBranchId(targetBranch.getId());
-        session.setCheckInTime(LocalDateTime.now());
+        session.setCheckInTime(
+                TimeFormatUtil.truncateToSeconds(
+                        LocalDateTime.now()
+                )
+        );
         session.setCreatedByUserId(getCurrentUserId());
 
         boolean saved =
@@ -330,6 +341,8 @@ public class AttendanceService {
                     "Self check-in at branch " + targetBranch.getName(),
                     targetBranch.getId()
             );
+            attendanceAnomalyService.evaluateSavedSession(session);
+            attendanceAnomalyService.scanOpenSessionsForMissingCheckout();
         }
 
         return saved;
@@ -383,7 +396,9 @@ public class AttendanceService {
         }
 
         LocalDateTime checkOutTime =
-                LocalDateTime.now();
+                TimeFormatUtil.truncateToSeconds(
+                        LocalDateTime.now()
+                );
 
         openSession.setCheckOutTime(checkOutTime);
         openSession.setWorkedHours(
@@ -404,6 +419,8 @@ public class AttendanceService {
                     "Self check-out at branch " + targetBranch.getName(),
                     targetBranch.getId()
             );
+            attendanceAnomalyService.evaluateSavedSession(openSession);
+            attendanceAnomalyService.scanOpenSessionsForMissingCheckout();
         }
 
         return saved;
@@ -461,7 +478,9 @@ public class AttendanceService {
             total = total.add(
                     calculateWorkedHours(
                             activeSession.getCheckInTime(),
-                            LocalDateTime.now()
+                            TimeFormatUtil.truncateToSeconds(
+                                    LocalDateTime.now()
+                            )
                     )
             );
         }
@@ -545,8 +564,7 @@ public class AttendanceService {
         )) {
             notifyCurrentUser(
                     "Attendance denied",
-                    "You are not assigned to branch "
-                            + branch.getName(),
+                    "You can only check in at your assigned branch.",
                     NotificationType.ATTENDANCE
             );
             auditDenied(
@@ -555,7 +573,7 @@ public class AttendanceService {
                     branch
             );
             throw new RuntimeException(
-                    "Employee is not assigned to this branch"
+                    "You can only check in at your assigned branch."
             );
         }
     }
@@ -724,24 +742,24 @@ public class AttendanceService {
             return BigDecimal.ZERO;
         }
 
-        long minutes =
+        long workedSeconds =
                 Duration
                         .between(
-                                checkInTime,
-                                checkOutTime
+                                TimeFormatUtil.truncateToSeconds(checkInTime),
+                                TimeFormatUtil.truncateToSeconds(checkOutTime)
                         )
-                        .toMinutes();
+                        .getSeconds();
 
-        if (minutes < 0) {
+        if (workedSeconds < 0) {
             throw new RuntimeException(
                     "Check-out time cannot be before check-in time"
             );
         }
 
         return BigDecimal
-                .valueOf(minutes)
+                .valueOf(workedSeconds)
                 .divide(
-                BigDecimal.valueOf(60),
+                        BigDecimal.valueOf(3600L),
                         2,
                         RoundingMode.HALF_UP
                 );

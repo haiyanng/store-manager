@@ -5,6 +5,7 @@ import com.storemanager.domain.importing.model.ImportReceipt;
 import com.storemanager.domain.importing.presenter.ImportPresenter;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -67,7 +68,7 @@ public class ImportController {
     private TableColumn<ImportReceipt, Long> receiptUserColumn;
 
     @FXML
-    private TableColumn<ImportReceipt, LocalDateTime> receiptCreatedAtColumn;
+    private TableColumn<ImportReceipt, String> receiptCreatedAtColumn;
 
     @FXML
     private Label totalLabel;
@@ -281,7 +282,11 @@ public class ImportController {
         );
 
         receiptCreatedAtColumn.setCellValueFactory(
-                new PropertyValueFactory<>("createdAt")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getCreatedAt()
+                        )
+                )
         );
     }
 

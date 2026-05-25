@@ -4,6 +4,7 @@ import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.branch.model.EmployeeBranchAssignment;
 import com.storemanager.domain.branch.presenter.BranchPresenter;
 import com.storemanager.domain.employee.model.Employee;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -14,6 +15,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.StringConverter;
 
@@ -65,7 +67,7 @@ public class BranchController {
     private TableColumn<EmployeeBranchAssignment, Boolean> assignmentActiveColumn;
 
     @FXML
-    private TableColumn<EmployeeBranchAssignment, LocalDateTime> assignmentAssignedAtColumn;
+    private TableColumn<EmployeeBranchAssignment, String> assignmentAssignedAtColumn;
 
     @FXML
     private TableColumn<EmployeeBranchAssignment, Long> assignmentUserColumn;
@@ -109,9 +111,18 @@ public class BranchController {
     @FXML
     public void onAssignEmployee() {
 
+        Employee employee =
+                employeeComboBox.getValue();
+        Branch branch =
+                branchComboBox.getValue();
+
+        if (!confirmTransferIfNeeded(employee, branch)) {
+            return;
+        }
+
         presenter.assignEmployee(
-                employeeComboBox.getValue(),
-                branchComboBox.getValue()
+                employee,
+                branch
         );
     }
 
@@ -197,6 +208,43 @@ public class BranchController {
         alert.showAndWait();
     }
 
+    private boolean confirmTransferIfNeeded(
+            Employee employee,
+            Branch targetBranch
+    ) {
+
+        if (employee == null
+                || employee.getId() == null
+                || targetBranch == null
+                || targetBranch.getId() == null) {
+            return true;
+        }
+
+        String currentBranchName =
+                presenter.getCurrentActiveBranchName(employee);
+
+        if (currentBranchName == null
+                || currentBranchName.isBlank()
+                || currentBranchName.equals(targetBranch.getName())) {
+            return true;
+        }
+
+        Alert alert =
+                new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setHeaderText(null);
+        alert.setContentText(
+                "This will transfer the employee from "
+                        + currentBranchName
+                        + " to "
+                        + targetBranch.getName()
+                        + "."
+        );
+
+        return alert.showAndWait()
+                .filter(ButtonType.OK::equals)
+                .isPresent();
+    }
+
     private Branch readBranch() {
 
         Branch branch = new Branch();
@@ -279,7 +327,11 @@ public class BranchController {
                 new PropertyValueFactory<>("active")
         );
         assignmentAssignedAtColumn.setCellValueFactory(
-                new PropertyValueFactory<>("assignedAt")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getAssignedAt()
+                        )
+                )
         );
         assignmentUserColumn.setCellValueFactory(
                 new PropertyValueFactory<>("assignedByUserId")

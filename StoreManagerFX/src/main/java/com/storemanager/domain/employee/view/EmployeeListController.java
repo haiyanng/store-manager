@@ -1,15 +1,14 @@
 package com.storemanager.domain.employee.view;
 
 import com.storemanager.domain.employee.model.Employee;
+import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.presenter.EmployeePresenter;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.util.List;
 
@@ -19,28 +18,31 @@ public class EmployeeListController {
     private EmployeeFormController employeeFormController;
 
     @FXML
-    private TableView<Employee> employeeTable;
+    private TableView<EmployeeListViewDto> employeeTable;
 
     @FXML
-    private TableColumn<Employee, Long> idColumn;
+    private TableColumn<EmployeeListViewDto, Long> idColumn;
 
     @FXML
-    private TableColumn<Employee, String> fullNameColumn;
+    private TableColumn<EmployeeListViewDto, String> fullNameColumn;
 
     @FXML
-    private TableColumn<Employee, String> phoneColumn;
+    private TableColumn<EmployeeListViewDto, String> phoneColumn;
 
     @FXML
-    private TableColumn<Employee, String> positionColumn;
+    private TableColumn<EmployeeListViewDto, String> positionColumn;
 
     @FXML
-    private TableColumn<Employee, String> linkedUsernameColumn;
+    private TableColumn<EmployeeListViewDto, String> branchColumn;
 
     @FXML
-    private TableColumn<Employee, String> linkedRoleColumn;
+    private TableColumn<EmployeeListViewDto, String> linkedUsernameColumn;
 
     @FXML
-    private TableColumn<Employee, Boolean> activeColumn;
+    private TableColumn<EmployeeListViewDto, String> linkedRoleColumn;
+
+    @FXML
+    private TableColumn<EmployeeListViewDto, Boolean> activeColumn;
 
     @FXML
     private Button updateButton;
@@ -59,41 +61,35 @@ public class EmployeeListController {
                 );
 
         idColumn.setCellValueFactory(
-                new PropertyValueFactory<>("id")
+                new javafx.scene.control.cell.PropertyValueFactory<>("employeeId")
         );
 
         fullNameColumn.setCellValueFactory(
-                new PropertyValueFactory<>("fullName")
+                new javafx.scene.control.cell.PropertyValueFactory<>("fullName")
         );
 
         phoneColumn.setCellValueFactory(
-                new PropertyValueFactory<>("phone")
+                new javafx.scene.control.cell.PropertyValueFactory<>("phone")
         );
 
         positionColumn.setCellValueFactory(
-                new PropertyValueFactory<>("position")
+                new javafx.scene.control.cell.PropertyValueFactory<>("position")
+        );
+
+        branchColumn.setCellValueFactory(
+                new javafx.scene.control.cell.PropertyValueFactory<>("branchDisplayName")
         );
 
         linkedUsernameColumn.setCellValueFactory(
-                cellData ->
-                        new SimpleStringProperty(
-                                presenter.getLinkedUsername(
-                                        cellData.getValue()
-                                )
-                        )
+                new javafx.scene.control.cell.PropertyValueFactory<>("linkedUsername")
         );
 
         linkedRoleColumn.setCellValueFactory(
-                cellData ->
-                        new SimpleStringProperty(
-                                presenter.getLinkedRole(
-                                        cellData.getValue()
-                                )
-                        )
+                new javafx.scene.control.cell.PropertyValueFactory<>("linkedRole")
         );
 
         activeColumn.setCellValueFactory(
-                new PropertyValueFactory<>("active")
+                new javafx.scene.control.cell.PropertyValueFactory<>("active")
         );
 
         employeeTable
@@ -101,7 +97,7 @@ public class EmployeeListController {
                 .selectedItemProperty()
                 .addListener(
                         (observable, oldValue, newValue) ->
-                                presenter.selectEmployee(newValue)
+                        presenter.selectEmployee(newValue)
                 );
 
         presenter.initialize();
@@ -142,7 +138,7 @@ public class EmployeeListController {
     }
 
     public void setEmployees(
-            List<Employee> employees
+            List<EmployeeListViewDto> employees
     ) {
 
         employeeTable.setItems(

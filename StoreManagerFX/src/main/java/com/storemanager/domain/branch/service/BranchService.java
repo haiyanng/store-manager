@@ -105,7 +105,33 @@ public class BranchService {
             Long employeeId
     ) {
 
-        return branchRepository.findActiveBranchesForEmployeeId(
+        EmployeeBranchAssignment activeAssignment =
+                branchRepository.findActiveAssignmentByEmployeeId(
+                        employeeId
+                );
+
+        if (activeAssignment == null
+                || activeAssignment.getBranchId() == null) {
+            return List.of();
+        }
+
+        Branch branch =
+                branchRepository.findBranchById(
+                        activeAssignment.getBranchId()
+                );
+
+        if (branch == null || !branch.isActive()) {
+            return List.of();
+        }
+
+        return List.of(branch);
+    }
+
+    public EmployeeBranchAssignment findActiveAssignmentByEmployeeId(
+            Long employeeId
+    ) {
+
+        return branchRepository.findActiveAssignmentByEmployeeId(
                 employeeId
         );
     }
@@ -163,50 +189,61 @@ public class BranchService {
             Branch branch
     ) {
 
-        validateBranchAccess();
+        validateBranchTransferAccess();
         validateEmployee(employee);
         validateBranchForAssignment(branch);
 
-        if (branchRepository.hasActiveAssignment(
-                employee.getId(),
-                branch.getId()
-        )) {
+        EmployeeBranchAssignment currentAssignment =
+                branchRepository.findActiveAssignmentByEmployeeId(
+                        employee.getId()
+                );
+
+        if (currentAssignment != null
+                && branch.getId().equals(currentAssignment.getBranchId())) {
             throw new RuntimeException(
                     "Employee is already assigned to this branch"
             );
         }
 
-        EmployeeBranchAssignment assignment =
-                new EmployeeBranchAssignment();
+        Branch previousBranch =
+                currentAssignment == null
+                        ? null
+                        : branchRepository.findBranchById(
+                                currentAssignment.getBranchId()
+                        );
 
-        assignment.setEmployeeId(employee.getId());
-        assignment.setBranchId(branch.getId());
-        assignment.setActive(true);
-        assignment.setAssignedByUserId(getCurrentUserId());
+        boolean transferred =
+                branchRepository.transferEmployeeToBranch(
+                employee.getId(),
+                        branch.getId(),
+                        getCurrentUserId()
+                );
 
-        boolean saved =
-                branchRepository.saveAssignment(assignment);
-
-        if (saved) {
+        if (transferred) {
             auditService.record(
                     AuditService.ACTION_EMPLOYEE_BRANCH_ASSIGNMENT,
                     "EMPLOYEE_BRANCH_ASSIGNMENT",
-                    assignment.getEmployeeId(),
-                    "Assigned employee to branch",
+                    employee.getId(),
+                    previousBranch == null
+                            ? "Assigned employee to branch"
+                            : "Transferred employee from "
+                            + previousBranch.getName()
+                            + " to "
+                            + branch.getName(),
                     branch.getId()
             );
 
             notifyEmployeeBranchAssignment(employee, branch);
         }
 
-        return saved;
+        return transferred;
     }
 
     public boolean deactivateAssignment(
             EmployeeBranchAssignment assignment
     ) {
 
-        validateBranchAccess();
+        validateBranchTransferAccess();
 
         if (assignment == null || assignment.getId() == null) {
             throw new RuntimeException("Assignment is required");
@@ -237,12 +274,19 @@ public class BranchService {
             return false;
         }
 
-        return branchRepository.hasActiveAssignment(employeeId, branchId);
+        EmployeeBranchAssignment activeAssignment =
+                branchRepository.findActiveAssignmentByEmployeeId(
+                        employeeId
+                );
+
+        return activeAssignment != null
+                && branchId.equals(activeAssignment.getBranchId());
     }
 
     private void validateBranchAccess() {
 
         if (!PermissionGuard.canViewEmployee()) {
+            traceBranchAccessDenied();
             auditService.recordPermissionDenied(
                     AuditService.ACTION_PERMISSION_DENIED,
                     "BRANCH",
@@ -252,6 +296,51 @@ public class BranchService {
             );
             throw new RuntimeException("Branch access denied");
         }
+    }
+
+    private void validateBranchTransferAccess() {
+
+        if (!PermissionGuard.isDeveloper()
+                && !PermissionGuard.isOwner()) {
+            traceBranchAccessDenied();
+            auditService.recordPermissionDenied(
+                    AuditService.ACTION_PERMISSION_DENIED,
+                    "BRANCH_TRANSFER",
+                    null,
+                    "Branch transfer denied",
+                    null
+            );
+            throw new RuntimeException("Branch transfer denied");
+        }
+    }
+
+    private void traceBranchAccessDenied() {
+
+        User currentUser = AppSession.getCurrentUser();
+
+        String username =
+                currentUser == null ? "null" : currentUser.getUsername();
+        String role =
+                currentUser == null || currentUser.getRole() == null
+                        ? "null"
+                        : currentUser.getRole().name();
+        Long activeBranchId =
+                AppSession.getActiveBranchId();
+        String activeBranchName =
+                AppSession.getActiveBranchName();
+
+        System.err.println(
+                "[BRANCH_DENY_TRACE] user="
+                        + username
+                        + ", role="
+                        + role
+                        + ", activeBranchId="
+                        + activeBranchId
+                        + ", activeBranchName="
+                        + activeBranchName
+                        + ", caller=BranchService.validateBranchAccess"
+        );
+        Thread.dumpStack();
     }
 
     private User requireCurrentUser() {

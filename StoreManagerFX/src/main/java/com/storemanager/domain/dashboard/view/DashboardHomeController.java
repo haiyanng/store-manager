@@ -16,6 +16,7 @@ import com.storemanager.domain.dashboard.model.OwnerDashboardDto;
 import com.storemanager.domain.attendance.model.AttendanceRuntimeStatus;
 import com.storemanager.domain.dashboard.presenter.DashboardAttendancePresenter;
 import com.storemanager.domain.dashboard.presenter.DashboardAnalyticsPresenter;
+import com.storemanager.core.util.TimeFormatUtil;
 import com.storemanager.domain.user.model.User;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -429,7 +430,9 @@ public class DashboardHomeController {
         } else {
             quickAttendanceSessionLabel.setText(
                     "Session: active since "
-                            + status.getActiveSession().getCheckInTime()
+                            + TimeFormatUtil.formatDateTime(
+                                    status.getActiveSession().getCheckInTime()
+                            )
             );
         }
 
@@ -437,13 +440,17 @@ public class DashboardHomeController {
                 "Today's worked hours: "
                         + (status.getTodayWorkedHours() == null
                         ? "-"
-                        : status.getTodayWorkedHours())
+                        : TimeFormatUtil.formatDurationHours(
+                                status.getTodayWorkedHours()
+                        ))
         );
         quickAttendanceLatestCheckInLabel.setText(
                 "Check-in: "
                         + (status.getLatestCheckInTime() == null
                         ? "-"
-                        : status.getLatestCheckInTime())
+                        : TimeFormatUtil.formatDateTime(
+                                status.getLatestCheckInTime()
+                        ))
         );
 
         quickCheckInButton.setDisable(working);

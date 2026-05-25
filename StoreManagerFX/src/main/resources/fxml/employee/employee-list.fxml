@@ -74,6 +74,10 @@
                          text="Position"
                          prefWidth="160"/>
 
+            <TableColumn fx:id="branchColumn"
+                         text="Branch"
+                         prefWidth="240"/>
+
             <TableColumn fx:id="linkedUsernameColumn"
                          text="Linked username"
                          prefWidth="180"/>

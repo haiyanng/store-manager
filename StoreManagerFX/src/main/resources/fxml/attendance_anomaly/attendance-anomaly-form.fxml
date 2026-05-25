@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyFormController"
+      spacing="10"
+      prefWidth="420">
+
+    <Label text="Anomaly detail"
+           styleClass="content-description"/>
+
+    <VBox spacing="6">
+        <Label text="ID"/>
+        <Label fx:id="anomalyIdLabel" text="-"/>
+
+        <Label text="Attendance session"/>
+        <Label fx:id="attendanceSessionIdLabel" text="-"/>
+
+        <Label text="Employee"/>
+        <Label fx:id="employeeLabel" text="-"/>
+
+        <Label text="Branch"/>
+        <Label fx:id="branchLabel" text="-"/>
+
+        <Label text="Type"/>
+        <Label fx:id="typeLabel" text="-"/>
+
+        <Label text="Severity"/>
+        <Label fx:id="severityLabel" text="-"/>
+
+        <Label text="Status"/>
+        <Label fx:id="statusLabel" text="-"/>
+
+        <Label text="Created at"/>
+        <Label fx:id="createdAtLabel" text="-"/>
+
+        <Label text="Resolved by"/>
+        <Label fx:id="resolvedByLabel" text="-"/>
+
+        <Label text="Resolved at"/>
+        <Label fx:id="resolvedAtLabel" text="-"/>
+    </VBox>
+
+    <TextArea fx:id="messageArea"
+              promptText="Anomaly message"
+              editable="false"
+              wrapText="true"
+              prefRowCount="4"
+              styleClass="module-input"/>
+
+    <TextArea fx:id="managerReportArea"
+              promptText="Manager report"
+              wrapText="true"
+              prefRowCount="4"
+              styleClass="module-input"/>
+
+    <CheckBox fx:id="employeeNotificationCheckBox"
+              text="Notify employee"/>
+
+    <VBox spacing="6">
+        <Label text="Attendance edit"
+               styleClass="content-description"/>
+
+        <TextField fx:id="checkInField"
+                   promptText="Check-in yyyy-MM-dd HH:mm:ss"
+                   styleClass="module-input"/>
+
+        <TextField fx:id="checkOutField"
+                   promptText="Check-out yyyy-MM-dd HH:mm:ss"
+                   styleClass="module-input"/>
+
+        <TextField fx:id="workedHoursField"
+                   promptText="Worked hours"
+                   styleClass="module-input"/>
+    </VBox>
+
+    <padding>
+        <Insets top="0"
+                right="0"
+                bottom="0"
+                left="0"/>
+    </padding>
+</VBox>

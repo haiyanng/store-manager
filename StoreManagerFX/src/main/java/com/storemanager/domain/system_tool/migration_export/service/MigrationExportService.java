@@ -9,6 +9,7 @@ import com.storemanager.domain.system_tool.migration_export.model.MigrationHisto
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationStatusLevel;
 import com.storemanager.domain.user.model.User;
+import com.storemanager.core.util.TimeFormatUtil;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -95,7 +96,11 @@ public class MigrationExportService {
         MigrationHistoryEntry entry =
                 new MigrationHistoryEntry();
 
-        entry.setDate(LocalDateTime.now());
+        entry.setDate(
+                TimeFormatUtil.truncateToSeconds(
+                        LocalDateTime.now()
+                )
+        );
         entry.setDirection(direction);
         entry.setStatus(status);
         entry.setRecordCount(recordCount);

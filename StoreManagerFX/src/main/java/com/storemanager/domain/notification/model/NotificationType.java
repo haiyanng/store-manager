@@ -4,6 +4,7 @@ public enum NotificationType {
     PAYROLL,
     INVENTORY,
     ATTENDANCE,
+    ATTENDANCE_ANOMALY,
     SYSTEM,
     BRANCH
 }

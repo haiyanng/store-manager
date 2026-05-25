@@ -7,6 +7,7 @@ import com.storemanager.domain.audit.model.AuditLogFilter;
 import com.storemanager.domain.audit.model.AuditLogViewDto;
 import com.storemanager.domain.audit.presenter.AuditLogPresenter;
 import com.storemanager.domain.user.model.User;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -21,12 +22,8 @@ import javafx.scene.control.TextField;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class AuditLogController {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML
     private TextField actionField;
@@ -239,10 +236,6 @@ public class AuditLogController {
             LocalDateTime dateTime
     ) {
 
-        if (dateTime == null) {
-            return "";
-        }
-
-        return DATE_TIME_FORMATTER.format(dateTime);
+        return TimeFormatUtil.formatDateTime(dateTime);
     }
 }

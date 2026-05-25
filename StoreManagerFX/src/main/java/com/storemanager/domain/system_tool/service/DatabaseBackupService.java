@@ -8,6 +8,7 @@ import com.storemanager.domain.notification.model.NotificationType;
 import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.system_tool.backup.model.BackupSummary;
 import com.storemanager.domain.system_tool.backup.service.BackupHistoryStore;
+import com.storemanager.core.util.TimeFormatUtil;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -103,7 +104,11 @@ public class DatabaseBackupService {
 
             BackupSummary summary =
                     new BackupSummary();
-            summary.setCreatedAt(LocalDateTime.now());
+            summary.setCreatedAt(
+                    TimeFormatUtil.truncateToSeconds(
+                            LocalDateTime.now()
+                    )
+            );
             summary.setSizeBytes(outputFile.length());
             summary.setLocation(outputFile.getAbsolutePath());
             backupHistoryStore.append(summary);

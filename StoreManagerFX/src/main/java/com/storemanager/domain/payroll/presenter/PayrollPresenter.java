@@ -37,6 +37,10 @@ public class PayrollPresenter extends BaseModulePresenter {
     @Override
     public void initialize() {
 
+        view.setPayrollAdministrationVisible(
+                payrollService.canManagePayroll()
+        );
+
         view.setPeriod(
                 payrollService.getCurrentYear(),
                 payrollService.getCurrentMonth()
@@ -91,6 +95,11 @@ public class PayrollPresenter extends BaseModulePresenter {
             boolean active
     ) {
 
+        if (!payrollService.canManagePayroll()) {
+            view.showError("Payroll management access denied");
+            return;
+        }
+
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
@@ -128,6 +137,11 @@ public class PayrollPresenter extends BaseModulePresenter {
             int year,
             int month
     ) {
+
+        if (!payrollService.canManagePayroll()) {
+            view.showError("Payroll generation access denied");
+            return;
+        }
 
         loadingState =
                 LoadingState.LOADING;

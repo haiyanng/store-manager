@@ -2,12 +2,10 @@ package com.storemanager.domain.employee.presenter;
 
 import com.storemanager.core.runtime.BaseCrudPresenter;
 import com.storemanager.core.runtime.CrudMode;
+import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.service.EmployeeService;
 import com.storemanager.domain.employee.view.EmployeeListController;
-import com.storemanager.domain.user.model.User;
-
-import java.util.Map;
 
 public class EmployeePresenter extends BaseCrudPresenter<Employee> {
 
@@ -15,9 +13,6 @@ public class EmployeePresenter extends BaseCrudPresenter<Employee> {
 
     private final EmployeeService employeeService =
             new EmployeeService();
-
-    private Map<Long, User> usersById =
-            Map.of();
 
     public EmployeePresenter(
             EmployeeListController view
@@ -40,21 +35,31 @@ public class EmployeePresenter extends BaseCrudPresenter<Employee> {
 
     public void refreshTable() {
 
-        usersById =
-                employeeService.findUsersById();
-
         view.setEmployees(
-                employeeService.findAll()
+                employeeService.findEmployeeListViews()
         );
 
         updateActionState();
     }
 
     public void selectEmployee(
-            Employee employee
+            EmployeeListViewDto employeeRow
     ) {
 
+        if (employeeRow == null || employeeRow.getEmployeeId() == null) {
+            enterCreateMode();
+            view.clearEmployeeForm();
+            updateActionState();
+            return;
+        }
+
+        Employee employee =
+                employeeService.findById(
+                        employeeRow.getEmployeeId()
+                );
+
         if (employee == null) {
+            view.showError("Employee not found");
             enterCreateMode();
             view.clearEmployeeForm();
             updateActionState();
@@ -160,47 +165,6 @@ public class EmployeePresenter extends BaseCrudPresenter<Employee> {
         view.clearSelection();
         view.clearEmployeeForm();
         updateActionState();
-    }
-
-    public String getLinkedUsername(
-            Employee employee
-    ) {
-
-        User user =
-                getLinkedUser(employee);
-
-        if (user == null) {
-            return "";
-        }
-
-        return user.getUsername();
-    }
-
-    public String getLinkedRole(
-            Employee employee
-    ) {
-
-        User user =
-                getLinkedUser(employee);
-
-        if (user == null) {
-            return "";
-        }
-
-        return user.getRole().name();
-    }
-
-    private User getLinkedUser(
-            Employee employee
-    ) {
-
-        if (employee == null || employee.getUserId() == null) {
-            return null;
-        }
-
-        return usersById.get(
-                employee.getUserId()
-        );
     }
 
     private void updateActionState() {

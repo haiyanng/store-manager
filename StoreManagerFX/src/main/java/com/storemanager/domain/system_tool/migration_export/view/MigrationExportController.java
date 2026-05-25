@@ -4,6 +4,7 @@ import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationHistoryEntry;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
 import com.storemanager.domain.system_tool.migration_export.presenter.MigrationExportPresenter;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -94,7 +95,7 @@ public class MigrationExportController {
     private TableView<MigrationHistoryEntry> historyTable;
 
     @FXML
-    private TableColumn<MigrationHistoryEntry, Object> dateColumn;
+    private TableColumn<MigrationHistoryEntry, String> dateColumn;
 
     @FXML
     private TableColumn<MigrationHistoryEntry, Object> directionColumn;
@@ -121,7 +122,11 @@ public class MigrationExportController {
                 );
 
         dateColumn.setCellValueFactory(
-                new PropertyValueFactory<>("date")
+                cellData -> new javafx.beans.property.SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getDate()
+                        )
+                )
         );
         directionColumn.setCellValueFactory(
                 new PropertyValueFactory<>("direction")

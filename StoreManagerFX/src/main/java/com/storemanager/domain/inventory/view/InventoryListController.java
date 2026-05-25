@@ -4,6 +4,7 @@ import com.storemanager.domain.inventory.model.InventoryItem;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.presenter.InventoryPresenter;
 import com.storemanager.domain.product.model.Product;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -37,7 +38,7 @@ public class InventoryListController {
     private TableColumn<InventoryItem, Integer> itemQuantityColumn;
 
     @FXML
-    private TableColumn<InventoryItem, LocalDateTime> itemUpdatedAtColumn;
+    private TableColumn<InventoryItem, String> itemUpdatedAtColumn;
 
     @FXML
     private TableView<InventoryTransaction> transactionTable;
@@ -61,7 +62,7 @@ public class InventoryListController {
     private TableColumn<InventoryTransaction, Long> transactionUserColumn;
 
     @FXML
-    private TableColumn<InventoryTransaction, LocalDateTime> transactionCreatedAtColumn;
+    private TableColumn<InventoryTransaction, String> transactionCreatedAtColumn;
 
     @FXML
     private Label statusLabel;
@@ -206,7 +207,11 @@ public class InventoryListController {
         );
 
         itemUpdatedAtColumn.setCellValueFactory(
-                new PropertyValueFactory<>("updatedAt")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getUpdatedAt()
+                        )
+                )
         );
     }
 
@@ -247,7 +252,11 @@ public class InventoryListController {
         );
 
         transactionCreatedAtColumn.setCellValueFactory(
-                new PropertyValueFactory<>("createdAt")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getCreatedAt()
+                        )
+                )
         );
     }
 }

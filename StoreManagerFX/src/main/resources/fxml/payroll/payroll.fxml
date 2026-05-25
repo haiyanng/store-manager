@@ -24,7 +24,8 @@
                styleClass="content-description"/>
     </VBox>
 
-    <HBox spacing="12">
+    <HBox fx:id="salaryConfigControls"
+          spacing="12">
         <ComboBox fx:id="employeeComboBox"
                   promptText="Employee"
                   prefWidth="300"/>
@@ -42,7 +43,8 @@
                 onAction="#onSaveSalaryConfig"/>
     </HBox>
 
-    <HBox spacing="12">
+    <HBox fx:id="payrollGenerationControls"
+          spacing="12">
         <TextField fx:id="yearField"
                    promptText="Year"
                    prefWidth="100"
@@ -62,7 +64,8 @@
                 onAction="#onRefresh"/>
     </HBox>
 
-    <VBox spacing="8">
+    <VBox fx:id="salaryConfigSection"
+          spacing="8">
         <Label text="Salary configuration"
                styleClass="content-description"/>
 

@@ -138,6 +138,34 @@ public class BranchPresenter extends BaseCrudPresenter<Branch> {
         }
     }
 
+    public String getCurrentActiveBranchName(Employee employee) {
+
+        if (employee == null || employee.getId() == null) {
+            return "";
+        }
+
+        EmployeeBranchAssignment activeAssignment =
+                branchService.findActiveAssignmentByEmployeeId(
+                        employee.getId()
+                );
+
+        if (activeAssignment == null
+                || activeAssignment.getBranchId() == null) {
+            return "";
+        }
+
+        Branch branch =
+                branchService.findBranchById(
+                        activeAssignment.getBranchId()
+                );
+
+        if (branch == null || branch.getName() == null) {
+            return "";
+        }
+
+        return branch.getName();
+    }
+
     public void clearBranchForm() {
 
         enterCreateMode();

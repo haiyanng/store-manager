@@ -6,6 +6,7 @@ import com.storemanager.domain.message.model.MessageConversationRow;
 import com.storemanager.domain.message.model.MessageHistoryRow;
 import com.storemanager.domain.message.presenter.MessageInboxPresenter;
 import com.storemanager.domain.user.model.User;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -19,13 +20,9 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class MessageInboxController {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML
     private VBox rootPane;
@@ -297,11 +294,7 @@ public class MessageInboxController {
             LocalDateTime dateTime
     ) {
 
-        if (dateTime == null) {
-            return "";
-        }
-
-        return DATE_TIME_FORMATTER.format(dateTime);
+        return TimeFormatUtil.formatDateTime(dateTime);
     }
 
     private void attachLifecycle() {

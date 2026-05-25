@@ -5,6 +5,7 @@ import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.presenter.AttendancePresenter;
 import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.employee.model.Employee;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -17,7 +18,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class AttendanceController {
@@ -41,13 +41,13 @@ public class AttendanceController {
     private TableColumn<AttendanceSession, String> sessionBranchColumn;
 
     @FXML
-    private TableColumn<AttendanceSession, LocalDateTime> checkInColumn;
+    private TableColumn<AttendanceSession, String> checkInColumn;
 
     @FXML
-    private TableColumn<AttendanceSession, LocalDateTime> checkOutColumn;
+    private TableColumn<AttendanceSession, String> checkOutColumn;
 
     @FXML
-    private TableColumn<AttendanceSession, BigDecimal> workedHoursColumn;
+    private TableColumn<AttendanceSession, String> workedHoursColumn;
 
     @FXML
     private TableColumn<AttendanceSession, Long> createdByColumn;
@@ -62,7 +62,7 @@ public class AttendanceController {
     private TableColumn<AttendanceMonthlyTotal, String> monthlyMonthColumn;
 
     @FXML
-    private TableColumn<AttendanceMonthlyTotal, BigDecimal> monthlyHoursColumn;
+    private TableColumn<AttendanceMonthlyTotal, String> monthlyHoursColumn;
 
     @FXML
     private Label statusLabel;
@@ -367,15 +367,27 @@ public class AttendanceController {
         );
 
         checkInColumn.setCellValueFactory(
-                new PropertyValueFactory<>("checkInTime")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getCheckInTime()
+                        )
+                )
         );
 
         checkOutColumn.setCellValueFactory(
-                new PropertyValueFactory<>("checkOutTime")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getCheckOutTime()
+                        )
+                )
         );
 
         workedHoursColumn.setCellValueFactory(
-                new PropertyValueFactory<>("workedHours")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDurationHours(
+                                cellData.getValue().getWorkedHours()
+                        )
+                )
         );
 
         createdByColumn.setCellValueFactory(
@@ -399,7 +411,11 @@ public class AttendanceController {
         );
 
         monthlyHoursColumn.setCellValueFactory(
-                new PropertyValueFactory<>("totalWorkedHours")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDurationHours(
+                                cellData.getValue().getTotalWorkedHours()
+                        )
+                )
         );
     }
 }

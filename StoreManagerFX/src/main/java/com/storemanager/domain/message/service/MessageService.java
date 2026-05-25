@@ -5,19 +5,15 @@ import com.storemanager.domain.message.model.Message;
 import com.storemanager.domain.message.model.MessageConversationRow;
 import com.storemanager.domain.message.model.MessageHistoryRow;
 import com.storemanager.domain.message.repository.MessageRepository;
+import com.storemanager.core.util.TimeFormatUtil;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.domain.user.repository.UserRepository;
-
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 public class MessageService {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final MessageRepository messageRepository =
             new MessageRepository();
@@ -177,11 +173,7 @@ public class MessageService {
             java.time.LocalDateTime dateTime
     ) {
 
-        if (dateTime == null) {
-            return "";
-        }
-
-        return DATE_TIME_FORMATTER.format(dateTime);
+        return TimeFormatUtil.formatDateTime(dateTime);
     }
 
     private void markConversationAsRead(

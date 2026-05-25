@@ -6,12 +6,14 @@ import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
+import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.service.SaleService;
 import com.storemanager.domain.sale.view.SaleController;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SalePresenter extends BaseModulePresenter {
 
@@ -22,6 +24,9 @@ public class SalePresenter extends BaseModulePresenter {
 
     private final List<SaleCartItem> cartItems =
             new ArrayList<>();
+
+    private Map<Long, Integer> stockByProductId =
+            Map.of();
 
     private LoadingState loadingState =
             LoadingState.IDLE;
@@ -36,6 +41,7 @@ public class SalePresenter extends BaseModulePresenter {
     @Override
     public void initialize() {
 
+        view.clearSelectedProductPreview();
         loadSaleData();
         updateCartView();
     }
@@ -46,14 +52,18 @@ public class SalePresenter extends BaseModulePresenter {
                 LoadingState.LOADING;
         view.setBusy(true);
         view.setStatus("Loading sale workspace...");
+        view.clearSelectedProductPreview();
 
         AsyncTaskRunner.run(
                 () -> new SaleData(
                         saleService.findProducts(),
                         saleService.findQuickPickProducts(20),
-                        saleService.findRecentOrders()
+                        saleService.findRecentOrders(),
+                        saleService.findCurrentStockByProductId()
                 ),
                 data -> {
+                    stockByProductId =
+                            data.stockByProductId();
                     view.setProducts(data.products());
                     view.setQuickPickProducts(data.quickPickProducts());
                     view.setRecentOrders(data.orders());
@@ -170,6 +180,24 @@ public class SalePresenter extends BaseModulePresenter {
         );
     }
 
+    public void onSelectedProductChanged(
+            Product product
+    ) {
+
+        SelectedProductPreviewDto preview =
+                saleService.buildSelectedProductPreview(
+                        product,
+                        stockByProductId
+                );
+
+        if (preview == null) {
+            view.clearSelectedProductPreview();
+            return;
+        }
+
+        view.showSelectedProductPreview(preview);
+    }
+
     public LoadingState getLoadingState() {
         return loadingState;
     }
@@ -205,7 +233,8 @@ public class SalePresenter extends BaseModulePresenter {
     private record SaleData(
             List<Product> products,
             List<Product> quickPickProducts,
-            List<SaleOrder> orders
+            List<SaleOrder> orders,
+            Map<Long, Integer> stockByProductId
     ) {
     }
 }

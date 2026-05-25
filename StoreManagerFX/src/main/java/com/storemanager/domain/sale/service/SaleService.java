@@ -14,6 +14,7 @@ import com.storemanager.domain.product.service.ProductService;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.model.SaleOrderItem;
+import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.repository.SaleRepository;
 import com.storemanager.domain.user.model.User;
 
@@ -64,6 +65,55 @@ public class SaleService {
         validateSaleAccess();
 
         return saleRepository.findRecentOrders();
+    }
+
+    public Map<Long, Integer> findCurrentStockByProductId() {
+
+        validateSaleAccess();
+
+        if (!PermissionGuard.canViewInventory()) {
+            return Map.of();
+        }
+
+        return inventoryService.findAllItems()
+                .stream()
+                .collect(
+                        Collectors.toMap(
+                                InventoryItem::getProductId,
+                                InventoryItem::getQuantity
+                        )
+                );
+    }
+
+    public SelectedProductPreviewDto buildSelectedProductPreview(
+            Product product,
+            Map<Long, Integer> stockByProductId
+    ) {
+
+        if (product == null) {
+            return null;
+        }
+
+        Integer stockQuantity =
+                null;
+
+        if (stockByProductId != null
+                && product.getId() != null) {
+            stockQuantity =
+                    stockByProductId.get(product.getId());
+        }
+
+        return new SelectedProductPreviewDto(
+                product.getId(),
+                product.getName(),
+                product.getSku(),
+                product.getBarcode(),
+                product.getImagePath(),
+                product.getBasePrice() == null
+                        ? BigDecimal.ZERO
+                        : product.getBasePrice(),
+                stockQuantity
+        );
     }
 
     public BigDecimal findTotalRevenue() {

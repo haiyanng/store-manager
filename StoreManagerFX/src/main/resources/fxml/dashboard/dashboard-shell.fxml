@@ -145,83 +145,8 @@
                     <Label text="CONTROL PANEL"
                            styleClass="sidebar-kicker"/>
 
-                    <Button fx:id="dashboardButton"
-                            text="Dashboard"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onDashboard"/>
-
-                    <Button fx:id="employeeButton"
-                            text="Employee"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onEmployee"/>
-
-                    <Button fx:id="attendanceButton"
-                            text="Attendance"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onAttendance"/>
-
-                    <Button fx:id="payrollButton"
-                            text="Payroll"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onPayroll"/>
-
-                    <Button fx:id="branchButton"
-                            text="Branch"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onBranch"/>
-
-                    <Button fx:id="userManagementButton"
-                            text="User Management"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onUserManagement"/>
-
-                    <Button fx:id="productButton"
-                            text="Product"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onProduct"/>
-
-                    <Button fx:id="categoryButton"
-                            text="Category"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onCategory"/>
-
-                    <Button fx:id="inventoryButton"
-                            text="Inventory"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onInventory"/>
-
-                    <Button fx:id="importButton"
-                            text="Import"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onImport"/>
-
-                    <Button fx:id="orderButton"
-                            text="Order"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onOrder"/>
-
-                    <Button fx:id="systemToolsButton"
-                            text="System Tools"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onSystemTools"/>
-
-                    <Button fx:id="auditButton"
-                            text="Audit Logs"
-                            styleClass="nav-button"
-                            maxWidth="Infinity"
-                            onAction="#onAuditLogs"/>
+                    <VBox fx:id="sidebarMenuBox"
+                          spacing="8"/>
 
                     <Region VBox.vgrow="ALWAYS"/>
 

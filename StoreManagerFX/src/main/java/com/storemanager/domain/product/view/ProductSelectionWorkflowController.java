@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public class ProductSelectionWorkflowController {
 
@@ -48,7 +49,9 @@ public class ProductSelectionWorkflowController {
     private final ObservableList<Product> quickPickProducts =
             FXCollections.observableArrayList();
 
-    private boolean updatingSearch;
+    private Consumer<Product> selectedProductListener;
+
+    private boolean internalSelectionChange;
 
     @FXML
     public void initialize() {
@@ -68,9 +71,14 @@ public class ProductSelectionWorkflowController {
                 products == null ? List.of() : products
         );
 
-        updateResults(
-                searchField.getText(),
-                false
+        runWithoutSelectionNotifications(
+                () -> updateResults(
+                        searchField.getText()
+                )
+        );
+
+        notifySelectedProductChanged(
+                resolveSelectedProduct()
         );
     }
 
@@ -86,6 +94,13 @@ public class ProductSelectionWorkflowController {
                         quickPickProducts
                 )
         );
+    }
+
+    public void setSelectedProductListener(
+            Consumer<Product> selectedProductListener
+    ) {
+
+        this.selectedProductListener = selectedProductListener;
     }
 
     public Product resolveSelectedProduct() {
@@ -114,10 +129,16 @@ public class ProductSelectionWorkflowController {
 
     public void clearSelection() {
 
-        quickPickComboBox.setValue(null);
-        searchField.clear();
-        resultTable.getSelectionModel().clearSelection();
-        updateResults("", false);
+        runWithoutSelectionNotifications(
+                () -> {
+                    quickPickComboBox.setValue(null);
+                    searchField.clear();
+                    resultTable.getSelectionModel().clearSelection();
+                    updateResults("");
+                }
+        );
+
+        notifySelectedProductChanged(null);
     }
 
     public void setBusy(
@@ -157,9 +178,20 @@ public class ProductSelectionWorkflowController {
             }
         });
 
-        quickPickComboBox.setOnAction(event ->
-                resultTable.getSelectionModel().clearSelection()
-        );
+        quickPickComboBox.setOnAction(event -> {
+            if (internalSelectionChange) {
+                return;
+            }
+
+            runWithoutSelectionNotifications(
+                    () -> {
+                        resultTable.getSelectionModel().clearSelection();
+                        notifySelectedProductChanged(
+                                quickPickComboBox.getValue()
+                        );
+                    }
+            );
+        });
     }
 
     private void configureResultTable() {
@@ -198,9 +230,17 @@ public class ProductSelectionWorkflowController {
                 .selectedItemProperty()
                 .addListener(
                         (observable, oldValue, newValue) -> {
-                            if (newValue != null) {
-                                quickPickComboBox.setValue(null);
+                            if (internalSelectionChange) {
+                                return;
                             }
+
+                            if (newValue != null) {
+                                runWithoutSelectionNotifications(
+                                        () -> quickPickComboBox.setValue(null)
+                                );
+                            }
+
+                            notifySelectedProductChanged(newValue);
                         }
                 );
     }
@@ -209,11 +249,20 @@ public class ProductSelectionWorkflowController {
 
         searchField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
-                    if (updatingSearch) {
+                    if (internalSelectionChange) {
                         return;
                     }
-                    quickPickComboBox.setValue(null);
-                    updateResults(newValue, true);
+
+                    runWithoutSelectionNotifications(
+                            () -> {
+                                quickPickComboBox.setValue(null);
+                                updateResults(newValue);
+                            }
+                    );
+
+                    notifySelectedProductChanged(
+                            resolveSelectedProduct()
+                    );
                 }
         );
 
@@ -228,26 +277,16 @@ public class ProductSelectionWorkflowController {
     }
 
     private void updateResults(
-            String query,
-            boolean requestShow
+            String query
     ) {
 
         String cleaned = clean(query);
         List<Product> filtered = filterProducts(cleaned);
 
-        updatingSearch = true;
-        try {
-            resultTable.getSelectionModel().clearSelection();
-            resultTable.setItems(
-                    FXCollections.observableArrayList(filtered)
-            );
-
-            if (!filtered.isEmpty()) {
-                resultTable.getSelectionModel().select(0);
-            }
-        } finally {
-            updatingSearch = false;
-        }
+        resultTable.getSelectionModel().clearSelection();
+        resultTable.setItems(
+                FXCollections.observableArrayList(filtered)
+        );
 
         resultCountLabel.setText(
                 filtered.size() + " products"
@@ -370,6 +409,27 @@ public class ProductSelectionWorkflowController {
         }
 
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void notifySelectedProductChanged(
+            Product product
+    ) {
+
+        if (selectedProductListener != null) {
+            selectedProductListener.accept(product);
+        }
+    }
+
+    private void runWithoutSelectionNotifications(
+            Runnable action
+    ) {
+
+        internalSelectionChange = true;
+        try {
+            action.run();
+        } finally {
+            internalSelectionChange = false;
+        }
     }
 
     private record ProductScore(

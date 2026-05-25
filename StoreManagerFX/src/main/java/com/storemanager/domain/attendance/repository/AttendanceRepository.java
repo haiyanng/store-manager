@@ -1,6 +1,7 @@
 package com.storemanager.domain.attendance.repository;
 
 import com.storemanager.core.database.ConnectionFactory;
+import com.storemanager.core.util.TimeFormatUtil;
 import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 
@@ -58,6 +59,46 @@ public class AttendanceRepository {
             e.printStackTrace();
 
             return sessions;
+        }
+    }
+
+    public AttendanceSession findSessionById(
+            Long sessionId
+    ) {
+
+        if (sessionId == null) {
+            return null;
+        }
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT *
+                                FROM attendance_sessions
+                                WHERE id = ?
+                                LIMIT 1
+                                """
+                        )
+        ) {
+
+            statement.setLong(1, sessionId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapSession(resultSet);
+                }
+            }
+
+            return null;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -195,7 +236,8 @@ public class AttendanceRepository {
                                     created_by_user_id
                                 )
                                 VALUES (?, ?, ?, ?)
-                                """
+                                """,
+                                Statement.RETURN_GENERATED_KEYS
                         )
         ) {
 
@@ -209,7 +251,11 @@ public class AttendanceRepository {
             );
             statement.setTimestamp(
                     3,
-                    Timestamp.valueOf(session.getCheckInTime())
+                    Timestamp.valueOf(
+                            TimeFormatUtil.truncateToSeconds(
+                                    session.getCheckInTime()
+                            )
+                    )
             );
 
             if (session.getCreatedByUserId() == null) {
@@ -224,7 +270,17 @@ public class AttendanceRepository {
                 );
             }
 
-            return statement.executeUpdate() > 0;
+            boolean saved = statement.executeUpdate() > 0;
+
+            if (saved) {
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        session.setId(generatedKeys.getLong(1));
+                    }
+                }
+            }
+
+            return saved;
 
         } catch (Exception e) {
 
@@ -255,7 +311,11 @@ public class AttendanceRepository {
 
             statement.setTimestamp(
                     1,
-                    Timestamp.valueOf(session.getCheckOutTime())
+                    Timestamp.valueOf(
+                            TimeFormatUtil.truncateToSeconds(
+                                    session.getCheckOutTime()
+                            )
+                    )
             );
             statement.setBigDecimal(
                     2,
@@ -273,6 +333,111 @@ public class AttendanceRepository {
             e.printStackTrace();
 
             return false;
+        }
+    }
+
+    public boolean updateSession(
+            AttendanceSession session
+    ) {
+
+        if (session == null || session.getId() == null) {
+            return false;
+        }
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                UPDATE attendance_sessions
+                                SET employee_id = ?,
+                                    branch_id = ?,
+                                    check_in_time = ?,
+                                    check_out_time = ?,
+                                    worked_hours = ?
+                                WHERE id = ?
+                                """
+                        )
+        ) {
+
+            statement.setLong(1, session.getEmployeeId());
+
+            if (session.getBranchId() == null) {
+                statement.setObject(2, null);
+            } else {
+                statement.setLong(2, session.getBranchId());
+            }
+
+            statement.setTimestamp(
+                    3,
+                    session.getCheckInTime() == null
+                            ? null
+                            : Timestamp.valueOf(
+                                    TimeFormatUtil.truncateToSeconds(
+                                            session.getCheckInTime()
+                                    )
+                            )
+            );
+            statement.setTimestamp(
+                    4,
+                    session.getCheckOutTime() == null
+                            ? null
+                            : Timestamp.valueOf(
+                                    TimeFormatUtil.truncateToSeconds(
+                                            session.getCheckOutTime()
+                                    )
+                            )
+            );
+            statement.setBigDecimal(5, session.getWorkedHours());
+            statement.setLong(6, session.getId());
+
+            return statement.executeUpdate() > 0;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<AttendanceSession> findOpenSessions() {
+
+        List<AttendanceSession> sessions =
+                new ArrayList<>();
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+
+                Statement statement =
+                        connection.createStatement();
+
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT *
+                                FROM attendance_sessions
+                                WHERE check_out_time IS NULL
+                                ORDER BY check_in_time DESC, id DESC
+                                """
+                        )
+        ) {
+
+            while (resultSet.next()) {
+                sessions.add(
+                        mapSession(resultSet)
+                );
+            }
+
+            return sessions;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return sessions;
         }
     }
 
@@ -409,6 +574,8 @@ public class AttendanceRepository {
             return null;
         }
 
-        return timestamp.toLocalDateTime();
+        return TimeFormatUtil.truncateToSeconds(
+                timestamp.toLocalDateTime()
+        );
     }
 }

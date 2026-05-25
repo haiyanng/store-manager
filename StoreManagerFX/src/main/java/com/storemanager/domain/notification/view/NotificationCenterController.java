@@ -6,6 +6,7 @@ import com.storemanager.domain.notification.model.Notification;
 import com.storemanager.domain.notification.model.NotificationType;
 import com.storemanager.domain.notification.presenter.NotificationCenterPresenter;
 import com.storemanager.domain.user.model.User;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -19,13 +20,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class NotificationCenterController {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML
     private VBox rootPane;
@@ -273,11 +270,7 @@ public class NotificationCenterController {
             LocalDateTime dateTime
     ) {
 
-        if (dateTime == null) {
-            return "";
-        }
-
-        return DATE_TIME_FORMATTER.format(dateTime);
+        return TimeFormatUtil.formatDateTime(dateTime);
     }
 
     private String safeEnum(

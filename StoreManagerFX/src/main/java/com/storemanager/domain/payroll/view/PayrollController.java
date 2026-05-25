@@ -4,6 +4,7 @@ import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.payroll.model.EmployeeSalaryConfig;
 import com.storemanager.domain.payroll.model.PayrollRecord;
 import com.storemanager.domain.payroll.presenter.PayrollPresenter;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -15,6 +16,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
@@ -31,6 +34,15 @@ public class PayrollController {
 
     @FXML
     private CheckBox activeCheckBox;
+
+    @FXML
+    private HBox salaryConfigControls;
+
+    @FXML
+    private HBox payrollGenerationControls;
+
+    @FXML
+    private VBox salaryConfigSection;
 
     @FXML
     private TextField yearField;
@@ -51,7 +63,7 @@ public class PayrollController {
     private TableColumn<EmployeeSalaryConfig, Boolean> configActiveColumn;
 
     @FXML
-    private TableColumn<EmployeeSalaryConfig, LocalDateTime> configUpdatedAtColumn;
+    private TableColumn<EmployeeSalaryConfig, String> configUpdatedAtColumn;
 
     @FXML
     private TableView<PayrollRecord> payrollTable;
@@ -66,7 +78,7 @@ public class PayrollController {
     private TableColumn<PayrollRecord, Integer> payrollYearColumn;
 
     @FXML
-    private TableColumn<PayrollRecord, BigDecimal> payrollHoursColumn;
+    private TableColumn<PayrollRecord, String> payrollHoursColumn;
 
     @FXML
     private TableColumn<PayrollRecord, BigDecimal> payrollRateColumn;
@@ -75,7 +87,7 @@ public class PayrollController {
     private TableColumn<PayrollRecord, BigDecimal> payrollSalaryColumn;
 
     @FXML
-    private TableColumn<PayrollRecord, LocalDateTime> payrollGeneratedAtColumn;
+    private TableColumn<PayrollRecord, String> payrollGeneratedAtColumn;
 
     @FXML
     private Label statusLabel;
@@ -192,6 +204,18 @@ public class PayrollController {
         statusLabel.setText(status);
     }
 
+    public void setPayrollAdministrationVisible(
+            boolean visible
+    ) {
+
+        salaryConfigControls.setVisible(visible);
+        salaryConfigControls.setManaged(visible);
+        payrollGenerationControls.setVisible(visible);
+        payrollGenerationControls.setManaged(visible);
+        salaryConfigSection.setVisible(visible);
+        salaryConfigSection.setManaged(visible);
+    }
+
     public void showError(
             String message
     ) {
@@ -238,7 +262,11 @@ public class PayrollController {
                 new PropertyValueFactory<>("active")
         );
         configUpdatedAtColumn.setCellValueFactory(
-                new PropertyValueFactory<>("updatedAt")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getUpdatedAt()
+                        )
+                )
         );
     }
 
@@ -259,7 +287,11 @@ public class PayrollController {
                 new PropertyValueFactory<>("year")
         );
         payrollHoursColumn.setCellValueFactory(
-                new PropertyValueFactory<>("totalHours")
+                cellData -> new SimpleStringProperty(
+                        formatPayrollHours(
+                                cellData.getValue().getTotalHours()
+                        )
+                )
         );
         payrollRateColumn.setCellValueFactory(
                 new PropertyValueFactory<>("hourlyRateSnapshot")
@@ -268,8 +300,22 @@ public class PayrollController {
                 new PropertyValueFactory<>("totalSalary")
         );
         payrollGeneratedAtColumn.setCellValueFactory(
-                new PropertyValueFactory<>("generatedAt")
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getGeneratedAt()
+                        )
+                )
         );
+    }
+
+    private String formatPayrollHours(
+            BigDecimal value
+    ) {
+
+        return value == null
+                ? "0.00"
+                : value.setScale(2, java.math.RoundingMode.HALF_UP)
+                        .toPlainString();
     }
 
     private BigDecimal parseHourlyRate() {

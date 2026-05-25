@@ -2,6 +2,7 @@ package com.storemanager.domain.system_tool.view;
 
 import com.storemanager.domain.system_tool.presenter.SystemToolPresenter;
 import com.storemanager.domain.system_tool.backup.model.BackupSummary;
+import com.storemanager.core.util.TimeFormatUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -11,12 +12,8 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 
 import java.io.File;
-import java.time.format.DateTimeFormatter;
 
 public class SystemToolController {
-
-    private static final DateTimeFormatter BACKUP_TIME_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML
     private TextField mysqlPathField;
@@ -179,8 +176,8 @@ public class SystemToolController {
                 summary.getCreatedAt() == null
                         ? "No backup time"
                         : "Latest: "
-                                + summary.getCreatedAt().format(
-                                        BACKUP_TIME_FORMAT
+                                + TimeFormatUtil.formatDateTime(
+                                        summary.getCreatedAt()
                                 )
         );
         latestBackupSizeLabel.setText(
