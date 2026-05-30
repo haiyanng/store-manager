@@ -14,6 +14,7 @@ import com.storemanager.domain.product.service.ProductService;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.model.SaleOrderItem;
+import com.storemanager.domain.sale.model.SaleOrderItemDetail;
 import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.repository.SaleRepository;
 import com.storemanager.domain.user.model.User;
@@ -65,6 +66,37 @@ public class SaleService {
         validateSaleAccess();
 
         return saleRepository.findRecentOrders();
+    }
+
+    public List<SaleOrderItemDetail> findOrderItemDetails(
+            SaleOrder order
+    ) {
+
+        validateSaleAccess();
+
+        if (order == null || order.getId() == null) {
+            return List.of();
+        }
+
+        Map<Long, Product> productsById =
+                productService.findAll()
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Product::getId,
+                                        product -> product
+                                )
+                        );
+
+        return saleRepository.findOrderItemsByOrderId(order.getId())
+                .stream()
+                .map(item ->
+                        toOrderItemDetail(
+                                item,
+                                productsById.get(item.getProductId())
+                        )
+                )
+                .toList();
     }
 
     public Map<Long, Integer> findCurrentStockByProductId() {
@@ -329,6 +361,33 @@ public class SaleService {
         }
 
         return products;
+    }
+
+    private SaleOrderItemDetail toOrderItemDetail(
+            SaleOrderItem item,
+            Product product
+    ) {
+
+        SaleOrderItemDetail detail =
+                new SaleOrderItemDetail();
+
+        detail.setOrderItemId(item.getId());
+        detail.setProductId(item.getProductId());
+        detail.setProductName(
+                product == null
+                        ? "Product #" + item.getProductId()
+                        : product.getName()
+        );
+        detail.setSku(
+                product == null
+                        ? "-"
+                        : product.getSku()
+        );
+        detail.setQuantity(item.getQuantity());
+        detail.setUnitPrice(item.getUnitPrice());
+        detail.setSubtotal(item.getSubtotal());
+
+        return detail;
     }
 
     private void validateSaleAccess() {

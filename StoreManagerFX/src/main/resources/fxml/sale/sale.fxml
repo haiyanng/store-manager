@@ -185,6 +185,36 @@
         </TableView>
     </VBox>
 
+    <VBox spacing="8">
+        <Label text="Order details"
+               styleClass="content-description"/>
+
+        <TableView fx:id="orderDetailTable"
+                   prefHeight="220">
+            <columns>
+                <TableColumn fx:id="detailProductColumn"
+                             text="Product"
+                             prefWidth="240"/>
+
+                <TableColumn fx:id="detailSkuColumn"
+                             text="SKU"
+                             prefWidth="130"/>
+
+                <TableColumn fx:id="detailQuantityColumn"
+                             text="Qty"
+                             prefWidth="80"/>
+
+                <TableColumn fx:id="detailUnitPriceColumn"
+                             text="Unit price"
+                             prefWidth="120"/>
+
+                <TableColumn fx:id="detailSubtotalColumn"
+                             text="Subtotal"
+                             prefWidth="130"/>
+            </columns>
+        </TableView>
+    </VBox>
+
     <Label fx:id="statusLabel"
            text="Ready"
            styleClass="content-description"/>

@@ -61,9 +61,10 @@ public class ImportRepository {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
-
-            return null;
+            throw new RuntimeException(
+                    "Cannot save import receipt",
+                    e
+            );
         }
     }
 

@@ -1,0 +1,146 @@
+.auth-root,
+.auth-page,
+.auth-layout {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-font-family: "System";
+}
+
+.auth-background {
+    -fx-background-color: linear-gradient(to bottom right, #1F2937 0%, #7C2D12 40%, #EA580C 72%, #F59E0B 100%);
+    -fx-background-insets: 0;
+}
+
+.auth-host {
+    -fx-background-color: transparent;
+}
+
+.login-panel,
+.register-panel,
+.auth-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 28;
+    -fx-border-radius: 28;
+    -fx-border-color: rgba(255, 255, 255, 0.6);
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 40, 0.2, 0, 10);
+    -fx-alignment: center;
+}
+
+.login-content,
+.register-content,
+.auth-card > .container {
+    -fx-padding: 72 48 72 48;
+    -fx-spacing: 18;
+    -fx-max-width: 420;
+    -fx-pref-width: 420;
+    -fx-alignment: center-left;
+}
+
+.auth-eyebrow {
+    -fx-text-fill: #2563EB;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 0.3px;
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display", "System";
+}
+
+.auth-title {
+    -fx-text-fill: #111827;
+    -fx-font-size: 32;
+    -fx-font-weight: 600;
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display", "System";
+    -fx-font-smoothing-type: gray;
+    -fx-letter-spacing: 0.3px;
+}
+
+.auth-subtitle {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 15;
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display", "System";
+}
+
+.auth-label {
+    -fx-text-fill: #111827;
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display", "System";
+}
+
+.auth-input,
+.text-field {
+    -fx-background-color: #F9FAFB;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-color: #D0D7E2;
+    -fx-border-width: 1;
+    -fx-padding: 12 14;
+    -fx-text-fill: #0F172A;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-font-size: 16;
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display", "System";
+}
+
+.auth-input:focused,
+.text-field:focused {
+    -fx-border-color: #2563EB;
+    -fx-background-color: #FFFFFF;
+    -fx-border-width: 1.5;
+}
+
+.button.auth-primary-button,
+.button#loginButton,
+.button.button-primary,
+.button#registerButton {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 600;
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-border-color: transparent;
+    -fx-padding: 12 18;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+
+.button.auth-primary-button:hover,
+.button#loginButton:hover,
+.button.button-primary:hover,
+.button#registerButton:hover {
+    -fx-background-color: #1D4ED8;
+}
+
+.button.auth-secondary-button,
+.button#createAccountButton,
+.button.button-secondary,
+.button#backButton {
+    -fx-background-color: rgba(255, 255, 255, 0.0);
+    -fx-text-fill: #2563EB;
+    -fx-font-weight: 600;
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-border-color: #2563EB;
+    -fx-border-width: 1;
+    -fx-padding: 12 18;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+
+.button.auth-secondary-button:hover,
+.button#createAccountButton:hover,
+.button.button-secondary:hover,
+.button#backButton:hover {
+    -fx-background-color: rgba(37, 99, 235, 0.08);
+}
+
+.auth-status {
+    -fx-text-fill: #B12704;
+    -fx-font-size: 13;
+    -fx-font-weight: 600;
+}
+
+.auth-helper {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12;
+    -fx-font-family: "Inter", "Segoe UI", "SF Pro Display", "System";
+}

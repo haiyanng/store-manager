@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:id="loginPanel"
+           id="loginPanel"
+           fx:controller="com.customershopfx.auth.view.LoginController"
+           alignment="CENTER"
+           prefWidth="460" maxWidth="460" minHeight="700" prefHeight="760" maxHeight="Infinity"
+           styleClass="login-panel">
+    <padding>
+        <Insets top="24" right="0" bottom="24" left="0"/>
+    </padding>
+    <children>
+        <VBox fx:id="loginContent" alignment="CENTER_LEFT" spacing="18" maxWidth="460"
+              styleClass="login-content">
+            <children>
+                <VBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="STORE MANAGER" styleClass="auth-eyebrow"/>
+                    <Label text="Welcome back" styleClass="auth-title"/>
+                    <Label text="Sign in to continue" styleClass="auth-subtitle" wrapText="true"/>
+                </VBox>
+
+                <VBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Username" styleClass="auth-label"/>
+                    <TextField fx:id="emailField" promptText="customer@example.com"
+                               styleClass="auth-input"/>
+                </VBox>
+
+                <VBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Password" styleClass="auth-label"/>
+                    <PasswordField fx:id="passwordField" promptText="Password"
+                                   styleClass="auth-input"/>
+                </VBox>
+
+                <VBox spacing="12" alignment="CENTER_LEFT">
+                    <Button fx:id="loginButton" id="loginButton" text="Login" maxWidth="Infinity"
+                            onAction="#login" styleClass="auth-primary-button"/>
+                    <Button fx:id="createAccountButton" id="createAccountButton" text="Create account"
+                            maxWidth="Infinity" onAction="#register" styleClass="auth-secondary-button"/>
+                </VBox>
+
+                <VBox spacing="6" alignment="CENTER_LEFT">
+                    <Label fx:id="messageLabel" styleClass="auth-status"/>
+                    <Label text="Use your customer account to access cart, checkout, and order history."
+                           styleClass="auth-helper" wrapText="true"/>
+                    <Label text="Customer shopping platform" styleClass="auth-helper"/>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

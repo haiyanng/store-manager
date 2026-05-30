@@ -6,6 +6,7 @@ import com.storemanager.domain.offline_export.dto.OfflineExportResult;
 import com.storemanager.domain.offline_export.service.OfflineExportService;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationDirection;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationHistoryEntry;
+import com.storemanager.domain.system_tool.migration_export.model.MigrationImportResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationStatusLevel;
 import com.storemanager.domain.user.model.User;
@@ -22,6 +23,9 @@ public class MigrationExportService {
 
     private final MigrationPackagePreviewService previewService =
             new MigrationPackagePreviewService();
+
+    private final MigrationPackageImportService importService =
+            new MigrationPackageImportService();
 
     private final MigrationHistoryStore historyStore =
             new MigrationHistoryStore();
@@ -52,6 +56,13 @@ public class MigrationExportService {
 
         return previewResult != null
                 && previewResult.getValidationErrors().isEmpty();
+    }
+
+    public MigrationImportResult importPackage(
+            File packageFile
+    ) {
+
+        return importService.importProducts(packageFile);
     }
 
     public void recordExportHistory(

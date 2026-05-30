@@ -95,14 +95,21 @@ public class ImportController {
     @FXML
     public void onAddItem() {
 
-        Product selectedProduct =
-                productSelectionWorkflowController.resolveSelectedProduct();
+        try {
 
-        presenter.addItem(
-                selectedProduct,
-                parseQuantity(),
-                parseUnitCost()
-        );
+            Product selectedProduct =
+                    productSelectionWorkflowController.resolveSelectedProduct();
+
+            presenter.addItem(
+                    selectedProduct,
+                    parseQuantity(),
+                    parseUnitCost()
+            );
+
+        } catch (NumberFormatException e) {
+
+            showError("Quantity and unit cost must be valid numbers");
+        }
     }
 
     @FXML

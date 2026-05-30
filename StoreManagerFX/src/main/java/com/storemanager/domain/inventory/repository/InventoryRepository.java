@@ -6,6 +6,7 @@ import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.model.InventoryTransactionType;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -191,9 +192,10 @@ public class InventoryRepository {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
-
-            return false;
+            throw new RuntimeException(
+                    "Cannot apply inventory transaction",
+                    e
+            );
         }
     }
 
@@ -233,6 +235,9 @@ public class InventoryRepository {
                     """
             );
 
+            collapseDuplicateInventoryItems(connection);
+            addUniqueProductIndexIfMissing(connection);
+
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -241,6 +246,139 @@ public class InventoryRepository {
                     "Inventory table initialization failed",
                     e
             );
+        }
+    }
+
+    private void collapseDuplicateInventoryItems(
+            Connection connection
+    ) throws Exception {
+
+        try (
+                Statement statement =
+                        connection.createStatement();
+                ResultSet resultSet =
+                        statement.executeQuery(
+                                """
+                                SELECT product_id,
+                                       MIN(id) AS keeper_id,
+                                       SUM(quantity) AS total_quantity,
+                                       COUNT(*) AS row_count
+                                FROM inventory_items
+                                GROUP BY product_id
+                                HAVING COUNT(*) > 1
+                                """
+                        )
+        ) {
+
+            while (resultSet.next()) {
+                long productId =
+                        resultSet.getLong("product_id");
+                long keeperId =
+                        resultSet.getLong("keeper_id");
+                int totalQuantity =
+                        resultSet.getInt("total_quantity");
+
+                updateInventoryItemQuantity(
+                        connection,
+                        keeperId,
+                        totalQuantity
+                );
+                deleteDuplicateInventoryItems(
+                        connection,
+                        productId,
+                        keeperId
+                );
+            }
+        }
+    }
+
+    private void addUniqueProductIndexIfMissing(
+            Connection connection
+    ) throws Exception {
+
+        DatabaseMetaData metaData =
+                connection.getMetaData();
+
+        try (
+                ResultSet indexes =
+                        metaData.getIndexInfo(
+                                null,
+                                null,
+                                "inventory_items",
+                                true,
+                                false
+                        )
+        ) {
+
+            while (indexes.next()) {
+                String columnName =
+                        indexes.getString("COLUMN_NAME");
+
+                if ("product_id".equalsIgnoreCase(columnName)) {
+                    return;
+                }
+            }
+        }
+
+        try (
+                Statement statement =
+                        connection.createStatement()
+        ) {
+
+            statement.execute(
+                    """
+                    ALTER TABLE inventory_items
+                    ADD CONSTRAINT uq_inventory_items_product_id
+                    UNIQUE (product_id)
+                    """
+            );
+        }
+    }
+
+    private void updateInventoryItemQuantity(
+            Connection connection,
+            long keeperId,
+            int quantity
+    ) throws Exception {
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                UPDATE inventory_items
+                                SET quantity = ?,
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE id = ?
+                                """
+                        )
+        ) {
+
+            statement.setInt(1, quantity);
+            statement.setLong(2, keeperId);
+            statement.executeUpdate();
+        }
+    }
+
+    private void deleteDuplicateInventoryItems(
+            Connection connection,
+            long productId,
+            long keeperId
+    ) throws Exception {
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                DELETE FROM inventory_items
+                                WHERE product_id = ?
+                                  AND id <> ?
+                                """
+                        )
+        ) {
+
+            statement.setLong(1, productId);
+            statement.setLong(2, keeperId);
+            statement.executeUpdate();
         }
     }
 

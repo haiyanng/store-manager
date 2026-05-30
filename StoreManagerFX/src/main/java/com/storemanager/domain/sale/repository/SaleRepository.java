@@ -178,6 +178,51 @@ public class SaleRepository {
         }
     }
 
+    public List<SaleOrderItem> findOrderItemsByOrderId(
+            Long orderId
+    ) {
+
+        List<SaleOrderItem> items =
+                new ArrayList<>();
+
+        if (orderId == null) {
+            return items;
+        }
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT *
+                                FROM sale_order_items
+                                WHERE order_id = ?
+                                ORDER BY id
+                                """
+                        )
+        ) {
+
+            statement.setLong(1, orderId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    items.add(
+                            mapOrderItem(resultSet)
+                    );
+                }
+            }
+
+            return items;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return items;
+        }
+    }
+
     public List<Long> findTopSellingProductIds(
             int limit
     ) {

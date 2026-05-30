@@ -6,6 +6,7 @@ import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
+import com.storemanager.domain.sale.model.SaleOrderItemDetail;
 import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.service.SaleService;
 import com.storemanager.domain.sale.view.SaleController;
@@ -67,6 +68,7 @@ public class SalePresenter extends BaseModulePresenter {
                     view.setProducts(data.products());
                     view.setQuickPickProducts(data.quickPickProducts());
                     view.setRecentOrders(data.orders());
+                    view.setOrderItemDetails(List.of());
                     loadingState =
                             LoadingState.SUCCESS;
                     view.setStatus("Ready");
@@ -75,6 +77,39 @@ public class SalePresenter extends BaseModulePresenter {
                     loadingState =
                             LoadingState.ERROR;
                     view.setStatus("Cannot load sale workspace");
+                    view.showError(throwable.getMessage());
+                },
+                () -> view.setBusy(false)
+        );
+    }
+
+    public void selectOrder(
+            SaleOrder order
+    ) {
+
+        if (order == null) {
+            view.setOrderItemDetails(List.of());
+            view.setStatus("Select an order to view details");
+            return;
+        }
+
+        loadingState =
+                LoadingState.LOADING;
+        view.setBusy(true);
+        view.setStatus("Loading order #" + order.getId() + " details...");
+
+        AsyncTaskRunner.run(
+                () -> saleService.findOrderItemDetails(order),
+                details -> {
+                    view.setOrderItemDetails(details);
+                    loadingState =
+                            LoadingState.SUCCESS;
+                    view.setStatus("Order #" + order.getId() + " details loaded");
+                },
+                throwable -> {
+                    loadingState =
+                            LoadingState.ERROR;
+                    view.setStatus("Cannot load order details");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)

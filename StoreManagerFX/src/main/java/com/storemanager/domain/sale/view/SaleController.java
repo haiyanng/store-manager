@@ -5,6 +5,7 @@ import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
+import com.storemanager.domain.sale.model.SaleOrderItemDetail;
 import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.presenter.SalePresenter;
 import com.storemanager.core.util.TimeFormatUtil;
@@ -70,6 +71,24 @@ public class SaleController {
     private TableColumn<SaleOrder, String> orderCreatedAtColumn;
 
     @FXML
+    private TableView<SaleOrderItemDetail> orderDetailTable;
+
+    @FXML
+    private TableColumn<SaleOrderItemDetail, String> detailProductColumn;
+
+    @FXML
+    private TableColumn<SaleOrderItemDetail, String> detailSkuColumn;
+
+    @FXML
+    private TableColumn<SaleOrderItemDetail, Integer> detailQuantityColumn;
+
+    @FXML
+    private TableColumn<SaleOrderItemDetail, BigDecimal> detailUnitPriceColumn;
+
+    @FXML
+    private TableColumn<SaleOrderItemDetail, BigDecimal> detailSubtotalColumn;
+
+    @FXML
     private Label totalLabel;
 
     @FXML
@@ -116,6 +135,7 @@ public class SaleController {
 
         configureCartTable();
         configureOrderTable();
+        configureOrderDetailTable();
         clearSelectedProductPreview();
 
         presenter.initialize();
@@ -124,13 +144,20 @@ public class SaleController {
     @FXML
     public void onAddToCart() {
 
-        Product selectedProduct =
-                productSelectionWorkflowController.resolveSelectedProduct();
+        try {
 
-        presenter.addProductToCart(
-                selectedProduct,
-                parseQuantity()
-        );
+            Product selectedProduct =
+                    productSelectionWorkflowController.resolveSelectedProduct();
+
+            presenter.addProductToCart(
+                    selectedProduct,
+                    parseQuantity()
+            );
+
+        } catch (NumberFormatException e) {
+
+            showError("Quantity must be a valid number");
+        }
     }
 
     @FXML
@@ -193,6 +220,17 @@ public class SaleController {
         orderTable.setItems(
                 FXCollections.observableArrayList(
                         orders
+                )
+        );
+    }
+
+    public void setOrderItemDetails(
+            List<SaleOrderItemDetail> details
+    ) {
+
+        orderDetailTable.setItems(
+                FXCollections.observableArrayList(
+                        details == null ? List.of() : details
                 )
         );
     }
@@ -271,6 +309,7 @@ public class SaleController {
         quantityField.setDisable(busy);
         cartTable.setDisable(busy);
         orderTable.setDisable(busy);
+        orderDetailTable.setDisable(busy);
     }
 
     public void setStatus(
@@ -349,6 +388,37 @@ public class SaleController {
                                 cellData.getValue().getCreatedAt()
                         )
                 )
+        );
+
+        orderTable
+                .getSelectionModel()
+                .selectedItemProperty()
+                .addListener(
+                        (observable, oldValue, newValue) ->
+                                presenter.selectOrder(newValue)
+                );
+    }
+
+    private void configureOrderDetailTable() {
+
+        detailProductColumn.setCellValueFactory(
+                new PropertyValueFactory<>("productName")
+        );
+
+        detailSkuColumn.setCellValueFactory(
+                new PropertyValueFactory<>("sku")
+        );
+
+        detailQuantityColumn.setCellValueFactory(
+                new PropertyValueFactory<>("quantity")
+        );
+
+        detailUnitPriceColumn.setCellValueFactory(
+                new PropertyValueFactory<>("unitPrice")
+        );
+
+        detailSubtotalColumn.setCellValueFactory(
+                new PropertyValueFactory<>("subtotal")
         );
     }
 

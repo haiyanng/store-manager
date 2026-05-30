@@ -7,6 +7,7 @@ import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.offline_export.dto.OfflineExportResult;
 import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationHistoryEntry;
+import com.storemanager.domain.system_tool.migration_export.model.MigrationImportResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationStatusLevel;
 import com.storemanager.domain.system_tool.migration_export.service.MigrationExportService;
@@ -26,6 +27,8 @@ public class MigrationExportPresenter {
             LoadingState.IDLE;
 
     private MigrationPreviewResult currentPreview;
+
+    private File currentPackageFile;
 
     public MigrationExportPresenter(
             MigrationExportController view
@@ -50,6 +53,7 @@ public class MigrationExportPresenter {
     ) {
 
         currentPreview = null;
+        currentPackageFile = packageFile;
         view.setPreview(null);
         view.setStatus(
                 packageFile == null
@@ -169,7 +173,7 @@ public class MigrationExportPresenter {
 
     public void importPackage() {
 
-        if (currentPreview == null) {
+        if (currentPreview == null || currentPackageFile == null) {
             view.showWarning(
                     "Preview and validate the package first."
             );
@@ -184,10 +188,24 @@ public class MigrationExportPresenter {
         }
 
         loadingState =
-                LoadingState.SUCCESS;
-        view.setStatus("🟡 Warning - Import foundation not implemented yet");
-        view.showWarning(
-                "Import workflow is reserved for the next step."
+                LoadingState.LOADING;
+        view.setBusy(true);
+        view.setStatus("🟡 Warning - Importing package...");
+
+        AsyncTaskRunner.run(
+                () -> migrationExportService.importPackage(
+                        currentPackageFile
+                ),
+                this::handleImportSuccess,
+                throwable -> {
+                    loadingState =
+                            LoadingState.ERROR;
+                    view.setStatus("🔴 Failed - Import failed");
+                    view.showError(
+                            throwable.getMessage()
+                    );
+                },
+                () -> view.setBusy(false)
         );
     }
 
@@ -229,6 +247,32 @@ public class MigrationExportPresenter {
         }
 
         return settings.getDatabaseName().trim();
+    }
+
+    private void handleImportSuccess(
+            MigrationImportResult result
+    ) {
+
+        loadingState =
+                LoadingState.SUCCESS;
+        migrationExportService.recordImportHistory(
+                result.totalCount(),
+                MigrationStatusLevel.SUCCESS
+        );
+
+        view.setHistory(
+                migrationExportService.findHistory()
+        );
+        view.setStatus("🟢 Success - Import completed");
+        view.showInfo(
+                "Imported "
+                        + result.productCount()
+                        + " products, "
+                        + result.categoryCount()
+                        + " categories, "
+                        + result.inventoryCount()
+                        + " inventory rows."
+        );
     }
 
     private int countRecords(
