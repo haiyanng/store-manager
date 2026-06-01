@@ -22,6 +22,8 @@ public class ManagerDashboardDto {
 
     private String salesOverview;
 
+    private DashboardOnlineOrderSnapshot onlineOrderDashboard;
+
     private List<DashboardBranchSummary> branchOperationalSummaries =
             new ArrayList<>();
 
@@ -93,6 +95,14 @@ public class ManagerDashboardDto {
 
     public void setSalesOverview(String salesOverview) {
         this.salesOverview = salesOverview;
+    }
+
+    public DashboardOnlineOrderSnapshot getOnlineOrderDashboard() {
+        return onlineOrderDashboard;
+    }
+
+    public void setOnlineOrderDashboard(DashboardOnlineOrderSnapshot onlineOrderDashboard) {
+        this.onlineOrderDashboard = onlineOrderDashboard;
     }
 
     public List<DashboardBranchSummary> getBranchOperationalSummaries() {

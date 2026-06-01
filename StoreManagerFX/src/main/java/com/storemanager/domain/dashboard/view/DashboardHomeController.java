@@ -9,6 +9,8 @@ import com.storemanager.domain.dashboard.model.DashboardCashFlowSummary;
 import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
 import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
 import com.storemanager.domain.dashboard.model.DashboardMetricCard;
+import com.storemanager.domain.dashboard.model.DashboardOnlineOrderRow;
+import com.storemanager.domain.dashboard.model.DashboardOnlineOrderSnapshot;
 import com.storemanager.domain.dashboard.model.DashboardPayrollSummary;
 import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
 import com.storemanager.domain.dashboard.model.ManagerDashboardDto;
@@ -108,6 +110,9 @@ public class DashboardHomeController {
     private VBox managerSection;
 
     @FXML
+    private VBox onlineOrderSection;
+
+    @FXML
     private Label branchEmployeeCountLabel;
 
     @FXML
@@ -148,6 +153,27 @@ public class DashboardHomeController {
 
     @FXML
     private TableColumn<DashboardEmployeeLocationRow, Long> locationAssignmentsColumn;
+
+    @FXML
+    private FlowPane onlineOrderMetricsPane;
+
+    @FXML
+    private TableView<DashboardOnlineOrderRow> onlineOrderTable;
+
+    @FXML
+    private TableColumn<DashboardOnlineOrderRow, Long> onlineOrderIdColumn;
+
+    @FXML
+    private TableColumn<DashboardOnlineOrderRow, String> onlineOrderCustomerColumn;
+
+    @FXML
+    private TableColumn<DashboardOnlineOrderRow, String> onlineOrderStatusColumn;
+
+    @FXML
+    private TableColumn<DashboardOnlineOrderRow, BigDecimal> onlineOrderTotalColumn;
+
+    @FXML
+    private TableColumn<DashboardOnlineOrderRow, String> onlineOrderCreatedAtColumn;
 
     @FXML
     private VBox ownerSection;
@@ -357,6 +383,9 @@ public class DashboardHomeController {
         }
         employeeSection.setDisable(busy);
         managerSection.setDisable(busy);
+        if (onlineOrderSection != null) {
+            onlineOrderSection.setDisable(busy);
+        }
         ownerSection.setDisable(busy);
     }
 
@@ -477,6 +506,7 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, true);
         setSectionVisible(quickAttendanceSection, true);
         setSectionVisible(managerSection, false);
+        setSectionVisible(onlineOrderSection, false);
         setSectionVisible(ownerSection, false);
 
         renderMetrics(dto.getMetrics());
@@ -500,6 +530,7 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, false);
         setSectionVisible(quickAttendanceSection, false);
         setSectionVisible(managerSection, true);
+        setSectionVisible(onlineOrderSection, true);
         setSectionVisible(ownerSection, false);
 
         renderMetrics(dto.getMetrics());
@@ -520,6 +551,8 @@ public class DashboardHomeController {
                         dto.getEmployeeLocations()
                 )
         );
+
+        renderOnlineOrderDashboard(dto.getOnlineOrderDashboard());
     }
 
     private void renderOwnerDashboard(
@@ -529,6 +562,7 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, false);
         setSectionVisible(quickAttendanceSection, false);
         setSectionVisible(managerSection, true);
+        setSectionVisible(onlineOrderSection, true);
         setSectionVisible(ownerSection, true);
 
         renderMetrics(dto.getMetrics());
@@ -572,6 +606,76 @@ public class DashboardHomeController {
                         dto.getInventoryAlerts()
                 )
         );
+
+        renderOnlineOrderDashboard(dto.getOnlineOrderDashboard());
+    }
+
+    private void renderOnlineOrderDashboard(
+            DashboardOnlineOrderSnapshot snapshot
+    ) {
+
+        setSectionVisible(onlineOrderSection, true);
+
+        DashboardOnlineOrderSnapshot safeSnapshot =
+                snapshot == null ? new DashboardOnlineOrderSnapshot() : snapshot;
+
+        onlineOrderMetricsPane.getChildren().setAll(
+                createMetricCards(
+                        List.of(
+                                new DashboardMetricCard(
+                                        "Total Orders",
+                                        String.valueOf(safeSnapshot.getTotalOrders()),
+                                        "All online order records"
+                                ),
+                                new DashboardMetricCard(
+                                        "Pending Orders",
+                                        String.valueOf(safeSnapshot.getPendingOrders()),
+                                        "Waiting for confirmation"
+                                ),
+                                new DashboardMetricCard(
+                                        "Confirmed Orders",
+                                        String.valueOf(safeSnapshot.getConfirmedOrders()),
+                                        "Stock reserved at confirmation"
+                                ),
+                                new DashboardMetricCard(
+                                        "Delivering Orders",
+                                        String.valueOf(safeSnapshot.getDeliveringOrders()),
+                                        "Orders currently in delivery"
+                                ),
+                                new DashboardMetricCard(
+                                        "Delivered Orders",
+                                        String.valueOf(safeSnapshot.getDeliveredOrders()),
+                                        "Completed online deliveries"
+                                ),
+                                new DashboardMetricCard(
+                                        "Cancelled Orders",
+                                        String.valueOf(safeSnapshot.getCancelledOrders()),
+                                        "Orders closed by cancellation"
+                                ),
+                                new DashboardMetricCard(
+                                        "Total Revenue",
+                                        formatMoney(safeSnapshot.getTotalRevenue()),
+                                        "Delivered orders only"
+                                ),
+                                new DashboardMetricCard(
+                                        "Revenue Today",
+                                        formatMoney(safeSnapshot.getRevenueToday()),
+                                        "Delivered revenue for today"
+                                ),
+                                new DashboardMetricCard(
+                                        "Orders Today",
+                                        String.valueOf(safeSnapshot.getOrdersToday()),
+                                        "Orders created today"
+                                )
+                        )
+                )
+        );
+
+        onlineOrderTable.setItems(
+                FXCollections.observableArrayList(
+                        safeSnapshot.getRecentOrders()
+                )
+        );
     }
 
     private String buildOwnerAttendanceOverview(
@@ -606,6 +710,7 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, false);
         setSectionVisible(quickAttendanceSection, false);
         setSectionVisible(managerSection, false);
+        setSectionVisible(onlineOrderSection, false);
         setSectionVisible(ownerSection, false);
     }
 
@@ -645,6 +750,9 @@ public class DashboardHomeController {
                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
         );
         inventoryAlertTable.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+        );
+        onlineOrderTable.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
         );
 
@@ -773,6 +881,77 @@ public class DashboardHomeController {
                         cellData.getValue().getAlertText()
                 )
         );
+
+        onlineOrderIdColumn.setCellValueFactory(
+                cellData -> new SimpleObjectProperty<>(
+                        cellData.getValue().getOrderId()
+                )
+        );
+        onlineOrderCustomerColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        cellData.getValue().getCustomerName()
+                )
+        );
+        onlineOrderStatusColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        cellData.getValue().getStatus()
+                )
+        );
+        onlineOrderTotalColumn.setCellValueFactory(
+                cellData -> new SimpleObjectProperty<>(
+                        cellData.getValue().getTotalAmount()
+                )
+        );
+        onlineOrderCreatedAtColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        TimeFormatUtil.formatDateTime(
+                                cellData.getValue().getCreatedAt()
+                        )
+                )
+        );
+    }
+
+    private List<VBox> createMetricCards(
+            List<DashboardMetricCard> cards
+    ) {
+
+        if (cards == null || cards.isEmpty()) {
+            return List.of();
+        }
+
+        return cards.stream()
+                .map(this::createMetricCard)
+                .toList();
+    }
+
+    private VBox createMetricCard(
+            DashboardMetricCard card
+    ) {
+
+        VBox box = new VBox(4);
+        box.getStyleClass().add("analytics-card");
+        box.setPrefWidth(240);
+        box.setMinWidth(220);
+
+        Label title = new Label(valueOrDefault(card.getTitle()));
+        title.getStyleClass().add("analytics-card-title");
+
+        Label value = new Label(valueOrDefault(card.getValue()));
+        value.getStyleClass().add("analytics-card-value");
+
+        Label detail = new Label(valueOrDefault(card.getDetail()));
+        detail.getStyleClass().add("analytics-card-detail");
+        detail.setWrapText(true);
+
+        box.getChildren().addAll(title, value, detail);
+        return box;
+    }
+
+    private String formatMoney(
+            BigDecimal value
+    ) {
+
+        return value == null ? "0.00" : value.toPlainString();
     }
 
     private void renderMetrics(

@@ -14,6 +14,7 @@ import com.storemanager.domain.dashboard.model.DashboardCashFlowSummary;
 import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
 import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
 import com.storemanager.domain.dashboard.model.DashboardMetricCard;
+import com.storemanager.domain.dashboard.model.DashboardOnlineOrderSnapshot;
 import com.storemanager.domain.dashboard.model.DashboardPayrollSummary;
 import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
 import com.storemanager.domain.dashboard.model.ManagerDashboardDto;
@@ -62,6 +63,9 @@ public class DashboardAnalyticsService {
 
     private final InventoryService inventoryService =
             new InventoryService();
+
+    private final DashboardOnlineOrderService onlineOrderService =
+            new DashboardOnlineOrderService();
 
     public DashboardAnalyticsSnapshot loadDashboardAnalytics() {
 
@@ -208,6 +212,9 @@ public class DashboardAnalyticsService {
         dto.setSalesOverview(buildSalesOverviewSummary());
         dto.setBranchOperationalSummaries(buildBranchSummaries());
         dto.setEmployeeLocations(buildEmployeeLocationRows());
+        dto.setOnlineOrderDashboard(
+                onlineOrderService.loadDashboard()
+        );
 
         return dto;
     }
@@ -233,6 +240,9 @@ public class DashboardAnalyticsService {
         dto.setPayrollSummaries(buildPayrollSummaries());
         dto.setCashFlowSummaries(buildCashFlowSummaries());
         dto.setInventoryAlerts(buildInventoryAlertRows());
+        dto.setOnlineOrderDashboard(
+                onlineOrderService.loadDashboard()
+        );
 
         return dto;
     }
