@@ -6,5 +6,6 @@ import java.util.List;
 
 public record OrderDto(Long id, String status, BigDecimal totalAmount, String recipientName,
                        String phone, String shippingAddress, String paymentMethod,
-                       LocalDateTime createdAt, List<OrderItemDto> items) {
+                       LocalDateTime createdAt, List<OrderItemDto> items,
+                       List<OrderHistoryDto> history) {
 }

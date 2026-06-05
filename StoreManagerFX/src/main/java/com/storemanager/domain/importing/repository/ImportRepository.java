@@ -68,6 +68,36 @@ public class ImportRepository {
         }
     }
 
+    public Long saveReceipt(
+            Connection connection,
+            ImportReceipt receipt,
+            List<ImportItem> items
+    ) {
+
+        try {
+            Long receiptId =
+                    insertReceipt(
+                            connection,
+                            receipt
+                    );
+
+            for (ImportItem item : items) {
+                item.setImportReceiptId(receiptId);
+                insertImportItem(
+                        connection,
+                        item
+                );
+            }
+
+            return receiptId;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Cannot save import receipt",
+                    e
+            );
+        }
+    }
+
     public List<ImportReceipt> findRecentReceipts() {
 
         List<ImportReceipt> receipts =
@@ -176,7 +206,10 @@ public class ImportRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return BigDecimal.ZERO;
+            throw new RuntimeException(
+                    "Cannot load total import cost",
+                    e
+            );
         }
     }
 
@@ -212,7 +245,10 @@ public class ImportRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return BigDecimal.ZERO;
+            throw new RuntimeException(
+                    "Cannot load import cost for period",
+                    e
+            );
         }
     }
 
@@ -248,7 +284,10 @@ public class ImportRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return 0L;
+            throw new RuntimeException(
+                    "Cannot load import receipt count for period",
+                    e
+            );
         }
     }
 

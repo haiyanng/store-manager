@@ -19,18 +19,20 @@ import com.customershopfx.product.viewmodel.ProductViewModel;
 import com.customershopfx.shop.presenter.ShopPresenter;
 import com.customershopfx.shop.viewmodel.ShopViewModel;
 import atlantafx.base.theme.Styles;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextArea;
@@ -43,13 +45,17 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.application.Platform;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
 public class ShopController {
+    private static final double PRODUCT_TILE_MIN_WIDTH = 240;
+    private static final double PRODUCT_TILE_MAX_WIDTH = 320;
+    private static final double PRODUCT_GRID_GAP = 16;
+    private static final int PRODUCT_GRID_MAX_COLUMNS = 5;
+
     @FXML private StackPane pageHost;
     @FXML private VBox productsPage;
     @FXML private HBox cartPage;
@@ -155,13 +161,7 @@ public class ShopController {
             }
         });
         ordersList.getSelectionModel().selectedItemProperty().addListener((obs, old, order) -> orderPresenter.onOrderSelected(order));
-        productGrid.setAlignment(javafx.geometry.Pos.TOP_LEFT);
-        productGrid.setMaxWidth(Double.MAX_VALUE);
-        if (shopMain != null) {
-            productGrid.prefWrapLengthProperty().bind(Bindings.createDoubleBinding(
-                    () -> Math.max(640.0, shopMain.getWidth() - 24.0),
-                    shopMain.widthProperty()));
-        }
+        configureProductGrid();
         shopViewModel.selectedTabProperty().addListener(selectedTabListener);
         showPage(shopViewModel.getSelectedTab());
         updateNavState(shopViewModel.getSelectedTab());
@@ -173,16 +173,6 @@ public class ShopController {
         shopPresenter.initialize();
         syncCategorySelectionStyle();
 
-        Platform.runLater(() -> {
-            System.out.println("detailPanel size=" + detailPanel.getWidth() + "x" + detailPanel.getHeight());
-            System.out.println("detailPanel insets=" + detailPanel.getInsets());
-            System.out.println("detailContentBox bounds=" + detailContentBox.getBoundsInParent());
-            System.out.println("detailContentBox layoutBounds=" + detailContentBox.getLayoutBounds());
-            System.out.println("detailBodyBox bounds=" + detailBodyBox.getBoundsInParent());
-            System.out.println("shopMain bounds=" + shopMain.getBoundsInParent());
-            System.out.println("pageHost bounds=" + pageHost.getBoundsInParent());
-            System.out.println("right region width=" + detailPanel.getWidth());
-        });
     }
 
     @FXML
@@ -250,6 +240,30 @@ public class ShopController {
         shopPresenter.logout();
     }
 
+    @FXML
+    public void showSupportInfo() {
+        showFooterDialog(
+                "Support",
+                "For order support, contact the store team or review your order timeline in the Orders tab."
+        );
+    }
+
+    @FXML
+    public void showTermsInfo() {
+        showFooterDialog(
+                "Terms",
+                "Orders are confirmed by store staff. Availability, delivery timing, and payment terms may vary by branch."
+        );
+    }
+
+    @FXML
+    public void showPrivacyInfo() {
+        showFooterDialog(
+                "Privacy",
+                "Customer profile and order details are used only for checkout, delivery, and order history."
+        );
+    }
+
     public void selectTab(int index) {
         shopViewModel.setSelectedTab(index);
     }
@@ -288,8 +302,6 @@ public class ShopController {
 
     public void renderProducts(List<Product> products) {
         productGrid.getChildren().clear();
-        productGrid.setHgap(16);
-        productGrid.setVgap(16);
         boolean needsDefaultSelection = selectedProductId == null && !products.isEmpty();
         if (needsDefaultSelection) {
             selectedProductId = products.get(0).id();
@@ -304,9 +316,79 @@ public class ShopController {
                     (selected, quantity) -> productPresenter.addToCart(selected.id(), quantity, selected.name()));
             productGrid.getChildren().add(card);
         }
+        updateProductTileLayout();
         if (needsDefaultSelection) {
             renderProductDetailContent(products.get(0), false);
         }
+    }
+
+    private void configureProductGrid() {
+        productGrid.setAlignment(Pos.TOP_LEFT);
+        productGrid.setMinWidth(0);
+        productGrid.setMaxWidth(Double.MAX_VALUE);
+        productGrid.setHgap(PRODUCT_GRID_GAP);
+        productGrid.setVgap(PRODUCT_GRID_GAP);
+
+        ChangeListener<Number> layoutListener =
+                (obs, oldValue, newValue) -> updateProductTileLayout();
+        productGrid.widthProperty().addListener(layoutListener);
+        if (shopMain != null) {
+            shopMain.widthProperty().addListener(layoutListener);
+        }
+        Platform.runLater(this::updateProductTileLayout);
+    }
+
+    private void updateProductTileLayout() {
+        if (productGrid == null) {
+            return;
+        }
+
+        double availableWidth =
+                productGrid.getWidth();
+        if (availableWidth <= 0 && shopMain != null) {
+            availableWidth =
+                    shopMain.getWidth();
+        }
+        if (availableWidth <= 0) {
+            return;
+        }
+
+        double horizontalPadding =
+                productGrid.getPadding().getLeft()
+                        + productGrid.getPadding().getRight();
+        double usableWidth =
+                Math.max(
+                        PRODUCT_TILE_MIN_WIDTH,
+                        availableWidth - horizontalPadding
+                );
+        int columns =
+                calculateProductColumns(usableWidth);
+        double tileWidth =
+                (usableWidth - ((columns - 1) * PRODUCT_GRID_GAP)) / columns;
+        tileWidth =
+                Math.max(
+                        PRODUCT_TILE_MIN_WIDTH,
+                        Math.min(PRODUCT_TILE_MAX_WIDTH, Math.floor(tileWidth) - 1)
+                );
+
+        productGrid.setPrefWrapLength(usableWidth);
+        for (Node child : productGrid.getChildren()) {
+            if (child instanceof ProductCard productCard) {
+                productCard.setTileWidth(tileWidth);
+            }
+        }
+    }
+
+    private int calculateProductColumns(double availableWidth) {
+        for (int columns = PRODUCT_GRID_MAX_COLUMNS; columns > 1; columns--) {
+            double requiredWidth =
+                    (columns * PRODUCT_TILE_MIN_WIDTH)
+                            + ((columns - 1) * PRODUCT_GRID_GAP);
+            if (availableWidth >= requiredWidth) {
+                return columns;
+            }
+        }
+        return 1;
     }
 
     public void renderCart(Cart cart) {
@@ -356,6 +438,18 @@ public class ShopController {
         );
         order.items().forEach(item -> detailBodyBox.getChildren().add(
                 label(item.productName() + " x" + item.quantity() + " - " + money.format(item.subtotal()), "text-body")));
+        if (order.history() != null && !order.history().isEmpty()) {
+            detailBodyBox.getChildren().add(label("History", "text-section"));
+            order.history().forEach(entry -> {
+                String note =
+                        entry.note() == null || entry.note().isBlank()
+                                ? ""
+                                : " - " + entry.note();
+                detailBodyBox.getChildren().add(
+                        label(entry.createdAt() + " | " + entry.oldStatus() + " -> " + entry.newStatus() + note, "text-meta")
+                );
+            });
+        }
     }
 
     public void showCheckoutMessage(String message) {
@@ -411,12 +505,34 @@ public class ShopController {
                 quantitySpinner);
         quantityRow.setAlignment(Pos.CENTER_LEFT);
 
+        Label name = label(product.name(), "product-detail-name");
+        name.setWrapText(true);
+
+        Label category = label("Category: " + categoryName(product), "text-meta");
+        category.setWrapText(true);
+
+        Label metadata = label(
+                "Unit: " + safe(product.unit())
+                        + "  |  SKU: " + safe(product.sku())
+                        + "  |  Barcode: " + safe(product.barcode()),
+                "text-meta"
+        );
+        metadata.setWrapText(true);
+
+        Label descriptionHeading = label("Description", "product-description-heading");
+        Label fullDescription = label(descriptionText(product), "product-full-description");
+        fullDescription.setWrapText(true);
+
         VBox contentBlock = new VBox(10,
-                productImage(product.name(), product.imagePath(), 270, 205),
+                productImage(product.name(), product.imagePath(), 236, 150),
+                name,
+                category,
                 label(money.format(product.basePrice()), "text-price"),
-                label("Unit: " + product.unit(), "text-meta"),
-                label("SKU: " + product.sku(), "text-meta"),
-                label("Barcode: " + (product.barcode() == null ? "N/A" : product.barcode()), "text-meta"),
+                metadata,
+                descriptionHeading,
+                new Separator(),
+                fullDescription,
+                new Separator(),
                 quantityRow,
                 add);
         contentBlock.setAlignment(Pos.CENTER);
@@ -424,12 +540,28 @@ public class ShopController {
         contentBlock.setMaxWidth(Double.MAX_VALUE);
 
         detailTitleLabel.setText(product.name());
-        detailMessageLabel.setText("Category: " + (product.categoryName() == null ? "General" : product.categoryName()));
+        detailMessageLabel.setText("Category: " + categoryName(product));
         detailBodyBox.setAlignment(Pos.CENTER);
         detailBodyBox.getChildren().setAll(contentBlock);
         if (rerenderGrid) {
             renderProducts(productViewModel.getProducts());
         }
+    }
+
+    private String categoryName(Product product) {
+        return product.categoryName() == null || product.categoryName().isBlank()
+                ? "General"
+                : product.categoryName();
+    }
+
+    private String descriptionText(Product product) {
+        return product.fullDescription() == null || product.fullDescription().isBlank()
+                ? "No description available."
+                : product.fullDescription();
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "N/A" : value;
     }
 
     private void syncCategorySelectionStyle() {
@@ -488,6 +620,14 @@ public class ShopController {
         if (detailBodyBox != null) {
             detailBodyBox.getChildren().clear();
         }
+    }
+
+    private void showFooterDialog(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void setPageVisible(Node node, boolean visible) {

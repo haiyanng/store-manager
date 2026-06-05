@@ -67,6 +67,36 @@ public class SaleRepository {
         }
     }
 
+    public Long saveOrder(
+            Connection connection,
+            SaleOrder order,
+            List<SaleOrderItem> items
+    ) {
+
+        try {
+            Long orderId =
+                    insertOrder(
+                            connection,
+                            order
+                    );
+
+            for (SaleOrderItem item : items) {
+                item.setOrderId(orderId);
+                insertOrderItem(
+                        connection,
+                        item
+                );
+            }
+
+            return orderId;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Cannot save sale order",
+                    e
+            );
+        }
+    }
+
     public List<SaleOrder> findRecentOrders() {
 
         List<SaleOrder> orders =
@@ -293,7 +323,10 @@ public class SaleRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return BigDecimal.ZERO;
+            throw new RuntimeException(
+                    "Cannot load total sale revenue",
+                    e
+            );
         }
     }
 
@@ -329,7 +362,10 @@ public class SaleRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return BigDecimal.ZERO;
+            throw new RuntimeException(
+                    "Cannot load sale revenue for period",
+                    e
+            );
         }
     }
 
@@ -365,7 +401,10 @@ public class SaleRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return 0L;
+            throw new RuntimeException(
+                    "Cannot load sale order count for period",
+                    e
+            );
         }
     }
 

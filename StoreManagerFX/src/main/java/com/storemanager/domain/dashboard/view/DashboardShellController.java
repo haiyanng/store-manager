@@ -21,6 +21,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -406,10 +407,48 @@ public class DashboardShellController {
 
             button.getStyleClass().add("nav-button");
             button.setMaxWidth(Double.MAX_VALUE);
+            button.setContentDisplay(ContentDisplay.LEFT);
+            button.setGraphicTextGap(10);
+            button.setGraphic(createMenuIcon(menuItem.id()));
             button.setOnAction(event -> navigateTo(menuItem.id()));
 
             sidebarMenuBox.getChildren().add(button);
         }
+    }
+
+    private Label createMenuIcon(String menuItemId) {
+
+        Label icon =
+                new Label(resolveMenuIcon(menuItemId));
+        icon.getStyleClass().add("nav-button-icon");
+        icon.setMinWidth(22);
+        icon.setMaxWidth(22);
+
+        return icon;
+    }
+
+    private String resolveMenuIcon(String menuItemId) {
+
+        return switch (menuItemId) {
+            case DashboardMenuRegistry.DASHBOARD -> "◈";
+            case DashboardMenuRegistry.EMPLOYEE -> "👥";
+            case DashboardMenuRegistry.ATTENDANCE -> "◷";
+            case DashboardMenuRegistry.ATTENDANCE_ANOMALIES -> "!";
+            case DashboardMenuRegistry.PAYROLL -> "$";
+            case DashboardMenuRegistry.BRANCH -> "⌂";
+            case DashboardMenuRegistry.USER_MANAGEMENT -> "⚙";
+            case DashboardMenuRegistry.PRODUCT -> "▣";
+            case DashboardMenuRegistry.CATEGORY -> "⌗";
+            case DashboardMenuRegistry.INVENTORY -> "▤";
+            case DashboardMenuRegistry.IMPORT -> "↧";
+            case DashboardMenuRegistry.ORDER -> "◉";
+            case DashboardMenuRegistry.ONLINE_ORDER -> "◎";
+            case DashboardMenuRegistry.SYSTEM_TOOLS -> "⚒";
+            case DashboardMenuRegistry.AUDIT_LOGS -> "☑";
+            case DashboardMenuRegistry.NOTIFICATIONS -> "●";
+            case DashboardMenuRegistry.MESSAGES -> "✉";
+            default -> "•";
+        };
     }
 
     private void applyTopbarWorkflowVisibility() {

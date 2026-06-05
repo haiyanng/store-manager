@@ -60,6 +60,34 @@ public class CartRepository {
                 .update();
     }
 
+    public List<String> inactiveProductNames(Long customerId) {
+        Long cartId = cartId(customerId);
+        return jdbc.sql("""
+                SELECT COALESCE(p.name, CONCAT('Product #', ci.product_id)) AS product_name
+                FROM cart_items ci
+                LEFT JOIN products p ON p.id = ci.product_id
+                WHERE ci.cart_id = :cartId
+                  AND (p.id IS NULL OR p.active = FALSE)
+                ORDER BY ci.id
+                """)
+                .param("cartId", cartId)
+                .query(String.class)
+                .list();
+    }
+
+    public void removeInactiveItems(Long customerId) {
+        Long cartId = cartId(customerId);
+        jdbc.sql("""
+                DELETE ci
+                FROM cart_items ci
+                LEFT JOIN products p ON p.id = ci.product_id
+                WHERE ci.cart_id = :cartId
+                  AND (p.id IS NULL OR p.active = FALSE)
+                """)
+                .param("cartId", cartId)
+                .update();
+    }
+
     public void updateItem(Long customerId, Long itemId, int quantity) {
         jdbc.sql("""
                 UPDATE cart_items ci

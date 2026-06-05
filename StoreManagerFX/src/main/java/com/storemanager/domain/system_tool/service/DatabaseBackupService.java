@@ -44,16 +44,17 @@ public class DatabaseBackupService {
             File outputFile
     ) {
 
-        if (!PermissionGuard.canAccessSystemTools()) {
+        if (!PermissionGuard.canBackupDatabase()) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "DATABASE_BACKUP",
                     "BACKUP",
                     null,
                     "Backup access denied",
-                    null
+                    null,
+                    "OWNER"
             );
             throw new RuntimeException(
-                    "Current user cannot access system tools"
+                    "Current user cannot backup database"
             );
         }
 
@@ -113,13 +114,14 @@ public class DatabaseBackupService {
             summary.setLocation(outputFile.getAbsolutePath());
             backupHistoryStore.append(summary);
 
-            auditService.record(
-                    AuditService.ACTION_BACKUP,
+            auditService.recordEvent(
+                    "DATABASE_TOOLS",
+                    "DATABASE_BACKUP",
                     "DATABASE",
                     null,
-                    "Database backup created at "
-                            + outputFile.getAbsolutePath(),
-                    null
+                    true,
+                    null,
+                    "{\"path\":\"" + escape(outputFile.getAbsolutePath()) + "\",\"size_bytes\":" + outputFile.length() + "}"
             );
 
             notificationService.notifyCurrentUser(
@@ -156,5 +158,17 @@ public class DatabaseBackupService {
                     e
             );
         }
+    }
+
+    private String escape(
+            String value
+    ) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

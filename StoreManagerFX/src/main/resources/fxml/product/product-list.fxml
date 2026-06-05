@@ -26,7 +26,8 @@
                     source="product-form.fxml"/>
 
         <VBox spacing="10">
-            <Button text="Create"
+            <Button fx:id="createButton"
+                    text="Create"
                     styleClass="module-button"
                     maxWidth="Infinity"
                     onAction="#onCreate"/>

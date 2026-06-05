@@ -8,11 +8,21 @@ public class AuditLog {
 
     private Long userId;
 
+    private String actorUsername;
+
+    private String module;
+
     private String action;
 
     private String entityType;
 
     private Long entityId;
+
+    private Boolean success;
+
+    private String reason;
+
+    private String detailsJson;
 
     private String details;
 
@@ -39,6 +49,22 @@ public class AuditLog {
         this.userId = userId;
     }
 
+    public String getActorUsername() {
+        return actorUsername;
+    }
+
+    public void setActorUsername(String actorUsername) {
+        this.actorUsername = actorUsername;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public void setModule(String module) {
+        this.module = module;
+    }
+
     public String getAction() {
         return action;
     }
@@ -61,6 +87,30 @@ public class AuditLog {
 
     public void setEntityId(Long entityId) {
         this.entityId = entityId;
+    }
+
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Boolean success) {
+        this.success = success;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getDetailsJson() {
+        return detailsJson;
+    }
+
+    public void setDetailsJson(String detailsJson) {
+        this.detailsJson = detailsJson;
     }
 
     public String getDetails() {

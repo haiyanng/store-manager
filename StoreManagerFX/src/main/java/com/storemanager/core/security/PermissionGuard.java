@@ -17,7 +17,7 @@ public class PermissionGuard {
 
         return hasRole(
                 RoleType.OWNER
-        );
+        ) || isDeveloper();
     }
 
     public static boolean isManager() {
@@ -31,6 +31,18 @@ public class PermissionGuard {
 
         return hasRole(
                 RoleType.EMPLOYEE
+        ) || hasRole(RoleType.STAFF);
+    }
+
+    public static boolean isStaff() {
+
+        return isEmployee();
+    }
+
+    public static boolean isViewer() {
+
+        return hasRole(
+                RoleType.VIEWER
         );
     }
 
@@ -39,7 +51,8 @@ public class PermissionGuard {
         return isDeveloper()
                 || isOwner()
                 || isManager()
-                || isEmployee();
+                || isEmployee()
+                || isViewer();
     }
 
     public static boolean canViewEmployee() {
@@ -52,10 +65,28 @@ public class PermissionGuard {
     public static boolean canViewProduct() {
 
         return isDeveloper()
-                || isOwner();
+                || isOwner()
+                || isManager()
+                || isStaff()
+                || isViewer();
+    }
+
+    public static boolean canModifyProduct() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager();
     }
 
     public static boolean canViewInventory() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager()
+                || isStaff();
+    }
+
+    public static boolean canAdjustInventory() {
 
         return isDeveloper()
                 || isOwner()
@@ -67,7 +98,63 @@ public class PermissionGuard {
         return isDeveloper()
                 || isOwner()
                 || isManager()
-                || isEmployee();
+                || isStaff();
+    }
+
+    public static boolean canCreateSale() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager()
+                || isStaff();
+    }
+
+    public static boolean canCancelSale() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager();
+    }
+
+    public static boolean canViewOnlineOrders() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager();
+    }
+
+    public static boolean canModifyOnlineOrders() {
+
+        return canViewOnlineOrders();
+    }
+
+    public static boolean canCancelOnlineOrder() {
+
+        return canModifyOnlineOrders();
+    }
+
+    public static boolean canRefundOnlineOrder() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager();
+    }
+
+    public static boolean canViewCustomers() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager()
+                || isStaff()
+                || isViewer();
+    }
+
+    public static boolean canViewReports() {
+
+        return isDeveloper()
+                || isOwner()
+                || isManager()
+                || isViewer();
     }
 
     public static boolean canViewUserManagement() {
@@ -85,6 +172,16 @@ public class PermissionGuard {
 
         return isDeveloper()
                 || isOwner();
+    }
+
+    public static boolean canBackupDatabase() {
+
+        return canAccessSystemTools();
+    }
+
+    public static boolean canRestoreDatabase() {
+
+        return canAccessSystemTools();
     }
 
     public static boolean canViewAuditLogs() {
@@ -116,6 +213,8 @@ public class PermissionGuard {
         return isOwner()
                 && (
                 target.getRole() == RoleType.MANAGER
+                        || target.getRole() == RoleType.STAFF
+                        || target.getRole() == RoleType.VIEWER
                         || target.getRole() == RoleType.EMPLOYEE
         );
     }
@@ -143,6 +242,8 @@ public class PermissionGuard {
         return isOwner()
                 && (
                 target.getRole() == RoleType.MANAGER
+                        || target.getRole() == RoleType.STAFF
+                        || target.getRole() == RoleType.VIEWER
                         || target.getRole() == RoleType.EMPLOYEE
         );
     }

@@ -23,18 +23,31 @@ public class OnlineOrderPresenter extends BaseModulePresenter {
 
     @Override
     public void initialize() {
-        loadOrders();
+        loadOrders(null);
     }
 
     public void loadOrders() {
+        loadOrders(view.getSelectedOrderId());
+    }
+
+    private void loadOrders(Long preferredOrderId) {
         view.setBusy(true);
         view.setStatus("Loading online orders...");
 
         AsyncTaskRunner.run(
-                service::loadAllOrders,
-                orders -> {
-                    view.setOrders(orders);
-                    view.setStatus(orders.isEmpty() ? "No online orders found" : "Ready");
+                () -> loadOrdersWithDetail(preferredOrderId),
+                result -> {
+                    view.setOrders(
+                            result.orders(),
+                            result.selectedOrderId()
+                    );
+                    if (result.detail() == null) {
+                        view.clearDetail();
+                        view.setStatus("No online orders found");
+                        return;
+                    }
+                    view.showDetail(result.detail());
+                    view.setStatus("Order #" + result.selectedOrderId() + " loaded");
                 },
                 throwable -> handleLoadFailure("online orders", throwable),
                 () -> view.setBusy(false)
@@ -73,7 +86,11 @@ public class OnlineOrderPresenter extends BaseModulePresenter {
         loadOrders();
     }
 
-    public void updateStatus(Long orderId, String nextStatus) {
+    public void updateStatus(
+            Long orderId,
+            String nextStatus,
+            String note
+    ) {
         if (orderId == null || nextStatus == null || nextStatus.isBlank()) {
             return;
         }
@@ -82,15 +99,14 @@ public class OnlineOrderPresenter extends BaseModulePresenter {
         view.setStatus("Updating order #" + orderId + " to " + nextStatus + "...");
 
         AsyncTaskRunner.run(
-                () -> service.updateStatus(orderId, nextStatus),
+                () -> updateStatusWithOrders(orderId, nextStatus, note),
                 detail -> {
-                    try {
-                        view.setOrders(service.loadAllOrders());
-                    } catch (Throwable refreshError) {
-                        view.showError(detailMessage("online order list", refreshError));
-                    }
+                    view.setOrders(
+                            detail.orders(),
+                            orderId
+                    );
                     view.selectOrderById(orderId);
-                    view.showDetail(detail);
+                    view.showDetail(detail.detail());
                     view.setStatus("Order #" + orderId + " updated to " + nextStatus);
                 },
                 throwable -> {
@@ -106,6 +122,69 @@ public class OnlineOrderPresenter extends BaseModulePresenter {
                 },
                 () -> view.setBusy(false)
         );
+    }
+
+    private OrdersLoadResult loadOrdersWithDetail(
+            Long preferredOrderId
+    ) {
+
+        List<OnlineOrderSummary> orders =
+                service.loadAllOrders();
+
+        if (orders.isEmpty()) {
+            return new OrdersLoadResult(
+                    orders,
+                    null,
+                    null
+            );
+        }
+
+        Long selectedOrderId =
+                resolveSelectedOrderId(
+                        orders,
+                        preferredOrderId
+                );
+
+        return new OrdersLoadResult(
+                orders,
+                selectedOrderId,
+                service.loadOrderDetails(selectedOrderId)
+        );
+    }
+
+    private StatusUpdateResult updateStatusWithOrders(
+            Long orderId,
+            String nextStatus,
+            String note
+    ) {
+
+        OnlineOrderDetail detail =
+                service.updateStatus(
+                        orderId,
+                        nextStatus,
+                        note
+                );
+
+        return new StatusUpdateResult(
+                service.loadAllOrders(),
+                detail
+        );
+    }
+
+    private Long resolveSelectedOrderId(
+            List<OnlineOrderSummary> orders,
+            Long preferredOrderId
+    ) {
+
+        if (preferredOrderId != null) {
+            for (OnlineOrderSummary order : orders) {
+                if (preferredOrderId.equals(order.getId())) {
+                    return preferredOrderId;
+                }
+            }
+        }
+
+        return orders.get(0).getId();
     }
 
     private void handleLoadFailure(String scope, Throwable throwable) {
@@ -130,5 +209,18 @@ public class OnlineOrderPresenter extends BaseModulePresenter {
         }
         String message = throwable == null ? null : throwable.getMessage();
         return message == null || message.isBlank() ? "Request failed" : message;
+    }
+
+    private record OrdersLoadResult(
+            List<OnlineOrderSummary> orders,
+            Long selectedOrderId,
+            OnlineOrderDetail detail
+    ) {
+    }
+
+    private record StatusUpdateResult(
+            List<OnlineOrderSummary> orders,
+            OnlineOrderDetail detail
+    ) {
     }
 }

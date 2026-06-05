@@ -137,7 +137,8 @@ public class CategoryRepository {
                 PreparedStatement statement =
                         connection.prepareStatement(
                                 """
-                                DELETE FROM categories
+                                UPDATE categories
+                                SET active = FALSE
                                 WHERE id = ?
                                 """
                         )

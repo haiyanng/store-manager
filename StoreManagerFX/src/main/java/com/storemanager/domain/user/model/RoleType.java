@@ -8,6 +8,10 @@ public enum RoleType {
 
     MANAGER,
 
+    STAFF,
+
+    VIEWER,
+
     EMPLOYEE;
 
     public static RoleType fromDatabaseValue(
@@ -25,6 +29,10 @@ public enum RoleType {
 
         if ("ADMIN".equals(normalizedValue)) {
             return DEVELOPER;
+        }
+
+        if ("EMPLOYEE".equals(normalizedValue)) {
+            return STAFF;
         }
 
         return RoleType.valueOf(normalizedValue);

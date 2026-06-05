@@ -218,7 +218,10 @@ public class PayrollRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return BigDecimal.ZERO;
+            throw new RuntimeException(
+                    "Cannot load total payroll cost",
+                    e
+            );
         }
     }
 
@@ -254,7 +257,10 @@ public class PayrollRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return BigDecimal.ZERO;
+            throw new RuntimeException(
+                    "Cannot load payroll cost for period",
+                    e
+            );
         }
     }
 
@@ -290,7 +296,10 @@ public class PayrollRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return 0L;
+            throw new RuntimeException(
+                    "Cannot load payroll record count for period",
+                    e
+            );
         }
     }
 

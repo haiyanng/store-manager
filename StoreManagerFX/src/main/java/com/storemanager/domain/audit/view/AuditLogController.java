@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -30,6 +31,12 @@ public class AuditLogController {
 
     @FXML
     private TextField entityTypeField;
+
+    @FXML
+    private TextField moduleField;
+
+    @FXML
+    private ComboBox<String> successComboBox;
 
     @FXML
     private TextField userIdField;
@@ -56,6 +63,9 @@ public class AuditLogController {
     private TableColumn<AuditLogViewDto, String> usernameColumn;
 
     @FXML
+    private TableColumn<AuditLogViewDto, String> moduleColumn;
+
+    @FXML
     private TableColumn<AuditLogViewDto, String> actionColumn;
 
     @FXML
@@ -66,6 +76,15 @@ public class AuditLogController {
 
     @FXML
     private TableColumn<AuditLogViewDto, Long> branchIdColumn;
+
+    @FXML
+    private TableColumn<AuditLogViewDto, String> successColumn;
+
+    @FXML
+    private TableColumn<AuditLogViewDto, String> reasonColumn;
+
+    @FXML
+    private TableColumn<AuditLogViewDto, String> detailsJsonColumn;
 
     @FXML
     private TableColumn<AuditLogViewDto, String> detailsColumn;
@@ -93,6 +112,15 @@ public class AuditLogController {
         presenter =
                 new AuditLogPresenter(this);
 
+        successComboBox.setItems(
+                FXCollections.observableArrayList(
+                        "Any",
+                        "Success",
+                        "Failure"
+                )
+        );
+        successComboBox.setValue("Any");
+
         configureTable();
         presenter.initialize();
     }
@@ -108,6 +136,8 @@ public class AuditLogController {
 
         actionField.clear();
         entityTypeField.clear();
+        moduleField.clear();
+        successComboBox.setValue("Any");
         userIdField.clear();
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
@@ -121,6 +151,8 @@ public class AuditLogController {
 
         filter.setAction(clean(actionField.getText()));
         filter.setEntityType(clean(entityTypeField.getText()));
+        filter.setModule(clean(moduleField.getText()));
+        filter.setSuccess(parseSuccess(successComboBox.getValue()));
         filter.setUserId(parseLong(userIdField.getText()));
         filter.setFromDate(fromDatePicker.getValue());
         filter.setToDate(toDatePicker.getValue());
@@ -176,7 +208,14 @@ public class AuditLogController {
         );
         usernameColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
-                        cellData.getValue().getUsername()
+                        cellData.getValue().getActorUsername() == null
+                                ? cellData.getValue().getUsername()
+                                : cellData.getValue().getActorUsername()
+                )
+        );
+        moduleColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        cellData.getValue().getModule()
                 )
         );
         actionColumn.setCellValueFactory(
@@ -197,6 +236,23 @@ public class AuditLogController {
         branchIdColumn.setCellValueFactory(
                 cellData -> new SimpleObjectProperty<>(
                         cellData.getValue().getBranchId()
+                )
+        );
+        successColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        Boolean.FALSE.equals(cellData.getValue().getSuccess())
+                                ? "Failure"
+                                : "Success"
+                )
+        );
+        reasonColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        cellData.getValue().getReason()
+                )
+        );
+        detailsJsonColumn.setCellValueFactory(
+                cellData -> new SimpleStringProperty(
+                        cellData.getValue().getDetailsJson()
                 )
         );
         detailsColumn.setCellValueFactory(
@@ -230,6 +286,17 @@ public class AuditLogController {
         } catch (Exception e) {
             throw new RuntimeException("User id must be numeric");
         }
+    }
+
+    private Boolean parseSuccess(
+            String value
+    ) {
+
+        if (value == null || "Any".equals(value)) {
+            return null;
+        }
+
+        return "Success".equals(value);
     }
 
     private String formatDateTime(

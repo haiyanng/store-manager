@@ -25,10 +25,14 @@ public class UserManagementService {
 
     public List<User> findAll() {
 
+        validateUserManagementAccess();
+
         return userRepository.findAll();
     }
 
     public List<Employee> findEmployees() {
+
+        validateUserManagementAccess();
 
         return employeeRepository.findAll();
     }
@@ -67,20 +71,18 @@ public class UserManagementService {
             Employee linkedEmployee
     ) {
 
-        if (!PermissionGuard.canViewUserManagement()) {
-            auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
-                    "USER",
-                    null,
-                    "User management access denied",
-                    null
-            );
-            throw new RuntimeException(
-                    "Current user cannot manage users"
-            );
-        }
+        validateUserManagementAccess();
 
         if (role == null) {
+            auditService.recordEvent(
+                    "USER_MANAGEMENT",
+                    "USER_CREATE",
+                    "USER",
+                    null,
+                    false,
+                    "Role is required",
+                    "{\"username\":\"" + escape(username) + "\"}"
+            );
             throw new RuntimeException(
                     "Role is required"
             );
@@ -99,6 +101,15 @@ public class UserManagementService {
         }
 
         if (username == null || username.trim().isEmpty()) {
+            auditService.recordEvent(
+                    "USER_MANAGEMENT",
+                    "USER_CREATE",
+                    "USER",
+                    null,
+                    false,
+                    "Username is required",
+                    "{}"
+            );
             throw new RuntimeException(
                     "Username is required"
             );
@@ -111,6 +122,15 @@ public class UserManagementService {
         }
 
         if (userRepository.findByUsername(username.trim()).isPresent()) {
+            auditService.recordEvent(
+                    "USER_MANAGEMENT",
+                    "USER_CREATE",
+                    "USER",
+                    null,
+                    false,
+                    "Username already exists",
+                    "{\"username\":\"" + escape(username) + "\"}"
+            );
             throw new RuntimeException(
                     "Username already exists"
             );
@@ -148,12 +168,14 @@ public class UserManagementService {
                 linkedEmployee
         );
 
-        auditService.record(
-                "USER_CREATED",
+        auditService.recordEvent(
+                "USER_MANAGEMENT",
+                "USER_CREATE",
                 "USER",
                 createdUser.getId(),
-                "User account created",
-                null
+                true,
+                null,
+                "{\"username\":\"" + escape(createdUser.getUsername()) + "\",\"role\":\"" + createdUser.getRole() + "\"}"
         );
     }
 
@@ -189,11 +211,12 @@ public class UserManagementService {
 
         if (!PermissionGuard.canEditUser(target)) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "USER_UPDATE",
                     "USER",
                     target.getId(),
                     "User edit denied",
-                    null
+                    null,
+                    "OWNER"
             );
             throw new RuntimeException(
                     "Current user cannot edit this user"
@@ -242,6 +265,9 @@ public class UserManagementService {
             );
         }
 
+        RoleType oldRole =
+                target.getRole();
+
         target.setUsername(
                 username.trim()
         );
@@ -264,6 +290,16 @@ public class UserManagementService {
         updateEmployeeLink(
                 target,
                 linkedEmployee
+        );
+
+        auditService.recordEvent(
+                "USER_MANAGEMENT",
+                oldRole == role ? "USER_UPDATE" : "USER_ROLE_CHANGE",
+                "USER",
+                target.getId(),
+                true,
+                null,
+                "{\"username\":\"" + escape(target.getUsername()) + "\",\"role\":\"" + target.getRole() + "\"}"
         );
 
         return true;
@@ -292,11 +328,12 @@ public class UserManagementService {
 
         if (!PermissionGuard.canDeleteUser(target)) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "USER_DELETE",
                     "USER",
                     target.getId(),
                     "User delete denied",
-                    null
+                    null,
+                    "OWNER"
             );
             throw new RuntimeException(
                     "Current user cannot delete this user"
@@ -324,12 +361,14 @@ public class UserManagementService {
                 userRepository.deleteUser(target);
 
         if (deleted) {
-            auditService.record(
-                    "USER_DELETED",
+            auditService.recordEvent(
+                    "USER_MANAGEMENT",
+                    "USER_DELETE",
                     "USER",
                     target.getId(),
-                    "User account deleted",
-                    null
+                    true,
+                    null,
+                    "{\"username\":\"" + escape(target.getUsername()) + "\"}"
             );
         }
 
@@ -379,6 +418,35 @@ public class UserManagementService {
                     "Cannot link account to employee"
             );
         }
+    }
+
+    private void validateUserManagementAccess() {
+
+        if (!PermissionGuard.canViewUserManagement()) {
+            auditService.recordPermissionDenied(
+                    "USER_MANAGEMENT",
+                    "USER",
+                    null,
+                    "User management access denied",
+                    null,
+                    "OWNER"
+            );
+            throw new RuntimeException(
+                    "Current user cannot manage users"
+            );
+        }
+    }
+
+    private String escape(
+            String value
+    ) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 
     private long countDevelopers() {

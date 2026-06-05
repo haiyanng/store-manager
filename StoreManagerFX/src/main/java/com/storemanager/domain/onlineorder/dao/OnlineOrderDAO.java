@@ -1,18 +1,26 @@
 package com.storemanager.domain.onlineorder.dao;
 
 import com.storemanager.core.database.ConnectionFactory;
+import com.storemanager.core.session.AppSession;
 import com.storemanager.core.util.TimeFormatUtil;
 import com.storemanager.domain.onlineorder.model.OnlineOrder;
+import com.storemanager.domain.onlineorder.model.OnlineOrderHistoryEntry;
 import com.storemanager.domain.onlineorder.model.OnlineOrderSummary;
+import com.storemanager.domain.user.model.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class OnlineOrderDAO {
+
+    public OnlineOrderDAO() {
+        initializeTables();
+    }
 
     public List<OnlineOrderSummary> findAll() {
         List<OnlineOrderSummary> orders = new ArrayList<>();
@@ -92,28 +100,211 @@ public class OnlineOrderDAO {
         }
     }
 
-    public boolean updateStatus(Long orderId, String currentStatus, String nextStatus) {
-        if (orderId == null || currentStatus == null || currentStatus.isBlank() || nextStatus == null || nextStatus.isBlank()) {
-            return false;
+    public List<OnlineOrderHistoryEntry> findHistoryByOrderId(Long orderId) {
+        List<OnlineOrderHistoryEntry> history =
+                new ArrayList<>();
+
+        if (orderId == null) {
+            return history;
         }
 
-        String sql = """
-                UPDATE orders
-                SET status = ?
-                WHERE id = ?
-                  AND status = ?
+        String sql =
+                """
+                SELECT *
+                FROM online_order_status_history
+                WHERE order_id = ?
+                ORDER BY created_at DESC, id DESC
                 """;
 
         try (
                 Connection connection = ConnectionFactory.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)
         ) {
+            statement.setLong(1, orderId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    history.add(mapHistory(resultSet));
+                }
+            }
+
+            return history;
+        } catch (Exception e) {
+            throw new OnlineOrderDataAccessException("Cannot load online order history", e);
+        }
+    }
+
+    public boolean updateStatus(
+            Long orderId,
+            String currentStatus,
+            String nextStatus,
+            String action,
+            String note
+    ) {
+        if (orderId == null || currentStatus == null || currentStatus.isBlank() || nextStatus == null || nextStatus.isBlank()) {
+            return false;
+        }
+
+        String sql = """
+                UPDATE orders
+                SET status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                  AND status = ?
+                """;
+
+        try (
+                Connection connection = ConnectionFactory.getConnection()
+        ) {
+            connection.setAutoCommit(false);
+
+            try (
+                    PreparedStatement statement = connection.prepareStatement(sql)
+            ) {
+                statement.setString(1, nextStatus);
+                statement.setLong(2, orderId);
+                statement.setString(3, currentStatus);
+
+                boolean updated =
+                        statement.executeUpdate() > 0;
+
+                if (!updated) {
+                    connection.rollback();
+                    return false;
+                }
+
+                insertHistory(
+                        connection,
+                        orderId,
+                        action,
+                        currentStatus,
+                        nextStatus,
+                        clean(note),
+                        currentUserId()
+                );
+
+                connection.commit();
+                return true;
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            throw new OnlineOrderDataAccessException("Cannot update online order status", e);
+        }
+    }
+
+    public boolean updateStatus(
+            Connection connection,
+            Long orderId,
+            String currentStatus,
+            String nextStatus,
+            String action,
+            String note
+    ) {
+        if (connection == null || orderId == null || currentStatus == null || currentStatus.isBlank()
+                || nextStatus == null || nextStatus.isBlank()) {
+            return false;
+        }
+
+        String sql = """
+                UPDATE orders
+                SET status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                  AND status = ?
+                """;
+
+        try (
+                PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
             statement.setString(1, nextStatus);
             statement.setLong(2, orderId);
             statement.setString(3, currentStatus);
-            return statement.executeUpdate() > 0;
+
+            boolean updated =
+                    statement.executeUpdate() > 0;
+
+            if (!updated) {
+                return false;
+            }
+
+            insertHistory(
+                    connection,
+                    orderId,
+                    action,
+                    currentStatus,
+                    nextStatus,
+                    clean(note),
+                    currentUserId()
+            );
+
+            return true;
         } catch (Exception e) {
             throw new OnlineOrderDataAccessException("Cannot update online order status", e);
+        }
+    }
+
+    private void initializeTables() {
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+            statement.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS online_order_status_history (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        order_id BIGINT NOT NULL,
+                        action VARCHAR(40) NOT NULL,
+                        old_status VARCHAR(40) NOT NULL,
+                        new_status VARCHAR(40) NOT NULL,
+                        note VARCHAR(1000),
+                        created_by_user_id BIGINT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+            );
+        } catch (Exception e) {
+            throw new OnlineOrderDataAccessException("Cannot initialize online order history table", e);
+        }
+    }
+
+    private void insertHistory(
+            Connection connection,
+            Long orderId,
+            String action,
+            String oldStatus,
+            String newStatus,
+            String note,
+            Long createdByUserId
+    ) throws Exception {
+
+        try (
+                PreparedStatement statement = connection.prepareStatement(
+                        """
+                        INSERT INTO online_order_status_history (
+                            order_id,
+                            action,
+                            old_status,
+                            new_status,
+                            note,
+                            created_by_user_id
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """
+                )
+        ) {
+            statement.setLong(1, orderId);
+            statement.setString(2, clean(action));
+            statement.setString(3, oldStatus);
+            statement.setString(4, newStatus);
+            statement.setString(5, note);
+            if (createdByUserId == null) {
+                statement.setObject(6, null);
+            } else {
+                statement.setLong(6, createdByUserId);
+            }
+            statement.executeUpdate();
         }
     }
 
@@ -142,6 +333,22 @@ public class OnlineOrderDAO {
         order.setShippingAddress(resultSet.getString("shipping_address"));
         order.setPaymentMethod(resultSet.getString("payment_method"));
         return order;
+    }
+
+    private OnlineOrderHistoryEntry mapHistory(ResultSet resultSet) throws Exception {
+        OnlineOrderHistoryEntry entry =
+                new OnlineOrderHistoryEntry();
+
+        entry.setId(resultSet.getLong("id"));
+        entry.setOrderId(resultSet.getLong("order_id"));
+        entry.setAction(resultSet.getString("action"));
+        entry.setOldStatus(resultSet.getString("old_status"));
+        entry.setNewStatus(resultSet.getString("new_status"));
+        entry.setNote(resultSet.getString("note"));
+        entry.setCreatedByUserId(readNullableLong(resultSet, "created_by_user_id"));
+        entry.setCreatedAt(toLocalDateTime(resultSet.getTimestamp("created_at")));
+
+        return entry;
     }
 
     private CustomerRow findCustomer(Connection connection, Long customerId) throws Exception {
@@ -174,6 +381,21 @@ public class OnlineOrderDAO {
 
     private java.time.LocalDateTime toLocalDateTime(java.sql.Timestamp timestamp) {
         return timestamp == null ? null : TimeFormatUtil.truncateToSeconds(timestamp.toLocalDateTime());
+    }
+
+    private Long currentUserId() {
+        User currentUser =
+                AppSession.getCurrentUser();
+
+        return currentUser == null ? null : currentUser.getId();
+    }
+
+    private String clean(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        return value.trim();
     }
 
     private record CustomerRow(String fullName, String email) {

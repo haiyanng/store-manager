@@ -15,12 +15,11 @@ CREATE TABLE IF NOT EXISTS products (
     base_price DECIMAL(18, 2) NOT NULL DEFAULT 0,
     unit VARCHAR(40) NOT NULL,
     image_path VARCHAR(255) NULL,
+    short_description VARCHAR(255) NULL,
+    full_description TEXT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE categories ADD COLUMN image_path VARCHAR(255) NULL;
-ALTER TABLE products ADD COLUMN image_path VARCHAR(255) NULL;
 
 CREATE TABLE IF NOT EXISTS customers (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -99,4 +98,31 @@ CREATE TABLE IF NOT EXISTS payment_methods (
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_payment_methods_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+CREATE TABLE IF NOT EXISTS online_order_status_history (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id BIGINT NOT NULL,
+    action VARCHAR(40) NOT NULL,
+    old_status VARCHAR(40) NOT NULL,
+    new_status VARCHAR(40) NOT NULL,
+    note VARCHAR(1000),
+    created_by_user_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT,
+    actor_username VARCHAR(100),
+    module VARCHAR(80),
+    action VARCHAR(80) NOT NULL,
+    entity_type VARCHAR(120) NOT NULL,
+    entity_id BIGINT,
+    success BOOLEAN NOT NULL DEFAULT TRUE,
+    reason VARCHAR(500),
+    details_json TEXT,
+    details TEXT,
+    branch_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

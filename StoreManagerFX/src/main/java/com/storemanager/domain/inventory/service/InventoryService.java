@@ -16,6 +16,7 @@ import com.storemanager.domain.user.model.User;
 import java.util.List;
 import java.util.Map;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.stream.Collectors;
 
 public class InventoryService {
@@ -115,7 +116,7 @@ public class InventoryService {
             InventoryTransaction transaction
     ) {
 
-        validateInventoryAccess();
+        validateInventoryAdjustmentAccess("INVENTORY_ADJUSTMENT");
         validateTransaction(transaction);
 
         User currentUser =
@@ -145,18 +146,104 @@ public class InventoryService {
         return applied;
     }
 
+    public boolean adjustStock(
+            Connection connection,
+            InventoryTransaction transaction
+    ) {
+
+        validateInventoryWorkflowAccess(transaction);
+        validateTransaction(transaction);
+
+        User currentUser =
+                AppSession.getCurrentUser();
+
+        transaction.setCreatedByUserId(
+                currentUser == null
+                        ? null
+                        : currentUser.getId()
+        );
+
+        transaction.setReason(
+                clean(transaction.getReason())
+        );
+
+        return inventoryRepository.applyTransaction(
+                connection,
+                transaction,
+                calculateQuantityDelta(transaction)
+        );
+    }
+
     private void validateInventoryAccess() {
 
         if (!PermissionGuard.canViewInventory()) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "INVENTORY_VIEW",
                     "INVENTORY",
                     null,
                     "Inventory access denied",
-                    null
+                    null,
+                    "OWNER/MANAGER/STAFF"
             );
             throw new RuntimeException(
                     "Inventory access denied"
+            );
+        }
+    }
+
+    private void validateInventoryAdjustmentAccess(
+            String action
+    ) {
+
+        if (!PermissionGuard.canAdjustInventory()) {
+            auditService.recordPermissionDenied(
+                    action,
+                    "INVENTORY",
+                    null,
+                    "Inventory adjustment denied",
+                    null,
+                    "OWNER/MANAGER"
+            );
+            throw new RuntimeException(
+                    "Current user cannot adjust inventory"
+            );
+        }
+    }
+
+    private void validateInventoryWorkflowAccess(
+            InventoryTransaction transaction
+    ) {
+
+        InventoryTransactionType type =
+                transaction == null ? null : transaction.getType();
+
+        boolean allowed;
+
+        if (type == InventoryTransactionType.SALE) {
+            allowed =
+                    PermissionGuard.canCreateSale()
+                            || PermissionGuard.canModifyOnlineOrders();
+        } else if (type == InventoryTransactionType.IMPORT
+                || type == InventoryTransactionType.ADJUSTMENT) {
+            allowed =
+                    PermissionGuard.canAdjustInventory()
+                            || PermissionGuard.canModifyOnlineOrders();
+        } else {
+            allowed =
+                    PermissionGuard.canAdjustInventory();
+        }
+
+        if (!allowed) {
+            auditService.recordPermissionDenied(
+                    "INVENTORY_TRANSACTION",
+                    "INVENTORY",
+                    null,
+                    "Inventory transaction denied",
+                    null,
+                    "OWNER/MANAGER"
+            );
+            throw new RuntimeException(
+                    "Current user cannot update inventory"
             );
         }
     }
@@ -189,6 +276,15 @@ public class InventoryService {
             );
         }
 
+        if (transaction.getType() == InventoryTransactionType.ADJUSTMENT
+                && transaction.getQuantity() < 0
+                && (transaction.getReason() == null
+                || transaction.getReason().trim().isEmpty())) {
+            throw new RuntimeException(
+                    "Reason is required for stock decrease"
+            );
+        }
+
         if (transaction.getType() != InventoryTransactionType.ADJUSTMENT
                 && transaction.getQuantity() < 0) {
             throw new RuntimeException(
@@ -205,16 +301,19 @@ public class InventoryService {
             return;
         }
 
-        auditService.record(
-                AuditService.ACTION_INVENTORY_ADJUSTMENT,
+        auditService.recordEvent(
+                "INVENTORY",
+                transaction.getType() == InventoryTransactionType.IMPORT
+                        ? "IMPORT_CREATE"
+                        : "INVENTORY_ADJUSTMENT",
                 "INVENTORY_TRANSACTION",
                 transaction.getProductId(),
-                transaction.getType()
-                        + " "
+                true,
+                transaction.getReason(),
+                "{\"type\":\"" + transaction.getType()
+                        + "\",\"quantity\":"
                         + transaction.getQuantity()
-                        + " | "
-                        + transaction.getReason(),
-                null
+                        + "}"
         );
     }
 

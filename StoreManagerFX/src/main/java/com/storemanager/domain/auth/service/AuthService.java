@@ -27,6 +27,10 @@ public class AuthService {
                 );
 
         if (optionalUser.isEmpty()) {
+            auditService.recordLoginFailure(
+                    username,
+                    "User not found"
+            );
             return false;
         }
 
@@ -44,10 +48,18 @@ public class AuthService {
                 );
 
         if (!matched) {
+            auditService.recordLoginFailure(
+                    username,
+                    "Invalid password"
+            );
             return false;
         }
 
         if (!user.isActive()) {
+            auditService.recordLoginFailure(
+                    username,
+                    "Inactive user"
+            );
             return false;
         }
 

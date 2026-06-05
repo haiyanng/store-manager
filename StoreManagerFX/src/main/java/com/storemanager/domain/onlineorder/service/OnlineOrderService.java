@@ -25,6 +25,7 @@ public class OnlineOrderService {
                         .orElseThrow(() -> new NoSuchElementException("Online order not found"))
         );
         detail.setItems(onlineOrderItemDAO.findItemsByOrderId(orderId));
+        detail.setHistory(onlineOrderDAO.findHistoryByOrderId(orderId));
         return detail;
     }
 }

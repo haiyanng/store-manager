@@ -30,6 +30,8 @@ public final class DashboardMenuRegistry {
                     RoleType.DEVELOPER,
                     RoleType.OWNER,
                     RoleType.MANAGER,
+                    RoleType.STAFF,
+                    RoleType.VIEWER,
                     RoleType.EMPLOYEE
             );
 
@@ -40,11 +42,31 @@ public final class DashboardMenuRegistry {
                     RoleType.MANAGER
             );
 
-    private static final Set<RoleType> EMPLOYEE_SELF_SERVICE_ROLES =
+    private static final Set<RoleType> STAFF_WORKFLOW_ROLES =
             Set.of(
                     RoleType.DEVELOPER,
                     RoleType.OWNER,
+                    RoleType.MANAGER,
+                    RoleType.STAFF,
                     RoleType.EMPLOYEE
+            );
+
+    private static final Set<RoleType> PRODUCT_VIEW_ROLES =
+            Set.of(
+                    RoleType.DEVELOPER,
+                    RoleType.OWNER,
+                    RoleType.MANAGER,
+                    RoleType.STAFF,
+                    RoleType.VIEWER,
+                    RoleType.EMPLOYEE
+            );
+
+    private static final Set<RoleType> VIEWER_REPORT_ROLES =
+            Set.of(
+                    RoleType.DEVELOPER,
+                    RoleType.OWNER,
+                    RoleType.MANAGER,
+                    RoleType.VIEWER
             );
 
     private static final Set<RoleType> ADMIN_ROLES =
@@ -74,7 +96,7 @@ public final class DashboardMenuRegistry {
                             "Attendance",
                             "/fxml/attendance/attendance.fxml",
                             true,
-                            ALL_ROLES
+                            STAFF_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             ATTENDANCE_ANOMALIES,
@@ -88,7 +110,7 @@ public final class DashboardMenuRegistry {
                             "Payroll",
                             "/fxml/payroll/payroll.fxml",
                             true,
-                            EMPLOYEE_SELF_SERVICE_ROLES
+                            STAFF_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             BRANCH,
@@ -109,35 +131,35 @@ public final class DashboardMenuRegistry {
                             "Product",
                             "/fxml/product/product-list.fxml",
                             true,
-                            ADMIN_ROLES
+                            PRODUCT_VIEW_ROLES
                     ),
                     new DashboardMenuItem(
                             CATEGORY,
                             "Category",
                             "/fxml/category/category-list.fxml",
                             true,
-                            ADMIN_ROLES
+                            PRODUCT_VIEW_ROLES
                     ),
                     new DashboardMenuItem(
                             INVENTORY,
                             "Inventory",
                             "/fxml/inventory/inventory-list.fxml",
                             true,
-                            ADMIN_ROLES
+                            STAFF_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             IMPORT,
                             "Import",
                             "/fxml/importing/import.fxml",
                             true,
-                            ADMIN_ROLES
+                            MANAGER_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             ORDER,
                             "Order",
                             "/fxml/sale/sale.fxml",
                             true,
-                            ADMIN_ROLES
+                            STAFF_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             ONLINE_ORDER,
@@ -165,14 +187,14 @@ public final class DashboardMenuRegistry {
                             "Notifications",
                             "/fxml/notification/notification-center.fxml",
                             false,
-                            EMPLOYEE_SELF_SERVICE_ROLES
+                            STAFF_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             MESSAGES,
                             "Messages",
                             "/fxml/message/message-inbox.fxml",
                             false,
-                            EMPLOYEE_SELF_SERVICE_ROLES
+                            STAFF_WORKFLOW_ROLES
                     )
             );
 

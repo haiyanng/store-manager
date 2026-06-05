@@ -22,16 +22,17 @@ public class DatabaseRestoreService {
             File inputFile
     ) {
 
-        if (!PermissionGuard.canAccessSystemTools()) {
+        if (!PermissionGuard.canRestoreDatabase()) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "DATABASE_RESTORE",
                     "RESTORE",
                     null,
                     "Restore access denied",
-                    null
+                    null,
+                    "OWNER"
             );
             throw new RuntimeException(
-                    "Current user cannot access system tools"
+                    "Current user cannot restore database"
             );
         }
 
@@ -76,12 +77,14 @@ public class DatabaseRestoreService {
                 run(processBuilder);
 
         if (success) {
-            auditService.record(
-                    AuditService.ACTION_RESTORE,
+            auditService.recordEvent(
+                    "DATABASE_TOOLS",
+                    "DATABASE_RESTORE",
                     "DATABASE",
                     null,
-                    "Database restored from " + inputFile.getAbsolutePath(),
-                    null
+                    true,
+                    null,
+                    "{\"path\":\"" + escape(inputFile.getAbsolutePath()) + "\"}"
             );
 
             notificationService.notifyCurrentUser(
@@ -112,5 +115,17 @@ public class DatabaseRestoreService {
                     e
             );
         }
+    }
+
+    private String escape(
+            String value
+    ) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

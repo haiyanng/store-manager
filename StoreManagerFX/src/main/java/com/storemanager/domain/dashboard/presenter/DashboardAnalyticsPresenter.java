@@ -45,8 +45,9 @@ public class DashboardAnalyticsPresenter extends BaseModulePresenter {
                 },
                 throwable -> {
                     loadingState = LoadingState.ERROR;
-                    view.setStatus("Cannot load dashboard analytics");
-                    view.showError(throwable.getMessage());
+                    throwable.printStackTrace();
+                    view.showDataUnavailable();
+                    view.showError("Data unavailable");
                 },
                 () -> view.setBusy(false)
         );

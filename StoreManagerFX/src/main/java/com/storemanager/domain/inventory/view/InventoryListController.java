@@ -1,5 +1,6 @@
 package com.storemanager.domain.inventory.view;
 
+import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.inventory.model.InventoryItem;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.presenter.InventoryPresenter;
@@ -9,6 +10,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -63,6 +65,12 @@ public class InventoryListController {
 
     @FXML
     private TableColumn<InventoryTransaction, String> transactionCreatedAtColumn;
+
+    @FXML
+    private Button applyButton;
+
+    @FXML
+    private Button clearButton;
 
     @FXML
     private Label statusLabel;
@@ -155,6 +163,12 @@ public class InventoryListController {
         adjustmentFormController.setBusy(busy);
         inventoryTable.setDisable(busy);
         transactionTable.setDisable(busy);
+
+        boolean canAdjust =
+                PermissionGuard.canAdjustInventory();
+        adjustmentFormController.setBusy(busy || !canAdjust);
+        applyButton.setDisable(busy || !canAdjust);
+        clearButton.setDisable(busy || !canAdjust);
     }
 
     public void setStatus(

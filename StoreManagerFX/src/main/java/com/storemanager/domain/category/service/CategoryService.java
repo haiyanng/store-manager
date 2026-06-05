@@ -2,6 +2,8 @@ package com.storemanager.domain.category.service;
 
 import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.category.repository.CategoryRepository;
+import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.domain.audit.service.AuditService;
 
 import java.util.List;
 
@@ -10,7 +12,12 @@ public class CategoryService {
     private final CategoryRepository categoryRepository =
             new CategoryRepository();
 
+    private final AuditService auditService =
+            new AuditService();
+
     public List<Category> findAll() {
+
+        validateCategoryViewAccess();
 
         return categoryRepository.findAll();
     }
@@ -19,6 +26,7 @@ public class CategoryService {
             Category category
     ) {
 
+        validateCategoryWriteAccess("CATEGORY_CREATE");
         validate(category);
 
         return categoryRepository.save(category);
@@ -27,6 +35,8 @@ public class CategoryService {
     public boolean update(
             Category category
     ) {
+
+        validateCategoryWriteAccess("CATEGORY_UPDATE");
 
         if (category.getId() == null) {
             throw new RuntimeException(
@@ -43,6 +53,8 @@ public class CategoryService {
             Category category
     ) {
 
+        validateCategoryWriteAccess("CATEGORY_DELETE");
+
         if (category == null || category.getId() == null) {
             throw new RuntimeException(
                     "Category is required"
@@ -55,6 +67,8 @@ public class CategoryService {
     public boolean deactivate(
             Category category
     ) {
+
+        validateCategoryWriteAccess("CATEGORY_ARCHIVE");
 
         if (category == null || category.getId() == null) {
             throw new RuntimeException(
@@ -91,6 +105,38 @@ public class CategoryService {
         category.setImagePath(
                 cleanNullable(category.getImagePath())
         );
+    }
+
+    private void validateCategoryViewAccess() {
+
+        if (!PermissionGuard.canViewProduct()) {
+            auditService.recordPermissionDenied(
+                    "CATEGORY_VIEW",
+                    "CATEGORY",
+                    null,
+                    "Category access denied",
+                    null,
+                    "OWNER/MANAGER/STAFF/VIEWER"
+            );
+            throw new RuntimeException("Category access denied");
+        }
+    }
+
+    private void validateCategoryWriteAccess(
+            String action
+    ) {
+
+        if (!PermissionGuard.canModifyProduct()) {
+            auditService.recordPermissionDenied(
+                    action,
+                    "CATEGORY",
+                    null,
+                    "Category modification denied",
+                    null,
+                    "OWNER/MANAGER"
+            );
+            throw new RuntimeException("Current user cannot modify categories");
+        }
     }
 
     private String cleanNullable(

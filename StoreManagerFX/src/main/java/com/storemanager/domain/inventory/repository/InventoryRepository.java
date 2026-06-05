@@ -199,6 +199,48 @@ public class InventoryRepository {
         }
     }
 
+    public boolean applyTransaction(
+            Connection connection,
+            InventoryTransaction transaction,
+            int quantityDelta
+    ) {
+
+        try {
+            int currentQuantity =
+                    findCurrentQuantityForUpdate(
+                            connection,
+                            transaction.getProductId()
+                    );
+
+            int newQuantity =
+                    currentQuantity + quantityDelta;
+
+            if (newQuantity < 0) {
+                throw new RuntimeException(
+                        "Stock cannot be negative"
+                );
+            }
+
+            upsertInventoryItem(
+                    connection,
+                    transaction.getProductId(),
+                    newQuantity
+            );
+
+            insertTransaction(
+                    connection,
+                    transaction
+            );
+
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Cannot apply inventory transaction",
+                    e
+            );
+        }
+    }
+
     private void initializeTables() {
 
         try (

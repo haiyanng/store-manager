@@ -20,25 +20,49 @@ public class ProductRepository {
 
     public List<Product> findAll() {
 
+        return findByActiveState(true);
+    }
+
+    public List<Product> findAllIncludingInactive() {
+
+        return findByActiveState(null);
+    }
+
+    private List<Product> findByActiveState(
+            Boolean active
+    ) {
+
         List<Product> products =
                 new ArrayList<>();
+
+        String sql =
+                active == null
+                        ? """
+                          SELECT *
+                          FROM products
+                          ORDER BY id
+                          """
+                        : """
+                          SELECT *
+                          FROM products
+                          WHERE active = ?
+                          ORDER BY id
+                          """;
 
         try (
                 Connection connection =
                         ConnectionFactory.getConnection();
 
-                Statement statement =
-                        connection.createStatement();
-
-                ResultSet resultSet =
-                        statement.executeQuery(
-                                """
-                                SELECT *
-                                FROM products
-                                ORDER BY id
-                                """
-                        )
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
         ) {
+
+            if (active != null) {
+                statement.setBoolean(1, active);
+            }
+
+            ResultSet resultSet =
+                    statement.executeQuery();
 
             while (resultSet.next()) {
                 products.add(
@@ -147,7 +171,8 @@ public class ProductRepository {
                 PreparedStatement statement =
                         connection.prepareStatement(
                                 """
-                                DELETE FROM products
+                                UPDATE products
+                                SET active = FALSE
                                 WHERE id = ?
                                 """
                         )
@@ -189,6 +214,8 @@ public class ProductRepository {
                         base_price DECIMAL(18, 2) NOT NULL DEFAULT 0,
                         unit VARCHAR(40) NOT NULL,
                         image_path VARCHAR(255) NULL,
+                        short_description VARCHAR(255) NULL,
+                        full_description TEXT NULL,
                         active BOOLEAN NOT NULL DEFAULT TRUE,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -196,6 +223,16 @@ public class ProductRepository {
             );
 
             addImagePathColumnIfMissing(connection);
+            addColumnIfMissing(
+                    connection,
+                    "short_description",
+                    "ALTER TABLE products ADD COLUMN short_description VARCHAR(255) NULL"
+            );
+            addColumnIfMissing(
+                    connection,
+                    "full_description",
+                    "ALTER TABLE products ADD COLUMN full_description TEXT NULL"
+            );
 
         } catch (Exception e) {
 
@@ -241,6 +278,39 @@ public class ProductRepository {
                     ADD COLUMN image_path VARCHAR(255) NULL
                     """
             );
+        }
+    }
+
+    private void addColumnIfMissing(
+            Connection connection,
+            String columnName,
+            String alterSql
+    ) throws Exception {
+
+        DatabaseMetaData metaData =
+                connection.getMetaData();
+
+        try (
+                ResultSet columns =
+                        metaData.getColumns(
+                                null,
+                                null,
+                                "products",
+                                columnName
+                        )
+        ) {
+
+            if (columns.next()) {
+                return;
+            }
+        }
+
+        try (
+                Statement statement =
+                        connection.createStatement()
+        ) {
+
+            statement.execute(alterSql);
         }
     }
 

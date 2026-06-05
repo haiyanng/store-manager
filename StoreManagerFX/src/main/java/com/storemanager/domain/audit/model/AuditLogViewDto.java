@@ -7,9 +7,14 @@ public class AuditLogViewDto {
     private Long id;
     private Long userId;
     private String username;
+    private String actorUsername;
+    private String module;
     private String action;
     private String entityType;
     private Long entityId;
+    private Boolean success;
+    private String reason;
+    private String detailsJson;
     private String details;
     private Long branchId;
     private LocalDateTime createdAt;
@@ -38,6 +43,22 @@ public class AuditLogViewDto {
         this.username = username;
     }
 
+    public String getActorUsername() {
+        return actorUsername;
+    }
+
+    public void setActorUsername(String actorUsername) {
+        this.actorUsername = actorUsername;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public void setModule(String module) {
+        this.module = module;
+    }
+
     public String getAction() {
         return action;
     }
@@ -60,6 +81,30 @@ public class AuditLogViewDto {
 
     public void setEntityId(Long entityId) {
         this.entityId = entityId;
+    }
+
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Boolean success) {
+        this.success = success;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getDetailsJson() {
+        return detailsJson;
+    }
+
+    public void setDetailsJson(String detailsJson) {
+        this.detailsJson = detailsJson;
     }
 
     public String getDetails() {

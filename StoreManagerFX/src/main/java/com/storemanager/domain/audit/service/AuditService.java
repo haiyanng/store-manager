@@ -13,6 +13,8 @@ import java.util.List;
 public class AuditService {
 
     public static final String ACTION_LOGIN = "LOGIN";
+    public static final String ACTION_LOGIN_SUCCESS = "LOGIN_SUCCESS";
+    public static final String ACTION_LOGIN_FAILED = "LOGIN_FAILED";
     public static final String ACTION_LOGOUT = "LOGOUT";
     public static final String ACTION_PERMISSION_DENIED = "PERMISSION_DENIED";
     public static final String ACTION_PAYROLL_GENERATED = "PAYROLL_GENERATED";
@@ -38,11 +40,56 @@ public class AuditService {
             Long branchId
     ) {
 
+        return recordEvent(
+                moduleFromEntity(entityType),
+                action,
+                entityType,
+                entityId,
+                true,
+                null,
+                details,
+                branchId
+        );
+    }
+
+    public boolean recordEvent(
+            String module,
+            String action,
+            String targetType,
+            Long targetId,
+            boolean success,
+            String reason,
+            String detailsJson
+    ) {
+
+        return recordEvent(
+                module,
+                action,
+                targetType,
+                targetId,
+                success,
+                reason,
+                detailsJson,
+                null
+        );
+    }
+
+    public boolean recordEvent(
+            String module,
+            String action,
+            String targetType,
+            Long targetId,
+            boolean success,
+            String reason,
+            String detailsJson,
+            Long branchId
+    ) {
+
         if (action == null || action.trim().isEmpty()) {
             throw new RuntimeException("Audit action is required");
         }
 
-        if (entityType == null || entityType.trim().isEmpty()) {
+        if (targetType == null || targetType.trim().isEmpty()) {
             throw new RuntimeException("Audit entity type is required");
         }
 
@@ -52,13 +99,21 @@ public class AuditService {
         User currentUser =
                 AppSession.getCurrentUser();
 
+        String actorUsername =
+                currentUser == null ? "System" : currentUser.getUsername();
+
         log.setUserId(
                 currentUser == null ? null : currentUser.getId()
         );
+        log.setActorUsername(clean(actorUsername));
+        log.setModule(clean(module == null ? moduleFromEntity(targetType) : module));
         log.setAction(action.trim());
-        log.setEntityType(entityType.trim());
-        log.setEntityId(entityId);
-        log.setDetails(clean(details));
+        log.setEntityType(targetType.trim());
+        log.setEntityId(targetId);
+        log.setSuccess(success);
+        log.setReason(clean(reason));
+        log.setDetailsJson(clean(detailsJson));
+        log.setDetails(clean(detailsJson));
         log.setBranchId(branchId);
 
         return auditLogRepository.save(log);
@@ -72,13 +127,40 @@ public class AuditService {
             Long branchId
     ) {
 
-        record(
+        recordPermissionDenied(
+                action,
+                entityType,
+                entityId,
+                details,
+                branchId,
+                null
+        );
+    }
+
+    public void recordPermissionDenied(
+            String action,
+            String entityType,
+            Long entityId,
+            String details,
+            Long branchId,
+            String requiredRole
+    ) {
+
+        String attemptedAction =
+                action == null || action.isBlank()
+                        ? ACTION_PERMISSION_DENIED
+                        : action.trim();
+
+        recordEvent(
+                "SECURITY",
                 ACTION_PERMISSION_DENIED,
                 entityType == null ? "SECURITY" : entityType,
                 entityId,
-                action == null
-                        ? details
-                        : action + (details == null ? "" : " | " + details),
+                false,
+                details,
+                "{\"attempted_action\":\"" + escape(attemptedAction)
+                        + "\",\"required_role\":\"" + escape(requiredRole)
+                        + "\"}",
                 branchId
         );
     }
@@ -91,15 +173,32 @@ public class AuditService {
             return;
         }
 
-        AuditLog log =
-                new AuditLog();
-        log.setUserId(user.getId());
-        log.setAction(ACTION_LOGIN);
-        log.setEntityType("USER");
-        log.setEntityId(user.getId());
-        log.setDetails("User logged in");
+        AppSession.setCurrentUser(user);
+        recordEvent(
+                "AUTHENTICATION",
+                ACTION_LOGIN_SUCCESS,
+                "USER",
+                user.getId(),
+                true,
+                null,
+                "{\"username\":\"" + escape(user.getUsername()) + "\"}"
+        );
+    }
 
-        auditLogRepository.save(log);
+    public void recordLoginFailure(
+            String username,
+            String reason
+    ) {
+
+        recordEvent(
+                "AUTHENTICATION",
+                ACTION_LOGIN_FAILED,
+                "USER",
+                null,
+                false,
+                reason,
+                "{\"username\":\"" + escape(username) + "\"}"
+        );
     }
 
     public void recordLogout(
@@ -110,15 +209,15 @@ public class AuditService {
             return;
         }
 
-        AuditLog log =
-                new AuditLog();
-        log.setUserId(user.getId());
-        log.setAction(ACTION_LOGOUT);
-        log.setEntityType("USER");
-        log.setEntityId(user.getId());
-        log.setDetails("User logged out");
-
-        auditLogRepository.save(log);
+        recordEvent(
+                "AUTHENTICATION",
+                ACTION_LOGOUT,
+                "USER",
+                user.getId(),
+                true,
+                null,
+                "{\"username\":\"" + escape(user.getUsername()) + "\"}"
+        );
     }
 
     public List<AuditLogViewDto> findAuditLogs(
@@ -166,5 +265,28 @@ public class AuditService {
         }
 
         return value.trim();
+    }
+
+    private String moduleFromEntity(
+            String entityType
+    ) {
+
+        if (entityType == null || entityType.isBlank()) {
+            return "GENERAL";
+        }
+
+        return entityType.trim().toUpperCase();
+    }
+
+    private String escape(
+            String value
+    ) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

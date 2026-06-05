@@ -84,12 +84,13 @@ public class UserManagementController {
                 FXCollections.observableArrayList(
                         RoleType.OWNER,
                         RoleType.MANAGER,
-                        RoleType.EMPLOYEE
+                        RoleType.STAFF,
+                        RoleType.VIEWER
                 )
         );
 
         roleComboBox.setValue(
-                RoleType.EMPLOYEE
+                RoleType.STAFF
         );
 
         idColumn.setCellValueFactory(
@@ -301,7 +302,7 @@ public class UserManagementController {
         passwordField.clear();
         roleComboBox.setDisable(false);
         roleComboBox.setValue(
-                RoleType.EMPLOYEE
+                RoleType.STAFF
         );
         employeeComboBox.setDisable(false);
         employeeComboBox.setValue(null);
@@ -317,7 +318,7 @@ public class UserManagementController {
         passwordField.clear();
         roleComboBox.setDisable(false);
         roleComboBox.setValue(
-                RoleType.EMPLOYEE
+                RoleType.STAFF
         );
         employeeComboBox.setDisable(false);
         employeeComboBox.setValue(null);

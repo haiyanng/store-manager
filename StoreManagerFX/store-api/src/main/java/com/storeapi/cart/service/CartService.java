@@ -6,6 +6,8 @@ import com.storeapi.cart.dto.QuantityRequest;
 import com.storeapi.cart.repository.CartRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class CartService {
     private final CartRepository carts;
@@ -21,6 +23,14 @@ public class CartService {
     public CartDto add(Long customerId, CartItemRequest request) {
         carts.addItem(customerId, request.productId(), request.quantity());
         return carts.cart(customerId);
+    }
+
+    public List<String> inactiveProductNames(Long customerId) {
+        return carts.inactiveProductNames(customerId);
+    }
+
+    public void removeInactiveItems(Long customerId) {
+        carts.removeInactiveItems(customerId);
     }
 
     public CartDto update(Long customerId, Long itemId, QuantityRequest request) {

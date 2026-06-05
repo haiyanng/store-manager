@@ -8,26 +8,38 @@ public final class OnlineOrderStatus {
     public static final String PENDING = "PENDING";
     public static final String CONFIRMED = "CONFIRMED";
     public static final String PREPARING = "PREPARING";
+    public static final String READY = "READY";
     public static final String DELIVERING = "DELIVERING";
     public static final String DELIVERED = "DELIVERED";
+    public static final String COMPLETED = "COMPLETED";
     public static final String CANCELLED = "CANCELLED";
+    public static final String REFUNDED = "REFUNDED";
+    public static final String REJECTED = "REJECTED";
 
     private static final Set<String> KNOWN_STATUSES = Set.of(
             PENDING,
             CONFIRMED,
             PREPARING,
+            READY,
             DELIVERING,
             DELIVERED,
-            CANCELLED
+            COMPLETED,
+            CANCELLED,
+            REFUNDED,
+            REJECTED
     );
 
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS = Map.of(
-            PENDING, Set.of(CONFIRMED, CANCELLED),
-            CONFIRMED, Set.of(PREPARING, CANCELLED),
-            PREPARING, Set.of(DELIVERING, CANCELLED),
+            PENDING, Set.of(CONFIRMED, CANCELLED, REJECTED),
+            CONFIRMED, Set.of(PREPARING, CANCELLED, REJECTED),
+            PREPARING, Set.of(READY, CANCELLED, REJECTED),
+            READY, Set.of(DELIVERING, CANCELLED, REJECTED),
             DELIVERING, Set.of(DELIVERED, CANCELLED),
-            DELIVERED, Set.of(),
-            CANCELLED, Set.of()
+            DELIVERED, Set.of(COMPLETED, REFUNDED),
+            COMPLETED, Set.of(REFUNDED),
+            CANCELLED, Set.of(),
+            REFUNDED, Set.of(),
+            REJECTED, Set.of()
     );
 
     private OnlineOrderStatus() {

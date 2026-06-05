@@ -5,6 +5,7 @@ import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.product.model.Product;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
@@ -22,6 +23,12 @@ public class ProductFormController {
             new ImageStorageService();
 
     private String imagePath;
+
+    @FXML
+    private Button selectImageButton;
+
+    @FXML
+    private Button removeImageButton;
 
     @FXML
     private TextField nameField;
@@ -173,6 +180,21 @@ public class ProductFormController {
         activeCheckBox.setSelected(true);
         imagePath = null;
         imagePreview.setImage(null);
+    }
+
+    public void setBusy(
+            boolean busy
+    ) {
+
+        selectImageButton.setDisable(busy);
+        removeImageButton.setDisable(busy);
+        nameField.setDisable(busy);
+        skuField.setDisable(busy);
+        barcodeField.setDisable(busy);
+        categoryComboBox.setDisable(busy);
+        basePriceField.setDisable(busy);
+        unitField.setDisable(busy);
+        activeCheckBox.setDisable(busy);
     }
 
     private BigDecimal parseBasePrice() {

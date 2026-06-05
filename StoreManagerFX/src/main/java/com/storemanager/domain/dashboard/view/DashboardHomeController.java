@@ -373,6 +373,55 @@ public class DashboardHomeController {
         }
     }
 
+    public void showDataUnavailable() {
+
+        titleLabel.setText("Data unavailable");
+        subtitleLabel.setText("Loading failed");
+        setStatus("Data unavailable");
+
+        renderMetrics(List.of());
+        if (onlineOrderMetricsPane != null) {
+            onlineOrderMetricsPane.getChildren().clear();
+        }
+
+        setLabel(todayHoursLabel);
+        setLabel(monthHoursLabel);
+        setLabel(assignedBranchesLabel);
+        setLabel(latestPayrollLabel);
+        setLabel(branchEmployeeCountLabel);
+        setLabel(checkedInLabel);
+        setLabel(attendanceOverviewLabel);
+        setLabel(inventoryOverviewLabel);
+        setLabel(salesOverviewLabel);
+        setLabel(totalEmployeesLabel);
+        setLabel(activeEmployeesLabel);
+        setLabel(workingEmployeesLabel);
+        setLabel(payrollTotalsLabel);
+        setLabel(revenueTotalsLabel);
+        setLabel(inventoryAlertsLabel);
+
+        attendanceHistoryTable.setItems(FXCollections.observableArrayList());
+        branchSummaryTable.setItems(FXCollections.observableArrayList());
+        locationTable.setItems(FXCollections.observableArrayList());
+        payrollTable.setItems(FXCollections.observableArrayList());
+        cashFlowTable.setItems(FXCollections.observableArrayList());
+        inventoryAlertTable.setItems(FXCollections.observableArrayList());
+        if (onlineOrderTable != null) {
+            onlineOrderTable.setItems(FXCollections.observableArrayList());
+        }
+
+        hideAllSections();
+    }
+
+    private void setLabel(
+            Label label
+    ) {
+
+        if (label != null) {
+            label.setText("Data unavailable");
+        }
+    }
+
     public void setBusy(
             boolean busy
     ) {

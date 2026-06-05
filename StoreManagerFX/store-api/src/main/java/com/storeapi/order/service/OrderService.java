@@ -21,6 +21,22 @@ public class OrderService {
 
     @Transactional
     public OrderDto place(Long customerId, CheckoutRequest request) {
+        java.util.List<String> inactiveProducts =
+                carts.inactiveProductNames(customerId);
+        if (!inactiveProducts.isEmpty()) {
+            carts.removeInactiveItems(customerId);
+            orders.addAuditEvent(
+                    customerId,
+                    "CHECKOUT_FAILED",
+                    false,
+                    "Product is inactive and cannot be checked out.",
+                    "{\"inactive_products\":" + inactiveProducts.size() + "}"
+            );
+            throw new IllegalStateException(
+                    "Product is inactive and cannot be checked out."
+            );
+        }
+
         CartDto cart = carts.cart(customerId);
         if (cart.items().isEmpty()) {
             throw new IllegalStateException("Cart is empty");
@@ -29,6 +45,13 @@ public class OrderService {
         for (CartItemDto item : cart.items()) {
             orders.addItem(orderId, item.productId(), item.productName(), item.quantity(), item.unitPrice(), item.subtotal());
         }
+        orders.addHistory(
+                orderId,
+                "CREATE",
+                "NONE",
+                "PENDING",
+                "Order placed by customer"
+        );
         carts.clear(customerId);
         return orders.find(customerId, orderId).orElseThrow();
     }
@@ -43,9 +66,19 @@ public class OrderService {
 
     @Transactional
     public OrderDto cancel(Long customerId, Long orderId) {
+        OrderDto before =
+                orders.find(customerId, orderId)
+                        .orElseThrow();
         if (!orders.cancel(customerId, orderId)) {
             throw new IllegalStateException("Only pending orders can be cancelled");
         }
+        orders.addHistory(
+                orderId,
+                "CANCEL",
+                before.status(),
+                "CANCELLED",
+                "Cancelled by customer"
+        );
         return orders.find(customerId, orderId).orElseThrow();
     }
 }

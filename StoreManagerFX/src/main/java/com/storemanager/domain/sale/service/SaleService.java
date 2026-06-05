@@ -2,6 +2,7 @@ package com.storemanager.domain.sale.service;
 
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.core.database.ConnectionFactory;
 import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.inventory.model.InventoryItem;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
@@ -20,6 +21,9 @@ import com.storemanager.domain.sale.repository.SaleRepository;
 import com.storemanager.domain.user.model.User;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +83,7 @@ public class SaleService {
         }
 
         Map<Long, Product> productsById =
-                productService.findAll()
+                productService.findAllIncludingInactive()
                         .stream()
                         .collect(
                                 Collectors.toMap(
@@ -181,9 +185,22 @@ public class SaleService {
             List<SaleCartItem> cartItems
     ) {
 
-        validateSaleAccess();
-        validateCart(cartItems);
-        validateStockAvailability(cartItems);
+        try {
+            validateSaleCreateAccess();
+            validateCart(cartItems);
+            validateStockAvailability(cartItems);
+        } catch (RuntimeException e) {
+            auditService.recordEvent(
+                    "SALE",
+                    "SALE_CREATE",
+                    "SALE_ORDER",
+                    null,
+                    false,
+                    rootMessage(e),
+                    "{}"
+            );
+            throw e;
+        }
 
         SaleOrder order =
                 buildOrder(cartItems);
@@ -191,31 +208,35 @@ public class SaleService {
         List<SaleOrderItem> orderItems =
                 buildOrderItems(cartItems);
 
-        Long orderId =
-                saleRepository.saveOrder(
-                        order,
-                        orderItems
-                );
+        Long orderId;
 
-        if (orderId == null) {
-            throw new RuntimeException(
-                    "Cannot create sale order"
+        try {
+            orderId =
+                    persistSaleAndInventoryAtomically(
+                            order,
+                            orderItems
+                    );
+        } catch (RuntimeException e) {
+            auditService.recordEvent(
+                    "SALE",
+                    "SALE_CREATE",
+                    "SALE_ORDER",
+                    null,
+                    false,
+                    rootMessage(e),
+                    "{\"items\":" + orderItems.size() + "}"
             );
+            throw e;
         }
 
-        for (SaleOrderItem item : orderItems) {
-            createInventorySaleTransaction(
-                    orderId,
-                    item
-            );
-        }
-
-        auditService.record(
-                AuditService.ACTION_SALE_FINALIZED,
+        auditService.recordEvent(
+                "SALE",
+                "SALE_CREATE",
                 "SALE_ORDER",
                 orderId,
-                "Sale finalized with " + orderItems.size() + " items",
-                null
+                true,
+                null,
+                "{\"items\":" + orderItems.size() + ",\"total\":\"" + order.getTotalAmount() + "\"}"
         );
 
         notificationService.notifyCurrentUser(
@@ -227,6 +248,92 @@ public class SaleService {
         );
 
         return orderId;
+    }
+
+    private Long persistSaleAndInventoryAtomically(
+            SaleOrder order,
+            List<SaleOrderItem> orderItems
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection()
+        ) {
+            connection.setAutoCommit(false);
+
+            try {
+                validateProductsActive(
+                        connection,
+                        orderItems
+                );
+
+                Long orderId =
+                        saleRepository.saveOrder(
+                                connection,
+                                order,
+                                orderItems
+                        );
+
+                if (orderId == null) {
+                    throw new RuntimeException(
+                            "Cannot create sale order"
+                    );
+                }
+
+                for (SaleOrderItem item : orderItems) {
+                    createInventorySaleTransaction(
+                            connection,
+                            orderId,
+                            item
+                    );
+                }
+
+                connection.commit();
+                return orderId;
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Cannot finalize sale atomically",
+                    e
+            );
+        }
+    }
+
+    private void validateProductsActive(
+            Connection connection,
+            List<SaleOrderItem> orderItems
+    ) throws Exception {
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT active
+                                FROM products
+                                WHERE id = ?
+                                FOR UPDATE
+                                """
+                        )
+        ) {
+            for (SaleOrderItem item : orderItems) {
+                statement.setLong(1, item.getProductId());
+
+                try (
+                        ResultSet resultSet =
+                                statement.executeQuery()
+                ) {
+                    if (!resultSet.next()
+                            || !resultSet.getBoolean("active")) {
+                        throw new RuntimeException(
+                                "Product is inactive and cannot be sold/imported."
+                        );
+                    }
+                }
+            }
+        }
     }
 
     public BigDecimal calculateTotal(
@@ -331,6 +438,42 @@ public class SaleService {
         }
     }
 
+    private void createInventorySaleTransaction(
+            Connection connection,
+            Long orderId,
+            SaleOrderItem item
+    ) {
+
+        InventoryTransaction transaction =
+                new InventoryTransaction();
+
+        transaction.setProductId(
+                item.getProductId()
+        );
+        transaction.setType(
+                InventoryTransactionType.SALE
+        );
+        transaction.setQuantity(
+                item.getQuantity()
+        );
+        transaction.setReason(
+                "Sale order #" + orderId
+        );
+
+        boolean success =
+                inventoryService.adjustStock(
+                        connection,
+                        transaction
+                );
+
+        if (!success) {
+            throw new RuntimeException(
+                    "Cannot reduce inventory for product "
+                            + item.getProductId()
+            );
+        }
+    }
+
     private List<Product> resolveProductsByIds(
             List<Long> productIds
     ) {
@@ -394,14 +537,32 @@ public class SaleService {
 
         if (!PermissionGuard.canViewOrder()) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "SALE_VIEW",
                     "SALE",
                     null,
                     "Sale access denied",
-                    null
+                    null,
+                    "OWNER/MANAGER/STAFF"
             );
             throw new RuntimeException(
                     "Sale access denied"
+            );
+        }
+    }
+
+    private void validateSaleCreateAccess() {
+
+        if (!PermissionGuard.canCreateSale()) {
+            auditService.recordPermissionDenied(
+                    "SALE_CREATE",
+                    "SALE",
+                    null,
+                    "Sale creation denied",
+                    null,
+                    "OWNER/MANAGER/STAFF"
+            );
+            throw new RuntimeException(
+                    "Current user cannot create sales"
             );
         }
     }
@@ -421,6 +582,12 @@ public class SaleService {
                     || cartItem.getProduct().getId() == null) {
                 throw new RuntimeException(
                         "Product is required"
+                );
+            }
+
+            if (!cartItem.getProduct().isActive()) {
+                throw new RuntimeException(
+                        "Product is inactive and cannot be sold/imported."
                 );
             }
 
@@ -464,5 +631,20 @@ public class SaleService {
                 );
             }
         }
+    }
+
+    private String rootMessage(
+            Throwable throwable
+    ) {
+
+        Throwable current =
+                throwable;
+
+        while (current.getCause() != null) {
+            current =
+                    current.getCause();
+        }
+
+        return current.getMessage();
     }
 }

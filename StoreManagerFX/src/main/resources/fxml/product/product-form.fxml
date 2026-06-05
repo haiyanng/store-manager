@@ -22,11 +22,13 @@
                    smooth="true"/>
 
         <VBox spacing="8">
-            <Button text="Select Image"
+            <Button fx:id="selectImageButton"
+                    text="Select Image"
                     onAction="#onSelectImage"
                     styleClass="module-secondary-button"/>
 
-            <Button text="Remove Image"
+            <Button fx:id="removeImageButton"
+                    text="Remove Image"
                     onAction="#onRemoveImage"
                     styleClass="module-secondary-button"/>
         </VBox>

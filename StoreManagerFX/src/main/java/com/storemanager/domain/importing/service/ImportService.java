@@ -2,6 +2,7 @@ package com.storemanager.domain.importing.service;
 
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
+import com.storemanager.core.database.ConnectionFactory;
 import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.importing.model.ImportCartItem;
 import com.storemanager.domain.importing.model.ImportItem;
@@ -17,6 +18,9 @@ import com.storemanager.domain.product.service.ProductService;
 import com.storemanager.domain.user.model.User;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,8 +101,21 @@ public class ImportService {
             List<ImportCartItem> cartItems
     ) {
 
-        validateImportAccess();
-        validateImport(supplierName, cartItems);
+        try {
+            validateImportAccess();
+            validateImport(supplierName, cartItems);
+        } catch (RuntimeException e) {
+            auditService.recordEvent(
+                    "IMPORT",
+                    "IMPORT_CREATE",
+                    "IMPORT_RECEIPT",
+                    null,
+                    false,
+                    rootMessage(e),
+                    "{\"supplier\":\"" + escape(supplierName) + "\"}"
+            );
+            throw e;
+        }
 
         ImportReceipt receipt =
                 buildReceipt(
@@ -109,31 +126,35 @@ public class ImportService {
         List<ImportItem> importItems =
                 buildImportItems(cartItems);
 
-        Long receiptId =
-                importRepository.saveReceipt(
-                        receipt,
-                        importItems
-                );
+        Long receiptId;
 
-        if (receiptId == null) {
-            throw new RuntimeException(
-                    "Cannot create import receipt"
+        try {
+            receiptId =
+                    persistImportAndInventoryAtomically(
+                            receipt,
+                            importItems
+                    );
+        } catch (RuntimeException e) {
+            auditService.recordEvent(
+                    "IMPORT",
+                    "IMPORT_CREATE",
+                    "IMPORT_RECEIPT",
+                    null,
+                    false,
+                    rootMessage(e),
+                    "{\"items\":" + importItems.size() + "}"
             );
+            throw e;
         }
 
-        for (ImportItem item : importItems) {
-            createInventoryImportTransaction(
-                    receiptId,
-                    item
-            );
-        }
-
-        auditService.record(
-                AuditService.ACTION_IMPORT_FINALIZED,
+        auditService.recordEvent(
+                "IMPORT",
+                "IMPORT_CREATE",
                 "IMPORT_RECEIPT",
                 receiptId,
-                "Import finalized for supplier " + receipt.getSupplierName(),
-                null
+                true,
+                null,
+                "{\"supplier\":\"" + escape(receipt.getSupplierName()) + "\",\"items\":" + importItems.size() + "}"
         );
 
         notificationService.notifyCurrentUser(
@@ -145,6 +166,92 @@ public class ImportService {
         );
 
         return receiptId;
+    }
+
+    private Long persistImportAndInventoryAtomically(
+            ImportReceipt receipt,
+            List<ImportItem> importItems
+    ) {
+
+        try (
+                Connection connection =
+                        ConnectionFactory.getConnection()
+        ) {
+            connection.setAutoCommit(false);
+
+            try {
+                validateProductsActive(
+                        connection,
+                        importItems
+                );
+
+                Long receiptId =
+                        importRepository.saveReceipt(
+                                connection,
+                                receipt,
+                                importItems
+                        );
+
+                if (receiptId == null) {
+                    throw new RuntimeException(
+                            "Cannot create import receipt"
+                    );
+                }
+
+                for (ImportItem item : importItems) {
+                    createInventoryImportTransaction(
+                            connection,
+                            receiptId,
+                            item
+                    );
+                }
+
+                connection.commit();
+                return receiptId;
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Cannot finalize import atomically",
+                    e
+            );
+        }
+    }
+
+    private void validateProductsActive(
+            Connection connection,
+            List<ImportItem> importItems
+    ) throws Exception {
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT active
+                                FROM products
+                                WHERE id = ?
+                                FOR UPDATE
+                                """
+                        )
+        ) {
+            for (ImportItem item : importItems) {
+                statement.setLong(1, item.getProductId());
+
+                try (
+                        ResultSet resultSet =
+                                statement.executeQuery()
+                ) {
+                    if (!resultSet.next()
+                            || !resultSet.getBoolean("active")) {
+                        throw new RuntimeException(
+                                "Product is inactive and cannot be sold/imported."
+                        );
+                    }
+                }
+            }
+        }
     }
 
     public BigDecimal calculateTotal(
@@ -252,18 +359,55 @@ public class ImportService {
         }
     }
 
+    private void createInventoryImportTransaction(
+            Connection connection,
+            Long receiptId,
+            ImportItem item
+    ) {
+
+        InventoryTransaction transaction =
+                new InventoryTransaction();
+
+        transaction.setProductId(
+                item.getProductId()
+        );
+        transaction.setType(
+                InventoryTransactionType.IMPORT
+        );
+        transaction.setQuantity(
+                item.getQuantity()
+        );
+        transaction.setReason(
+                "Import receipt #" + receiptId
+        );
+
+        boolean success =
+                inventoryService.adjustStock(
+                        connection,
+                        transaction
+                );
+
+        if (!success) {
+            throw new RuntimeException(
+                    "Cannot increase inventory for product "
+                            + item.getProductId()
+            );
+        }
+    }
+
     private void validateImportAccess() {
 
-        if (!PermissionGuard.canViewInventory()) {
+        if (!PermissionGuard.canAdjustInventory()) {
             auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
+                    "IMPORT_CREATE",
                     "IMPORT",
                     null,
                     "Import access denied",
-                    null
+                    null,
+                    "OWNER/MANAGER"
             );
             throw new RuntimeException(
-                    "Import access denied"
+                    "Current user cannot import inventory"
             );
         }
     }
@@ -290,6 +434,12 @@ public class ImportService {
                     || cartItem.getProduct().getId() == null) {
                 throw new RuntimeException(
                         "Product is required"
+                );
+            }
+
+            if (!cartItem.getProduct().isActive()) {
+                throw new RuntimeException(
+                        "Product is inactive and cannot be sold/imported."
                 );
             }
 
@@ -337,5 +487,32 @@ public class ImportService {
         }
 
         return products;
+    }
+
+    private String rootMessage(
+            Throwable throwable
+    ) {
+
+        Throwable current =
+                throwable;
+
+        while (current.getCause() != null) {
+            current =
+                    current.getCause();
+        }
+
+        return current.getMessage();
+    }
+
+    private String escape(
+            String value
+    ) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

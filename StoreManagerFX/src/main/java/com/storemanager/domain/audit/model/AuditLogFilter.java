@@ -8,6 +8,10 @@ public class AuditLogFilter {
 
     private String entityType;
 
+    private String module;
+
+    private Boolean success;
+
     private Long userId;
 
     private LocalDate fromDate;
@@ -31,6 +35,22 @@ public class AuditLogFilter {
 
     public void setEntityType(String entityType) {
         this.entityType = entityType;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public void setModule(String module) {
+        this.module = module;
+    }
+
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Boolean success) {
+        this.success = success;
     }
 
     public Long getUserId() {

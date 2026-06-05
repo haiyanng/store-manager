@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.SplitPane?>
@@ -47,6 +48,7 @@
                 </HBox>
 
                 <TableView fx:id="orderTable"
+                           styleClass="analytics-table"
                            prefHeight="720"
                            minWidth="330"
                            maxWidth="Infinity"
@@ -90,8 +92,9 @@
                                     left="24"/>
                         </padding>
 
-                        <VBox spacing="4">
-                            <Label text="Order"
+                        <VBox spacing="8"
+                              styleClass="detail-section">
+                            <Label text="Order Information"
                                    styleClass="analytics-card-title"/>
                             <Label fx:id="orderIdValueLabel"
                                    text="-"
@@ -107,8 +110,9 @@
                                    styleClass="analytics-card-detail"/>
                         </VBox>
 
-                        <VBox spacing="4">
-                            <Label text="Customer"
+                        <VBox spacing="8"
+                              styleClass="detail-section">
+                            <Label text="Customer Information"
                                    styleClass="analytics-card-title"/>
                             <Label fx:id="customerFullNameValueLabel"
                                    text="-"
@@ -118,8 +122,9 @@
                                    styleClass="analytics-card-detail"/>
                         </VBox>
 
-                        <VBox spacing="4">
-                            <Label text="Shipping"
+                        <VBox spacing="8"
+                              styleClass="detail-section">
+                            <Label text="Shipping Information"
                                    styleClass="analytics-card-title"/>
                             <Label fx:id="recipientNameValueLabel"
                                    text="-"
@@ -136,39 +141,105 @@
                                    styleClass="analytics-card-detail"/>
                         </VBox>
 
-                        <VBox spacing="8">
-                            <Label text="Workflow"
+                        <VBox spacing="10"
+                              styleClass="detail-section">
+                            <Label text="Workflow Actions"
                                    styleClass="analytics-card-title"/>
 
-                            <HBox spacing="10">
+                            <FlowPane hgap="10"
+                                      vgap="10"
+                                      prefWrapLength="760">
                                 <Button fx:id="confirmButton"
-                                        text="Confirm"
-                                        styleClass="module-button"
+                                        text="Confirm Order"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
                                         onAction="#onConfirm"/>
                                 <Button fx:id="preparingButton"
-                                        text="Preparing"
-                                        styleClass="module-button"
+                                        text="Prepare Order"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
                                         onAction="#onPreparing"/>
+                                <Button fx:id="readyButton"
+                                        text="Approve Order"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
+                                        onAction="#onReady"/>
                                 <Button fx:id="deliveringButton"
                                         text="Delivering"
-                                        styleClass="module-button"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
                                         onAction="#onDelivering"/>
                                 <Button fx:id="deliveredButton"
                                         text="Delivered"
-                                        styleClass="module-button"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
                                         onAction="#onDelivered"/>
+                                <Button fx:id="completedButton"
+                                        text="Complete"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
+                                        onAction="#onCompleted"/>
+                                <Button fx:id="refundButton"
+                                        text="Refund"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
+                                        onAction="#onRefund"/>
+                                <Button fx:id="rejectButton"
+                                        text="Reject"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
+                                        onAction="#onReject"/>
                                 <Button fx:id="cancelButton"
                                         text="Cancel"
-                                        styleClass="module-button"
+                                        wrapText="true"
+                                        textAlignment="CENTER"
+                                        minHeight="48"
+                                        minWidth="112"
+                                        prefWidth="124"
+                                        styleClass="workflow-action-button"
                                         onAction="#onCancel"/>
-                            </HBox>
+                            </FlowPane>
                         </VBox>
 
-                        <VBox spacing="8">
-                            <Label text="Items"
+                        <VBox spacing="10"
+                              styleClass="detail-section">
+                            <Label text="Order Items"
                                    styleClass="analytics-card-title"/>
 
                             <TableView fx:id="itemTable"
+                                       styleClass="analytics-table"
                                        prefHeight="420"
                                        minWidth="600"
                                        maxWidth="Infinity"
@@ -186,6 +257,34 @@
                                     <TableColumn fx:id="itemSubtotalColumn"
                                                  text="Subtotal"
                                                  prefWidth="120"/>
+                                </columns>
+                            </TableView>
+                        </VBox>
+
+                        <VBox spacing="10"
+                              styleClass="detail-section">
+                            <Label text="Order History"
+                                   styleClass="analytics-card-title"/>
+
+                            <TableView fx:id="historyTable"
+                                       styleClass="analytics-table"
+                                       prefHeight="220"
+                                       minWidth="600"
+                                       maxWidth="Infinity"
+                                       VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="historyTimeColumn"
+                                                 text="Time"
+                                                 prefWidth="150"/>
+                                    <TableColumn fx:id="historyActionColumn"
+                                                 text="Action"
+                                                 prefWidth="100"/>
+                                    <TableColumn fx:id="historyStatusColumn"
+                                                 text="Status"
+                                                 prefWidth="180"/>
+                                    <TableColumn fx:id="historyNoteColumn"
+                                                 text="Note"
+                                                 prefWidth="280"/>
                                 </columns>
                             </TableView>
                         </VBox>

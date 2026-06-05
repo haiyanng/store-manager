@@ -9,6 +9,8 @@ public class OnlineOrderDetail {
 
     private List<OnlineOrderItem> items = new ArrayList<>();
 
+    private List<OnlineOrderHistoryEntry> history = new ArrayList<>();
+
     public OnlineOrderDetail() {
     }
 
@@ -26,5 +28,13 @@ public class OnlineOrderDetail {
 
     public void setItems(List<OnlineOrderItem> items) {
         this.items = items == null ? new ArrayList<>() : new ArrayList<>(items);
+    }
+
+    public List<OnlineOrderHistoryEntry> getHistory() {
+        return history;
+    }
+
+    public void setHistory(List<OnlineOrderHistoryEntry> history) {
+        this.history = history == null ? new ArrayList<>() : new ArrayList<>(history);
     }
 }

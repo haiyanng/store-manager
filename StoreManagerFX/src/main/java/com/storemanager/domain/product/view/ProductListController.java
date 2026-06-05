@@ -1,6 +1,7 @@
 package com.storemanager.domain.product.view;
 
 import com.storemanager.domain.category.model.Category;
+import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.presenter.ProductPresenter;
 import javafx.beans.property.SimpleStringProperty;
@@ -47,6 +48,9 @@ public class ProductListController {
 
     @FXML
     private TableColumn<Product, Boolean> activeColumn;
+
+    @FXML
+    private Button createButton;
 
     @FXML
     private Button updateButton;
@@ -192,14 +196,18 @@ public class ProductListController {
             boolean enabled
     ) {
 
-        updateButton.setDisable(!enabled);
+        updateButton.setDisable(
+                !enabled || !PermissionGuard.canModifyProduct()
+        );
     }
 
     public void setDeleteEnabled(
             boolean enabled
     ) {
 
-        deleteButton.setDisable(!enabled);
+        deleteButton.setDisable(
+                !enabled || !PermissionGuard.canModifyProduct()
+        );
     }
 
     public void setBusy(
@@ -207,6 +215,10 @@ public class ProductListController {
     ) {
 
         productTable.setDisable(busy);
+        boolean canModify =
+                PermissionGuard.canModifyProduct();
+        createButton.setDisable(busy || !canModify);
+        productFormController.setBusy(busy || !canModify);
     }
 
     public void setStatus(

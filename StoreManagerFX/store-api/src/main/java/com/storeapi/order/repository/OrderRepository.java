@@ -2,6 +2,7 @@ package com.storeapi.order.repository;
 
 import com.storeapi.order.dto.CheckoutRequest;
 import com.storeapi.order.dto.OrderDto;
+import com.storeapi.order.dto.OrderHistoryDto;
 import com.storeapi.order.dto.OrderItemDto;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -58,7 +59,7 @@ public class OrderRepository {
                 .query((rs, rowNum) -> new OrderDto(rs.getLong("id"), rs.getString("status"),
                         rs.getBigDecimal("total_amount"), rs.getString("recipient_name"), rs.getString("phone"),
                         rs.getString("shipping_address"), rs.getString("payment_method"),
-                        toLocal(rs.getTimestamp("created_at")), List.of()))
+                        toLocal(rs.getTimestamp("created_at")), List.of(), List.of()))
                 .list();
     }
 
@@ -69,7 +70,7 @@ public class OrderRepository {
                 .query((rs, rowNum) -> new OrderDto(rs.getLong("id"), rs.getString("status"),
                         rs.getBigDecimal("total_amount"), rs.getString("recipient_name"), rs.getString("phone"),
                         rs.getString("shipping_address"), rs.getString("payment_method"),
-                        toLocal(rs.getTimestamp("created_at")), items(orderId)))
+                        toLocal(rs.getTimestamp("created_at")), items(orderId), history(orderId)))
                 .optional();
     }
 
@@ -84,12 +85,81 @@ public class OrderRepository {
                 .update() > 0;
     }
 
+    public void addHistory(Long orderId, String action, String oldStatus, String newStatus, String note) {
+        jdbc.sql("""
+                INSERT INTO online_order_status_history (order_id, action, old_status, new_status, note)
+                VALUES (:orderId, :action, :oldStatus, :newStatus, :note)
+                """)
+                .param("orderId", orderId)
+                .param("action", action)
+                .param("oldStatus", oldStatus)
+                .param("newStatus", newStatus)
+                .param("note", note)
+                .update();
+    }
+
+    public void addAuditEvent(Long customerId, String action, boolean success, String reason, String detailsJson) {
+        jdbc.sql("""
+                INSERT INTO audit_logs (
+                    user_id,
+                    actor_username,
+                    module,
+                    action,
+                    entity_type,
+                    entity_id,
+                    success,
+                    reason,
+                    details_json,
+                    details,
+                    created_at
+                )
+                SELECT :customerId,
+                       COALESCE(c.email, CONCAT('Customer #', :customerId)),
+                       'ONLINE_ORDER',
+                       :action,
+                       'ONLINE_ORDER',
+                       NULL,
+                       :success,
+                       :reason,
+                       :detailsJson,
+                       :detailsJson,
+                       CURRENT_TIMESTAMP
+                FROM customers c
+                WHERE c.id = :customerId
+                """)
+                .param("customerId", customerId)
+                .param("action", action)
+                .param("success", success)
+                .param("reason", reason)
+                .param("detailsJson", detailsJson)
+                .update();
+    }
+
     private List<OrderItemDto> items(Long orderId) {
         return jdbc.sql("SELECT * FROM order_items WHERE order_id = :orderId ORDER BY id")
                 .param("orderId", orderId)
                 .query((rs, rowNum) -> new OrderItemDto(rs.getLong("id"), rs.getLong("product_id"),
                         rs.getString("product_name"), rs.getInt("quantity"), rs.getBigDecimal("unit_price"),
                         rs.getBigDecimal("subtotal")))
+                .list();
+    }
+
+    private List<OrderHistoryDto> history(Long orderId) {
+        return jdbc.sql("""
+                SELECT *
+                FROM online_order_status_history
+                WHERE order_id = :orderId
+                ORDER BY created_at, id
+                """)
+                .param("orderId", orderId)
+                .query((rs, rowNum) -> new OrderHistoryDto(
+                        rs.getLong("id"),
+                        rs.getString("action"),
+                        rs.getString("old_status"),
+                        rs.getString("new_status"),
+                        rs.getString("note"),
+                        toLocal(rs.getTimestamp("created_at"))
+                ))
                 .list();
     }
 

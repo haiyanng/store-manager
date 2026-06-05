@@ -26,12 +26,14 @@
                     source="inventory-adjustment-form.fxml"/>
 
         <VBox spacing="10">
-            <Button text="Apply"
+            <Button fx:id="applyButton"
+                    text="Apply"
                     styleClass="module-button"
                     maxWidth="Infinity"
                     onAction="#onApplyAdjustment"/>
 
-            <Button text="Clear"
+            <Button fx:id="clearButton"
+                    text="Clear"
                     styleClass="module-button"
                     maxWidth="Infinity"
                     onAction="#onClear"/>
