@@ -11,7 +11,11 @@ require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../repositories/RoleRepository.php';
 require_once __DIR__ . '/../repositories/UserRepository.php';
 require_once __DIR__ . '/../services/AuthService.php';
+require_once __DIR__ . '/../services/RoleManagementService.php';
+require_once __DIR__ . '/../services/UserManagementService.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/RoleController.php';
+require_once __DIR__ . '/../controllers/UserController.php';
 
 spl_autoload_register(static function (string $class): void {
     $baseDir = dirname(__DIR__);
@@ -55,7 +59,7 @@ if (is_string($origin) && in_array($origin, $allowedOrigins, true)) {
     header('Vary: Origin');
 }
 
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json; charset=utf-8');
@@ -70,11 +74,14 @@ try {
     $roleRepository = new RoleRepository($pdo);
     $userRepository = new UserRepository($pdo);
     $authService = new AuthService($userRepository, $roleRepository);
+    $authGuard = new AuthGuard($authService);
     $authController = new AuthController($authService);
+    $roleController = new RoleController(new RoleManagementService($roleRepository), $authGuard);
+    $userController = new UserController(new UserManagementService($userRepository, $roleRepository), $authGuard);
 
     $request = Request::fromGlobals();
     $dispatch = require __DIR__ . '/../routes/api.php';
-    $dispatch($request, $authController);
+    $dispatch($request, $authController, $roleController, $userController);
 } catch (Throwable $exception) {
     customer_web_api_log($exception);
     Response::error('Internal server error.', 500);
