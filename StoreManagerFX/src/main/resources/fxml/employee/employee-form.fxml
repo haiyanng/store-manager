@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.employee.view.EmployeeFormController"
+      spacing="24" alignment="TOP_LEFT" maxWidth="Infinity">
+
+    <VBox spacing="10" alignment="CENTER" minWidth="160" prefWidth="160" maxWidth="160">
+        <StackPane minWidth="128" prefWidth="128" maxWidth="128"
+                   minHeight="128" prefHeight="128" maxHeight="128"
+                   styleClass="record-image-frame">
+            <ImageView fx:id="imagePreview" fitWidth="120" fitHeight="120"
+                       preserveRatio="true" smooth="true"/>
+        </StackPane>
+        <VBox spacing="6" alignment="CENTER" maxWidth="140">
+            <Button text="Select Image" onAction="#onSelectImage"
+                    maxWidth="Infinity" styleClass="module-secondary-button"/>
+            <Button text="Remove Image" onAction="#onRemoveImage"
+                    maxWidth="Infinity" styleClass="module-secondary-button"/>
+        </VBox>
+    </VBox>
+
+    <GridPane hgap="20" vgap="14" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" minWidth="0"/>
+            <ColumnConstraints percentWidth="50" hgrow="ALWAYS" minWidth="0"/>
+        </columnConstraints>
+        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="1">
+            <Label text="Full name" styleClass="record-field-label"/>
+            <TextField fx:id="fullNameField" promptText="Full name" minWidth="0"
+                       maxWidth="Infinity" styleClass="module-input"/>
+        </VBox>
+        <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.columnSpan="1">
+            <Label text="Phone" styleClass="record-field-label"/>
+            <TextField fx:id="phoneField" promptText="Phone" minWidth="0"
+                       maxWidth="Infinity" styleClass="module-input"/>
+        </VBox>
+        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="1">
+            <Label text="Position" styleClass="record-field-label"/>
+            <TextField fx:id="positionField" promptText="Position" minWidth="0"
+                       maxWidth="Infinity" styleClass="module-input"/>
+        </VBox>
+        <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
+            <Label text="Status" styleClass="record-field-label"/>
+            <CheckBox fx:id="activeCheckBox" text="Active" minHeight="40"/>
+        </VBox>
+        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2">
+            <Label text="Address" styleClass="record-field-label"/>
+            <TextField fx:id="addressField" promptText="Address" minWidth="0"
+                       maxWidth="Infinity" styleClass="module-input"/>
+        </VBox>
+    </GridPane>
+</HBox>

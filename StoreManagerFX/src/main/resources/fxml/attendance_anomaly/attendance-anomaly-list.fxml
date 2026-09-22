@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyListController"
+      spacing="18">
+
+    <VBox spacing="6">
+        <Label text="Attendance Anomalies"
+               styleClass="content-title"/>
+
+        <Label text="Review unusual attendance records and resolve them with audit support."
+               styleClass="content-description"/>
+    </VBox>
+
+    <VBox spacing="10">
+        <HBox spacing="10">
+            <ComboBox fx:id="statusFilterComboBox" prefWidth="150"/>
+            <ComboBox fx:id="typeFilterComboBox" prefWidth="170"/>
+            <ComboBox fx:id="severityFilterComboBox" prefWidth="150"/>
+            <ComboBox fx:id="employeeFilterComboBox" prefWidth="210"/>
+            <ComboBox fx:id="branchFilterComboBox" prefWidth="180"/>
+        </HBox>
+
+        <HBox spacing="10">
+            <DatePicker fx:id="fromDatePicker" promptText="From"/>
+            <DatePicker fx:id="toDatePicker" promptText="To"/>
+            <Button fx:id="applyFilterButton" text="Apply" onAction="#onApplyFilters"/>
+            <Button fx:id="clearFilterButton" text="Clear" onAction="#onClearFilters"/>
+            <Button fx:id="refreshButton" text="Refresh" onAction="#onRefresh"/>
+        </HBox>
+    </VBox>
+
+    <HBox spacing="16" fillHeight="true">
+        <TableView fx:id="anomalyTable"
+                   prefHeight="560"
+                   prefWidth="920"
+                   VBox.vgrow="ALWAYS"
+                   HBox.hgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="anomalyIdColumn" text="ID" prefWidth="70"/>
+                <TableColumn fx:id="anomalyEmployeeColumn" text="Employee" prefWidth="190"/>
+                <TableColumn fx:id="anomalyBranchColumn" text="Branch" prefWidth="160"/>
+                <TableColumn fx:id="anomalyTypeColumn" text="Type" prefWidth="160"/>
+                <TableColumn fx:id="anomalySeverityColumn" text="Severity" prefWidth="90"/>
+                <TableColumn fx:id="anomalyStatusColumn" text="Status" prefWidth="120"/>
+                <TableColumn fx:id="anomalyCreatedAtColumn" text="Created at" prefWidth="170"/>
+                <TableColumn fx:id="anomalyMessageColumn" text="Message" prefWidth="340"/>
+            </columns>
+        </TableView>
+
+        <VBox spacing="12"
+              prefWidth="460"
+              VBox.vgrow="ALWAYS">
+
+            <fx:include fx:id="anomalyForm"
+                        source="attendance-anomaly-form.fxml"/>
+
+            <VBox fx:id="managerActionsBox" spacing="8">
+                <Button fx:id="submitReportButton"
+                        text="Submit Report"
+                        styleClass="module-button"
+                        maxWidth="Infinity"
+                        onAction="#onSubmitReport"/>
+            </VBox>
+
+            <VBox fx:id="adminActionsBox" spacing="8">
+                <Button fx:id="resolveButton"
+                        text="Resolve"
+                        styleClass="module-button"
+                        maxWidth="Infinity"
+                        onAction="#onResolve"/>
+
+                <Button fx:id="dismissButton"
+                        text="Dismiss"
+                        styleClass="module-button"
+                        maxWidth="Infinity"
+                        onAction="#onDismiss"/>
+
+                <Button fx:id="saveAttendanceButton"
+                        text="Save Attendance Edits"
+                        styleClass="module-button"
+                        maxWidth="Infinity"
+                        onAction="#onSaveAttendanceEdits"/>
+
+                <Button fx:id="updateNotificationButton"
+                        text="Update Employee Notification"
+                        styleClass="module-button"
+                        maxWidth="Infinity"
+                        onAction="#onUpdateEmployeeNotification"/>
+            </VBox>
+        </VBox>
+    </HBox>
+
+    <Label fx:id="statusLabel"
+           text="Ready"
+           styleClass="content-description"/>
+
+    <padding>
+        <Insets top="0"
+                right="0"
+                bottom="0"
+                left="0"/>
+    </padding>
+</VBox>

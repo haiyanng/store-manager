@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.storemanager.domain.dashboard.view.DashboardShellController"
+            styleClass="app-shell"
+            prefWidth="1400"
+            prefHeight="900">
+
+    <stylesheets>
+        <URL value="@dashboard-shell.css"/>
+        <URL value="@../../css/typography.css"/>
+    </stylesheets>
+
+    <top>
+        <HBox alignment="CENTER"
+              spacing="16"
+              styleClass="topbar">
+            <padding>
+                <Insets top="18"
+                        right="28"
+                        bottom="14"
+                        left="28"/>
+            </padding>
+
+            <VBox spacing="3">
+                <Label text="Dashboard"
+                       styleClass="topbar-title"/>
+
+                <Label text="Operational workspace"
+                       styleClass="topbar-subtitle"/>
+            </VBox>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <HBox spacing="10"
+                  alignment="CENTER_RIGHT"
+                  styleClass="topbar-actions">
+                <StackPane styleClass="badge-stack">
+                    <Button fx:id="notificationButton"
+                            text="Notifications"
+                            styleClass="utility-button"
+                            onAction="#onNotifications"/>
+                    <Label fx:id="notificationBadgeLabel"
+                           text="0"
+                           visible="false"
+                           managed="false"
+                           styleClass="badge-label"
+                           StackPane.alignment="TOP_RIGHT"/>
+                </StackPane>
+
+                <StackPane styleClass="badge-stack">
+                    <Button fx:id="messageButton"
+                            text="Messages"
+                            styleClass="utility-button"
+                            onAction="#onMessages"/>
+                    <Label fx:id="messageBadgeLabel"
+                           text="0"
+                           visible="false"
+                           managed="false"
+                           styleClass="badge-label"
+                           StackPane.alignment="TOP_RIGHT"/>
+                </StackPane>
+            </HBox>
+
+            <VBox alignment="CENTER_RIGHT"
+                  spacing="3">
+                <Label text="Signed in"
+                       styleClass="meta-label"/>
+
+                <Label fx:id="usernameLabel"
+                       text="Username"
+                       styleClass="meta-value"/>
+            </VBox>
+
+            <VBox alignment="CENTER_RIGHT"
+                  spacing="3">
+                <Label text="Role"
+                       styleClass="meta-label"/>
+
+                <Label fx:id="roleLabel"
+                       text="Role"
+                       styleClass="meta-value"/>
+            </VBox>
+
+            <VBox alignment="CENTER_RIGHT"
+                  spacing="3">
+                <Label text="Branch"
+                       styleClass="meta-label"/>
+
+                <Label fx:id="activeBranchLabel"
+                       text="🏢 Branch: Unassigned"
+                       styleClass="meta-value"/>
+            </VBox>
+
+            <ComboBox fx:id="activeBranchComboBox"
+                      prefWidth="220"
+                      maxWidth="220"
+                      styleClass="branch-selector"
+                      onAction="#onBranchSelected"/>
+        </HBox>
+    </top>
+
+    <left>
+        <ScrollPane fitToWidth="true"
+                    fitToHeight="false"
+                    hbarPolicy="NEVER"
+                    vbarPolicy="AS_NEEDED"
+                    styleClass="sidebar-scroll-pane">
+            <BorderPane.margin>
+                <Insets top="22"
+                        right="0"
+                        bottom="22"
+                        left="22"/>
+            </BorderPane.margin>
+
+            <content>
+                <VBox spacing="8"
+                      prefWidth="220"
+                      minWidth="220"
+                      maxWidth="220"
+                      styleClass="sidebar">
+                    <padding>
+                        <Insets top="24"
+                                right="16"
+                                bottom="24"
+                                left="16"/>
+                    </padding>
+
+                    <Label text="Store Manager"
+                           styleClass="sidebar-title"/>
+
+                    <Label text="CONTROL PANEL"
+                           styleClass="sidebar-kicker"/>
+
+                    <VBox fx:id="sidebarMenuBox"
+                          spacing="8"/>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <Button text="Logout"
+                            styleClass="logout-button"
+                            maxWidth="Infinity"
+                            onAction="#onLogout"/>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </left>
+
+    <center>
+        <ScrollPane fitToWidth="true"
+                    fitToHeight="false"
+                    hbarPolicy="NEVER"
+                    vbarPolicy="AS_NEEDED"
+                    styleClass="content-scroll-pane">
+            <BorderPane.margin>
+                <Insets top="22"
+                        right="22"
+                        bottom="22"
+                        left="22"/>
+            </BorderPane.margin>
+
+            <content>
+                <StackPane fx:id="contentArea"
+                           minHeight="520"
+                           styleClass="content-area text-primary">
+                    <padding>
+                        <Insets top="36"
+                                right="38"
+                                bottom="36"
+                                left="38"/>
+                    </padding>
+                </StackPane>
+            </content>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

@@ -1,0 +1,683 @@
+.shop-view {
+    -fx-background-color: #F4F7FB;
+    -fx-font-family: "Avenir Next", "Segoe UI", "System";
+}
+
+.shop-shell {
+    -fx-background-color: transparent;
+}
+
+.shop-header-shell {
+    -fx-background-color: linear-gradient(to right, #071323, #0B1E35);
+    -fx-border-color: #17304F;
+    -fx-border-width: 0 0 1 0;
+}
+
+.shop-header {
+    -fx-background-color: transparent;
+    -fx-padding: 16 24 12 24;
+    -fx-spacing: 24;
+    -fx-min-height: 80;
+}
+
+.shop-brand-block {
+    -fx-spacing: 3;
+    -fx-min-width: 250;
+}
+
+.shop-header .shop-brand-title,
+.shop-brand-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 21;
+    -fx-font-weight: 900;
+}
+
+.shop-brand-subtitle {
+    -fx-text-fill: #C7D2E5;
+    -fx-font-size: 12;
+}
+
+.shop-search-control {
+    -fx-spacing: 0;
+    -fx-alignment: center-left;
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: rgba(255, 255, 255, 0.55);
+    -fx-border-width: 1;
+    -fx-padding: 0;
+    -fx-min-height: 48;
+    -fx-max-height: 48;
+    -fx-effect: dropshadow(gaussian, rgba(0, 10, 30, 0.18), 16, 0.14, 0, 4);
+}
+
+.shop-search-control > .text-field {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-radius: 16 0 0 16;
+    -fx-border-radius: 16 0 0 16;
+    -fx-pref-height: 48;
+    -fx-min-height: 48;
+    -fx-max-height: 48;
+    -fx-padding: 8 16;
+    -fx-text-fill: #132033;
+    -fx-prompt-text-fill: #8B95A7;
+    -fx-font-size: 14;
+}
+
+.shop-search-control > .text-field:focused {
+    -fx-background-color: #F8FBFF;
+}
+
+.shop-search-control > .button,
+.shop-search-button {
+    -fx-background-color: #0877F2;
+    -fx-border-color: #0877F2;
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 0 16 16 0;
+    -fx-border-radius: 0 16 16 0;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 8 16;
+    -fx-min-height: 48;
+    -fx-max-height: 48;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+}
+
+.shop-search-control > .button:hover,
+.shop-search-button:hover {
+    -fx-background-color: #0068DE;
+}
+
+.shop-header-icon {
+    -fx-icon-color: #FFFFFF;
+}
+
+.shop-user-chip,
+.shop-cart-chip {
+    -fx-background-color: transparent;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: transparent;
+    -fx-padding: 8 10;
+}
+
+.shop-chip {
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+}
+
+.shop-header .shop-user-label,
+.shop-user-label {
+    -fx-text-fill: #D7E0EE;
+    -fx-font-size: 12;
+}
+
+.shop-header .shop-user-name,
+.shop-user-name {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13;
+    -fx-font-weight: 700;
+}
+
+.shop-header .shop-cart-label,
+.shop-cart-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13;
+    -fx-font-weight: 700;
+}
+
+.shop-cart-badge {
+    -fx-background-color: #FFD22E;
+    -fx-text-fill: #0E1726;
+    -fx-font-weight: 900;
+    -fx-background-radius: 999;
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-alignment: center;
+    -fx-padding: 4 10;
+}
+
+.shop-header .shop-logout-button {
+    -fx-background-color: #FFA51F;
+    -fx-border-color: #FFA51F;
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 12 24;
+    -fx-min-height: 48;
+    -fx-min-width: 118;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+}
+
+.shop-header .shop-logout-button:hover {
+    -fx-background-color: #F2930B;
+}
+
+.shop-nav-bar {
+    -fx-background-color: linear-gradient(to right, #10243D, #142B48);
+    -fx-padding: 8 24 10 24;
+    -fx-spacing: 12;
+}
+
+.shop-nav-button {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-border-color: rgba(255, 255, 255, 0.12);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-min-width: 104;
+    -fx-pref-width: 104;
+    -fx-max-width: 104;
+    -fx-min-height: 34;
+    -fx-padding: 6 12;
+    -fx-font-size: 13;
+    -fx-font-weight: 800;
+    -fx-text-fill: #FFFFFF;
+    -fx-cursor: hand;
+}
+
+.shop-nav-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+}
+
+.shop-nav-button-active {
+    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #0877F2;
+    -fx-border-color: #1788FF;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(8, 119, 242, 0.34), 14, 0.18, 0, 3);
+}
+
+.shop-page-host {
+    -fx-background-color: #F4F7FB;
+}
+
+.shop-products-page,
+.shop-cart-page,
+.shop-checkout-page,
+.shop-orders-page,
+.shop-profile-page {
+    -fx-spacing: 12;
+}
+
+.shop-products-row {
+    -fx-spacing: 24;
+}
+
+.shop-hero {
+    -fx-background-color: linear-gradient(to right, #0751C9, #0C88EA, #18C8D8);
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(10, 50, 100, 0.18), 16, 0.14, 0, 4);
+    -fx-min-height: 104;
+    -fx-pref-height: 104;
+    -fx-max-height: 120;
+}
+
+.shop-hero-content {
+    -fx-padding: 16 24;
+}
+
+.shop-hero-copy {
+    -fx-max-width: 520;
+}
+
+.shop-hero-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20;
+    -fx-font-weight: 900;
+}
+
+.shop-hero-subtitle {
+    -fx-text-fill: #ECF7FF;
+    -fx-font-size: 12;
+    -fx-line-spacing: 2;
+}
+
+.shop-hero-actions {
+    -fx-padding: 4 0 0 0;
+}
+
+.shop-hero-primary-button,
+.shop-hero-secondary-button {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-padding: 8 12;
+    -fx-min-height: 34;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+}
+
+.shop-hero-primary-button {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #FFFFFF;
+    -fx-text-fill: #0877F2;
+}
+
+.shop-hero-secondary-button {
+    -fx-background-color: rgba(3, 28, 74, 0.18);
+    -fx-border-color: rgba(255, 255, 255, 0.75);
+    -fx-text-fill: #FFFFFF;
+}
+
+.shop-hero-button-icon {
+    -fx-icon-color: #FFFFFF;
+}
+
+.shop-hero-primary-button .shop-hero-button-icon {
+    -fx-icon-color: #0877F2;
+}
+
+.shop-hero-image-card {
+    -fx-padding: 8;
+    -fx-background-color: rgba(255, 255, 255, 0.18);
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(255, 255, 255, 0.36);
+    -fx-min-width: 300;
+    -fx-pref-width: 300;
+    -fx-max-width: 300;
+    -fx-min-height: 80;
+    -fx-pref-height: 80;
+    -fx-max-height: 88;
+}
+
+.shop-hero-image-placeholder {
+    -fx-background-color: rgba(255, 255, 255, 0.20);
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: rgba(255, 255, 255, 0.42);
+    -fx-border-width: 1;
+    -fx-padding: 8;
+    -fx-min-width: 284;
+    -fx-min-height: 64;
+}
+
+.shop-hero-image-icon {
+    -fx-icon-color: rgba(255, 255, 255, 0.86);
+}
+
+.shop-hero-image-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13;
+    -fx-font-weight: 900;
+}
+
+.shop-hero-image-caption {
+    -fx-text-fill: #ECF7FF;
+    -fx-font-size: 12;
+}
+
+.shop-card,
+.shop-sidebar,
+.shop-detail,
+.shop-cart-list,
+.shop-cart-summary,
+.shop-checkout-page,
+.shop-orders-page,
+.shop-profile-page {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #E1E7F0;
+    -fx-border-width: 1;
+    -fx-padding: 12;
+    -fx-effect: dropshadow(gaussian, rgba(10, 24, 48, 0.08), 12, 0.12, 0, 3);
+}
+
+.shop-sidebar {
+    -fx-pref-width: 260;
+    -fx-min-width: 250;
+    -fx-max-width: 260;
+    -fx-spacing: 8;
+    -fx-padding: 12;
+    -fx-effect: dropshadow(gaussian, rgba(10, 24, 48, 0.08), 12, 0.12, 0, 3);
+}
+
+.shop-main {
+    -fx-background-color: transparent;
+}
+
+.shop-detail {
+    -fx-pref-width: 292;
+    -fx-min-width: 280;
+    -fx-max-width: 300;
+    -fx-alignment: top-center;
+    -fx-padding: 0;
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-effect: dropshadow(gaussian, rgba(10, 24, 48, 0.16), 20, 0.16, 0, 6);
+}
+
+.shop-toolbar {
+    -fx-padding: 0;
+}
+
+.shop-scroll,
+.shop-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.shop-product-grid {
+    -fx-padding: 4 4 16 4;
+    -fx-hgap: 16;
+    -fx-vgap: 16;
+}
+
+.shop-cart-list {
+    -fx-spacing: 12;
+}
+
+.shop-cart-summary {
+    -fx-pref-width: 320;
+    -fx-min-width: 300;
+    -fx-max-width: 320;
+}
+
+.shop-orders-page {
+    -fx-padding: 16;
+}
+
+.shop-footer {
+    -fx-padding: 8 24;
+    -fx-background-color: linear-gradient(to right, #081727, #10243D);
+    -fx-min-height: 40;
+    -fx-pref-height: 42;
+    -fx-max-height: 45;
+    -fx-border-color: #17304F;
+    -fx-border-width: 1 0 0 0;
+}
+
+.shop-footer-brand {
+    -fx-min-width: 160;
+}
+
+.shop-footer-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13;
+    -fx-font-weight: 900;
+}
+
+.shop-footer-subtitle,
+.shop-footer-version {
+    -fx-text-fill: #DDE8F6;
+    -fx-font-size: 11;
+}
+
+.shop-footer-link {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 11;
+    -fx-font-weight: 700;
+    -fx-padding: 4 6;
+    -fx-cursor: hand;
+}
+
+.shop-footer-link:hover {
+    -fx-text-fill: #FFD22E;
+}
+
+.shop-statusbar {
+    -fx-padding: 14 28;
+    -fx-background-color: linear-gradient(to right, #081727, #10243D);
+    -fx-text-fill: #DDE8F6;
+    -fx-border-color: #17304F;
+    -fx-border-width: 1 0 0 0;
+}
+
+.product-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 24;
+    -fx-border-radius: 24;
+    -fx-border-color: #E7EDF5;
+    -fx-border-width: 1;
+    -fx-padding: 12;
+    -fx-effect: none;
+}
+
+.product-card-layout {
+    -fx-spacing: 10;
+    -fx-padding: 0;
+}
+
+.product-card-content {
+    -fx-spacing: 4;
+}
+
+.product-card:hover {
+    -fx-border-color: #B6D6FA;
+    -fx-effect: dropshadow(gaussian, rgba(8, 119, 242, 0.16), 14, 0.14, 0, 5);
+}
+
+.product-card-selected {
+    -fx-border-color: #0877F2;
+    -fx-border-width: 1.5;
+}
+
+.product-card-clickable {
+    -fx-cursor: hand;
+}
+
+.product-image {
+    -fx-alignment: center;
+}
+
+.product-image-placeholder {
+    -fx-background-color: linear-gradient(to bottom, #F6FAFF, #EEF5FC);
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: #E8EFF7;
+    -fx-border-width: 1;
+}
+
+.image-placeholder {
+    -fx-text-fill: #9FB2C8;
+    -fx-font-size: 42;
+    -fx-font-weight: 900;
+}
+
+.product-title {
+    -fx-text-fill: #0D1726;
+    -fx-font-size: 15;
+    -fx-font-weight: 900;
+    -fx-line-spacing: 1;
+}
+
+.product-short-description {
+    -fx-text-fill: #7C8797;
+    -fx-font-size: 11;
+    -fx-font-weight: 600;
+    -fx-line-spacing: 1;
+}
+
+.product-meta {
+    -fx-text-fill: #7C8797;
+    -fx-font-size: 11;
+    -fx-font-weight: 700;
+}
+
+.product-price,
+.text-price {
+    -fx-text-fill: #0877F2;
+    -fx-font-size: 20;
+    -fx-font-weight: 900;
+}
+
+.product-action-area {
+    -fx-spacing: 8;
+    -fx-padding: 0;
+}
+
+.product-quantity-row {
+    -fx-padding: 0;
+    -fx-min-height: 30;
+    -fx-pref-height: 30;
+    -fx-max-height: 30;
+}
+
+.product-quantity-label {
+    -fx-text-fill: #5E6A7C;
+    -fx-font-size: 12;
+    -fx-font-weight: 800;
+}
+
+.product-card .button.accent,
+.shop-detail .button.accent,
+.button.accent,
+.shop-filter-button {
+    -fx-background-color: #0877F2;
+    -fx-border-color: #0877F2;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-background-insets: 0;
+    -fx-border-width: 1;
+    -fx-padding: 8 10;
+    -fx-min-height: 38;
+    -fx-pref-height: 38;
+    -fx-max-height: 38;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 900;
+    -fx-cursor: hand;
+    -fx-effect: none;
+}
+
+.product-card .product-add-button {
+    -fx-min-height: 40;
+    -fx-pref-height: 40;
+    -fx-max-height: 40;
+    -fx-font-size: 13;
+}
+
+.product-detail-name {
+    -fx-text-fill: #0D1726;
+    -fx-font-size: 16;
+    -fx-font-weight: 900;
+}
+
+.product-description-heading {
+    -fx-text-fill: #0D1726;
+    -fx-font-size: 13;
+    -fx-font-weight: 900;
+}
+
+.product-full-description {
+    -fx-text-fill: #364153;
+    -fx-font-size: 12;
+    -fx-font-weight: 500;
+    -fx-line-spacing: 2;
+}
+
+.product-card .button.accent:hover,
+.shop-detail .button.accent:hover,
+.button.accent:hover,
+.shop-filter-button:hover {
+    -fx-background-color: #0068DE;
+}
+
+.button.button-outlined,
+.shop-hero-secondary-button {
+    -fx-cursor: hand;
+}
+
+.combo-box-base,
+.text-input,
+.text-area {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D8E0EA;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+.category-chip-active {
+    -fx-border-color: #0877F2;
+    -fx-background-color: #EEF6FF;
+}
+
+.text-section-title,
+.section-title,
+.detail-title {
+    -fx-text-fill: #0D1726;
+    -fx-font-size: 17;
+    -fx-font-weight: 900;
+}
+
+.text-body {
+    -fx-text-fill: #5E6A7C;
+    -fx-font-size: 13;
+}
+
+.text-meta,
+.form-label {
+    -fx-text-fill: #667085;
+    -fx-font-size: 12;
+}
+
+.text-empty-title {
+    -fx-text-fill: #0D1726;
+    -fx-font-size: 20;
+    -fx-font-weight: 900;
+}
+
+.text-empty-body,
+.empty-state,
+.loading-text {
+    -fx-text-fill: #667085;
+    -fx-font-size: 13;
+}
+
+.text-success,
+.status-success {
+    -fx-text-fill: #0877F2;
+    -fx-font-size: 12;
+    -fx-font-weight: 800;
+}
+
+.text-error,
+.error-label,
+.status-error {
+    -fx-text-fill: #0B1E35;
+    -fx-font-size: 12;
+    -fx-font-weight: 800;
+}
+
+.notification-bar.white-toast > .pane {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #E1E7F0;
+    -fx-border-width: 1;
+    -fx-padding: 14 16 14 16;
+    -fx-effect: dropshadow(gaussian, rgba(10, 24, 48, 0.20), 22, 0.18, 0, 7);
+}
+
+.notification-bar.white-toast.toast-success > .pane {
+    -fx-border-color: #0877F2;
+}
+
+.notification-bar.white-toast.toast-error > .pane {
+    -fx-border-color: #FFA51F;
+}
+
+.notification-bar.white-toast .title {
+    -fx-text-fill: #0D1726;
+    -fx-font-weight: 900;
+}
+
+.notification-bar.white-toast .label {
+    -fx-text-fill: #364153;
+}
+
+.cart-row {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #E1E7F0;
+    -fx-border-width: 1;
+    -fx-padding: 12;
+}

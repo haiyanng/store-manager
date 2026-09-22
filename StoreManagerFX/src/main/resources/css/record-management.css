@@ -1,0 +1,133 @@
+.record-screen .record-editor {
+    -fx-background-color: rgba(255, 255, 255, 0.78);
+    -fx-background-radius: 16;
+    -fx-border-color: #dce4e8;
+    -fx-border-radius: 16;
+    -fx-padding: 20;
+}
+
+.record-screen .record-section-title {
+    -fx-font-size: 15;
+    -fx-font-weight: bold;
+    -fx-text-fill: #293d48;
+}
+
+.record-screen .record-field-label {
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-text-fill: #526570;
+}
+
+.record-screen .module-input {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d8e1e6;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-height: 40;
+    -fx-pref-height: 40;
+    -fx-padding: 8 12;
+}
+
+.record-screen .module-input:focused {
+    -fx-border-color: #58778a;
+}
+
+.record-screen .combo-box.module-input {
+    -fx-padding: 0 4;
+}
+
+.record-screen .record-image-frame {
+    -fx-background-color: #f0f4f6;
+    -fx-background-radius: 12;
+    -fx-border-color: #d7e1e6;
+    -fx-border-radius: 12;
+    -fx-border-style: segments(4, 4);
+}
+
+.record-screen .record-actions {
+    -fx-padding: 16 0 0 0;
+    -fx-border-color: #e6ecef transparent transparent transparent;
+}
+
+.record-screen .module-secondary-button,
+.record-screen .record-primary-button,
+.record-screen .record-danger-button {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 9 16;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.record-screen .module-secondary-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d8e1e6;
+    -fx-text-fill: #405b6a;
+}
+
+.record-screen .module-secondary-button:hover {
+    -fx-background-color: #edf3f6;
+}
+
+.record-screen .record-primary-button {
+    -fx-background-color: #486b7e;
+    -fx-border-color: #486b7e;
+    -fx-text-fill: #ffffff;
+}
+
+.record-screen .record-primary-button:hover {
+    -fx-background-color: #365568;
+}
+
+.record-screen .record-danger-button {
+    -fx-background-color: #fff5f4;
+    -fx-border-color: #efd4d0;
+    -fx-text-fill: #a34f46;
+}
+
+.record-screen .record-danger-button:hover {
+    -fx-background-color: #fbe8e5;
+}
+
+.record-screen .button:disabled {
+    -fx-opacity: 0.45;
+}
+
+.record-screen .record-table {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dce4e8;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-fixed-cell-size: 40;
+}
+
+.record-screen .record-table .column-header-background {
+    -fx-background-color: #edf3f6;
+    -fx-background-radius: 10 10 0 0;
+}
+
+.record-screen .record-table .column-header {
+    -fx-background-color: transparent;
+    -fx-pref-height: 40;
+    -fx-border-color: transparent transparent #dce4e8 transparent;
+}
+
+.record-screen .record-table .column-header .label {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 8;
+    -fx-font-size: 12;
+    -fx-text-fill: #405b6a;
+}
+
+.record-screen .record-table .table-cell {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 10;
+    -fx-font-size: 12;
+    -fx-border-color: transparent;
+}
+
+.record-screen .record-table .table-row-cell:filled:selected {
+    -fx-background-color: #e1edf3;
+    -fx-text-background-color: #233c4b;
+}

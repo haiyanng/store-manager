@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.database_setup.view.DatabaseSetupController"
+      spacing="12"
+      alignment="CENTER">
+
+    <padding>
+        <Insets top="32" right="32" bottom="32" left="32"/>
+    </padding>
+
+    <Label text="Thiết lập kết nối MySQL"/>
+
+    <TextField fx:id="hostField"
+               promptText="Host"/>
+
+    <TextField fx:id="portField"
+               promptText="Port"/>
+
+    <TextField fx:id="databaseField"
+               promptText="Database name"/>
+
+    <TextField fx:id="usernameField"
+               promptText="Username"/>
+
+    <PasswordField fx:id="passwordField"
+                   promptText="Password"/>
+
+    <Button text="Test Connection"
+            onAction="#onTestConnection"/>
+
+    <Button text="Save &amp; Continue"
+            onAction="#onSaveAndContinue"/>
+
+</VBox>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.product.view.ProductSelectionWorkflowController"
+      spacing="10">
+
+    <VBox spacing="4">
+        <Label text="Quick Product Dropdown"
+               styleClass="analytics-section-title"/>
+
+        <ComboBox fx:id="quickPickComboBox"
+                  promptText="Quick pick product"
+                  maxWidth="Infinity"/>
+    </VBox>
+
+    <VBox spacing="4">
+        <Label text="Search"
+               styleClass="analytics-section-title"/>
+
+        <TextField fx:id="searchField"
+                   promptText="Search by name, SKU, or barcode"
+                   maxWidth="Infinity"
+                   styleClass="module-input"/>
+    </VBox>
+
+    <VBox spacing="6">
+        <Label fx:id="resultCountLabel"
+               text="0 products"
+               styleClass="analytics-section-text"/>
+
+        <TableView fx:id="resultTable"
+                   prefHeight="220"
+                   maxHeight="Infinity">
+            <columns>
+                <TableColumn fx:id="resultNameColumn"
+                             text="Name"
+                             prefWidth="240"/>
+
+                <TableColumn fx:id="resultSkuColumn"
+                             text="SKU"
+                             prefWidth="130"/>
+
+                <TableColumn fx:id="resultBarcodeColumn"
+                             text="Barcode"
+                             prefWidth="140"/>
+            </columns>
+        </TableView>
+    </VBox>
+</VBox>

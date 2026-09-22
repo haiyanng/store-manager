@@ -1,0 +1,27 @@
+.setup-root {
+    -fx-background-color: #f6f7fb;
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.setup-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1f2937;
+}
+
+.setup-subtitle {
+    -fx-text-fill: #5b6472;
+}
+
+.setup-status {
+    -fx-text-fill: #1f2937;
+}
+
+.primary-button {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+}
+
+.primary-button:hover {
+    -fx-background-color: #1d4ed8;
+}

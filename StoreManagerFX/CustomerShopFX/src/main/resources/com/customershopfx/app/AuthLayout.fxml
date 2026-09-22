@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.customershopfx.app.AuthLayoutController"
+           styleClass="auth-root auth-layout">
+    <children>
+        <StackPane fx:id="backgroundLayer" styleClass="auth-background" mouseTransparent="true"/>
+        <StackPane fx:id="contentLayer" alignment="CENTER" styleClass="auth-host">
+            <padding>
+                <Insets top="16" right="24" bottom="16" left="24"/>
+            </padding>
+        </StackPane>
+    </children>
+</StackPane>

@@ -1,0 +1,6 @@
+# Machine-specific API configuration and encryption keys
+**/config/.store-api.key
+**/config/store-api.properties
+.env
+.env.*
+!.env.example

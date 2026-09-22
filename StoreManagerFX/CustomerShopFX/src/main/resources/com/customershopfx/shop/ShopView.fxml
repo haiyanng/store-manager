@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import com.customershopfx.common.component.NotificationView?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.customershopfx.shop.view.ShopController"
+           styleClass="app-root app-page shop-view">
+    <children>
+        <BorderPane styleClass="shop-shell">
+            <top>
+                <VBox styleClass="shop-header-shell">
+                    <children>
+                        <HBox spacing="24" alignment="CENTER_LEFT" styleClass="shop-header">
+                            <VBox spacing="2" styleClass="shop-brand-block">
+                                <Label text="Customer Shop" styleClass="shop-brand-title"/>
+                                <Label text="Search, compare, and checkout in one flow."
+                                       styleClass="shop-brand-subtitle"/>
+                            </VBox>
+                            <HBox spacing="0" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                                  styleClass="shop-search-control">
+                                <TextField fx:id="searchField" promptText="Search products, categories, brands"
+                                           onAction="#loadProducts" HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="searchButton" text="Search" onAction="#loadProducts"
+                                        styleClass="shop-search-button">
+                                    <graphic>
+                                        <FontIcon iconLiteral="fas-search" iconSize="14" styleClass="shop-header-icon"/>
+                                    </graphic>
+                                </Button>
+                            </HBox>
+                            <VBox fx:id="customerBox" alignment="CENTER_LEFT" spacing="2"
+                                  styleClass="shop-user-chip shop-chip">
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <FontIcon iconLiteral="fas-user" iconSize="14" styleClass="shop-header-icon"/>
+                                    <Label text="Hello" styleClass="shop-user-label"/>
+                                </HBox>
+                                <Label fx:id="customerNameLabel" text="Guest" styleClass="shop-user-name"/>
+                            </VBox>
+                            <HBox fx:id="cartBox" alignment="CENTER" spacing="8"
+                                  styleClass="shop-cart-chip shop-chip">
+                                <FontIcon iconLiteral="fas-shopping-cart" iconSize="14" styleClass="shop-header-icon"/>
+                                <Label text="Cart" styleClass="shop-cart-label"/>
+                                <Label fx:id="cartCountLabel" text="0" styleClass="shop-cart-badge"/>
+                            </HBox>
+                            <Button fx:id="logoutButton" text="Logout" onAction="#logout"
+                                    styleClass="shop-logout-button">
+                                <graphic>
+                                    <FontIcon iconLiteral="fas-sign-out-alt" iconSize="14" styleClass="shop-header-icon"/>
+                                </graphic>
+                            </Button>
+                        </HBox>
+
+                        <HBox fx:id="navBar" spacing="8" alignment="CENTER_LEFT" styleClass="shop-nav-bar">
+                            <Button fx:id="productsButton" text="Products" onAction="#onProductsTab"
+                                    styleClass="button button-outlined rounded large shop-nav-button shop-nav-button-active"/>
+                            <Button fx:id="cartNavButton" text="Cart" onAction="#onCartTab"
+                                    styleClass="button button-outlined rounded large shop-nav-button"/>
+                            <Button fx:id="checkoutButton" text="Checkout" onAction="#onCheckoutTab"
+                                    styleClass="button button-outlined rounded large shop-nav-button"/>
+                            <Button fx:id="ordersButton" text="Orders" onAction="#onOrdersTab"
+                                    styleClass="button button-outlined rounded large shop-nav-button"/>
+                            <Button fx:id="profileButton" text="Profile" onAction="#onProfileTab"
+                                    styleClass="button button-outlined rounded large shop-nav-button"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                    </children>
+                </VBox>
+            </top>
+            <center>
+                <StackPane fx:id="pageHost" styleClass="shop-page-host">
+                    <padding>
+                        <Insets top="12" right="16" bottom="12" left="16"/>
+                    </padding>
+                    <children>
+                        <VBox fx:id="productsPage" spacing="12" visible="true" managed="true"
+                              styleClass="shop-products-page">
+                            <StackPane styleClass="shop-hero">
+                                <HBox alignment="CENTER_LEFT" spacing="16" styleClass="shop-hero-content">
+                                    <VBox spacing="4" HBox.hgrow="ALWAYS" styleClass="shop-hero-copy">
+                                        <Label text="Discover products faster" styleClass="shop-hero-title"/>
+                                        <Label text="Browse, filter, and add items from a cleaner catalog built for quick local shopping."
+                                               wrapText="true" styleClass="shop-hero-subtitle"/>
+                                        <HBox spacing="8" alignment="CENTER_LEFT" styleClass="shop-hero-actions">
+                                            <Button text="Browse deals" onAction="#loadProducts"
+                                                    styleClass="shop-hero-primary-button">
+                                                <graphic>
+                                                    <FontIcon iconLiteral="fas-tag" iconSize="14"
+                                                              styleClass="shop-hero-button-icon"/>
+                                                </graphic>
+                                            </Button>
+                                            <Button text="View orders" onAction="#onOrdersTab"
+                                                    styleClass="shop-hero-secondary-button">
+                                                <graphic>
+                                                    <FontIcon iconLiteral="fas-receipt" iconSize="14"
+                                                              styleClass="shop-hero-button-icon"/>
+                                                </graphic>
+                                            </Button>
+                                        </HBox>
+                                    </VBox>
+                                    <StackPane styleClass="shop-hero-image-card">
+                                        <VBox spacing="4" alignment="CENTER" styleClass="shop-hero-image-placeholder">
+                                            <FontIcon iconLiteral="fas-image" iconSize="28"
+                                                      styleClass="shop-hero-image-icon"/>
+                                            <Label text="Hero image" styleClass="shop-hero-image-title"/>
+                                            <Label text="Configurable storefront visual"
+                                                   styleClass="shop-hero-image-caption"/>
+                                        </VBox>
+                                    </StackPane>
+                                </HBox>
+                            </StackPane>
+
+                            <HBox spacing="16" styleClass="shop-products-row">
+                                <VBox spacing="8" prefWidth="260" minWidth="250" maxWidth="260"
+                                      styleClass="shop-sidebar shop-card">
+                                    <Label text="Refine your search" styleClass="text-section-title"/>
+                                    <Label text="Category" styleClass="form-label text-meta"/>
+                                    <ComboBox fx:id="categoryCombo" prefWidth="224" styleClass="combo-box-base rounded large"/>
+                                    <Label text="Sort" styleClass="form-label text-meta"/>
+                                    <ComboBox fx:id="sortCombo" prefWidth="224" styleClass="combo-box-base rounded large"/>
+                                    <Button text="Apply" onAction="#loadProducts"
+                                            styleClass="button accent rounded large shop-filter-button">
+                                        <graphic>
+                                            <FontIcon iconLiteral="fas-filter" iconSize="14"/>
+                                        </graphic>
+                                    </Button>
+                                </VBox>
+
+                                <VBox fx:id="shopMain" spacing="8" HBox.hgrow="ALWAYS" styleClass="shop-main">
+                                    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="shop-toolbar">
+                                        <Label text="Products" styleClass="text-section-title"/>
+                                        <Label text="Fast local shopping experience" styleClass="text-meta"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <Label text="Showing all available products" styleClass="text-meta"/>
+                                    </HBox>
+                                    <ScrollPane fitToWidth="true" fitToHeight="true"
+                                                hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                                pannable="true" VBox.vgrow="ALWAYS"
+                                                styleClass="shop-scroll">
+                                        <FlowPane fx:id="productGrid" hgap="16" vgap="16"
+                                                  orientation="HORIZONTAL"
+                                                  styleClass="shop-product-grid"/>
+                                    </ScrollPane>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <HBox fx:id="cartPage" spacing="16" visible="false" managed="false"
+                              styleClass="shop-cart-page">
+                            <VBox spacing="12" HBox.hgrow="ALWAYS" styleClass="shop-card shop-cart-list">
+                                <Label text="Cart" styleClass="text-section-title"/>
+                                <Label text="Review items, adjust quantity, then continue to checkout."
+                                       styleClass="text-body" wrapText="true"/>
+                                <VBox fx:id="cartList" spacing="12"/>
+                            </VBox>
+                            <VBox spacing="12" prefWidth="320" minWidth="300" maxWidth="320"
+                                  styleClass="shop-card shop-cart-summary">
+                                <Label text="Cart summary" styleClass="text-section-title"/>
+                                <Label text="Total" styleClass="text-meta"/>
+                                <Label fx:id="cartTotalLabel" text="0 VND" styleClass="text-price"/>
+                                <Button text="Proceed to checkout" onAction="#onCheckoutTab"
+                                        styleClass="button accent rounded large"/>
+                                <Button text="Clear cart" styleClass="button button-outlined rounded large" onAction="#clearCart"/>
+                            </VBox>
+                        </HBox>
+
+                        <VBox fx:id="checkoutPage" spacing="12" visible="false" managed="false"
+                              styleClass="shop-checkout-page shop-card">
+                            <Label text="Checkout" styleClass="text-section-title"/>
+                            <Label text="Confirm recipient details and payment method before placing the order."
+                                   styleClass="text-body" wrapText="true"/>
+                            <TextField fx:id="checkoutNameField" promptText="Recipient name"
+                                       styleClass="text-input rounded large"/>
+                            <TextField fx:id="checkoutPhoneField" promptText="Phone"
+                                       styleClass="text-input rounded large"/>
+                            <TextArea fx:id="checkoutAddressField" promptText="Shipping address"
+                                      prefRowCount="4" styleClass="text-area"/>
+                            <ComboBox fx:id="paymentCombo" prefWidth="240" styleClass="combo-box-base rounded large"/>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <Button text="Place order" onAction="#placeOrder" styleClass="button accent rounded large"/>
+                                <Label fx:id="checkoutMessageLabel" styleClass="text-success"/>
+                            </HBox>
+                        </VBox>
+
+                        <VBox fx:id="ordersPage" spacing="12" visible="false" managed="false"
+                              styleClass="shop-orders-page shop-card">
+                            <Label text="My Orders" styleClass="text-section-title"/>
+                            <Label text="Select an order to view items and cancellation status."
+                                   styleClass="text-body" wrapText="true"/>
+                            <ListView fx:id="ordersList" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+
+                        <VBox fx:id="profilePage" spacing="12" visible="false" managed="false"
+                              styleClass="shop-profile-page shop-card">
+                            <Label text="Profile" styleClass="text-section-title"/>
+                            <TextField fx:id="profileEmailField" promptText="Email" editable="false"
+                                       styleClass="text-input rounded large"/>
+                            <TextField fx:id="profileNameField" promptText="Full name"
+                                       styleClass="text-input rounded large"/>
+                            <TextField fx:id="profilePhoneField" promptText="Phone"
+                                       styleClass="text-input rounded large"/>
+                            <Button text="Save profile" onAction="#saveProfile" styleClass="button accent rounded large"/>
+                            <Separator/>
+                            <Label text="Change Password" styleClass="text-section-title"/>
+                            <PasswordField fx:id="currentPasswordField" promptText="Current password"
+                                           styleClass="text-input rounded large"/>
+                            <PasswordField fx:id="newPasswordField" promptText="New password"
+                                           styleClass="text-input rounded large"/>
+                            <Button text="Change password" styleClass="button button-outlined rounded large"
+                                    onAction="#changePassword"/>
+                        </VBox>
+                    </children>
+                </StackPane>
+            </center>
+
+            <right>
+                <VBox fx:id="detailPanel" spacing="12" prefWidth="292" minWidth="280" maxWidth="300"
+                      alignment="TOP_CENTER"
+                      styleClass="shop-detail shop-card">
+                    <VBox fx:id="detailContentBox" spacing="16" alignment="TOP_CENTER">
+                        <padding>
+                            <Insets top="32" right="24" bottom="24" left="24"/>
+                        </padding>
+                        <children>
+                            <Label fx:id="detailTitleLabel" text="Select a product" styleClass="text-empty-title"/>
+                            <Label fx:id="detailMessageLabel" text="Click a product card to view details."
+                                   styleClass="text-empty-body" wrapText="true"/>
+                            <VBox fx:id="detailBodyBox" spacing="16" alignment="CENTER"/>
+                        </children>
+                    </VBox>
+                </VBox>
+            </right>
+
+            <bottom>
+                <HBox alignment="CENTER_LEFT" spacing="16" styleClass="shop-footer">
+                    <Label text="Customer Shop" styleClass="shop-footer-title"/>
+                    <Label fx:id="statusLabel" text="Fast local shopping experience"
+                           styleClass="shop-footer-subtitle" HBox.hgrow="ALWAYS"/>
+                    <Button text="Support" onAction="#showSupportInfo" styleClass="shop-footer-link"/>
+                    <Button text="Terms" onAction="#showTermsInfo" styleClass="shop-footer-link"/>
+                    <Button text="Privacy" onAction="#showPrivacyInfo" styleClass="shop-footer-link"/>
+                    <Label text="Version 1.0.0" styleClass="shop-footer-version"/>
+                </HBox>
+            </bottom>
+        </BorderPane>
+        <NotificationView fx:id="notificationView" StackPane.alignment="TOP_RIGHT"/>
+    </children>
+</StackPane>

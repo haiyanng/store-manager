@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.storemanager.domain.auth.view.LoginController"
+      styleClass="login-root"
+      alignment="CENTER"
+      prefWidth="880"
+      prefHeight="560">
+
+    <stylesheets>
+        <URL value="@login.css"/>
+        <URL value="@../../css/typography.css"/>
+    </stylesheets>
+
+    <padding>
+        <Insets top="40"
+                right="40"
+                bottom="40"
+                left="40"/>
+    </padding>
+
+    <VBox alignment="CENTER_LEFT"
+          spacing="16"
+          maxWidth="360"
+          styleClass="login-card">
+        <padding>
+            <Insets top="30"
+                    right="30"
+                    bottom="30"
+                    left="30"/>
+        </padding>
+
+        <VBox spacing="5">
+            <Label text="Store Manager"
+                   styleClass="login-title"/>
+
+            <Label text="Operator access console"
+                   styleClass="login-subtitle"/>
+        </VBox>
+
+        <TextField
+                fx:id="usernameField"
+                promptText="Username"
+                maxWidth="Infinity"
+                styleClass="login-input"/>
+
+        <PasswordField
+                fx:id="passwordField"
+                promptText="Password"
+                maxWidth="Infinity"
+                styleClass="login-input"/>
+
+        <Label
+                fx:id="licenseStatusLabel"
+                text="License status"
+                wrapText="true"
+                maxWidth="Infinity"
+                styleClass="license-status"/>
+
+        <Button
+                fx:id="loginButton"
+                text="Login"
+                maxWidth="Infinity"
+                styleClass="login-button"
+                onAction="#onLogin"/>
+    </VBox>
+
+
+</VBox>
