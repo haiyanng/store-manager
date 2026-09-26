@@ -1,5 +1,6 @@
 package com.storemanager.domain.user.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.user.model.RoleType;
@@ -68,11 +69,14 @@ public class UserManagementController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(usersTable, "No accounts found.");
+        UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
+
 
         if (!PermissionGuard.canManageUsers()) {
             setActionsDisabled(true);
             usersTable.setDisable(true);
-            showError("Bạn không có quyền truy cập quản lý người dùng");
+            showError("You do not have permission to manage accounts");
             return;
         }
 
@@ -85,8 +89,7 @@ public class UserManagementController {
                         RoleType.OWNER,
                         RoleType.MANAGER,
                         RoleType.STAFF,
-                        RoleType.VIEWER,
-                        RoleType.CUSTOMER
+                        RoleType.VIEWER
                 )
         );
 
@@ -160,7 +163,7 @@ public class UserManagementController {
     public void onEditUser() {
 
         if (selectedUser == null) {
-            showError("Chọn người dùng cần sửa");
+            showError("Select an account to edit");
             return;
         }
 
@@ -181,7 +184,7 @@ public class UserManagementController {
                     );
 
             if (!success) {
-                showError("Không thể cập nhật người dùng");
+                showError("Unable to update account");
                 return;
             }
 
@@ -200,7 +203,7 @@ public class UserManagementController {
     public void onDeleteUser() {
 
         if (selectedUser == null) {
-            showError("Chọn người dùng cần xoá");
+            showError("Select an account to delete");
             return;
         }
 
@@ -212,7 +215,7 @@ public class UserManagementController {
                     );
 
             if (!success) {
-                showError("Không thể xoá người dùng");
+                showError("Unable to delete account");
                 return;
             }
 
@@ -399,14 +402,6 @@ public class UserManagementController {
     private void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 }

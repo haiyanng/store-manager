@@ -101,36 +101,6 @@ public class PermissionGuard {
                 || isManager();
     }
 
-    public static boolean canViewOnlineOrders() {
-
-        return isOwner()
-                || isManager();
-    }
-
-    public static boolean canModifyOnlineOrders() {
-
-        return canViewOnlineOrders();
-    }
-
-    public static boolean canCancelOnlineOrder() {
-
-        return canModifyOnlineOrders();
-    }
-
-    public static boolean canRefundOnlineOrder() {
-
-        return isOwner()
-                || isManager();
-    }
-
-    public static boolean canViewCustomers() {
-
-        return isOwner()
-                || isManager()
-                || isStaff()
-                || isViewer();
-    }
-
     public static boolean canViewReports() {
 
         return isOwner()

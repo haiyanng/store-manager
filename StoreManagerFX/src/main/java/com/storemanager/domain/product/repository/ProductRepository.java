@@ -74,9 +74,19 @@ public class ProductRepository {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to load products. Check the database connection and try again.", e);
+        }
+    }
 
-            return products;
+    public Product findById(Long id) {
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM products WHERE id = ?")) {
+            statement.setLong(1, id);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? mapProduct(result) : null;
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load product. Check the database connection and try again.", e);
         }
     }
 
@@ -102,13 +112,19 @@ public class ProductRepository {
                                     active
                                 )
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                                """
+                                """, Statement.RETURN_GENERATED_KEYS
                         )
         ) {
 
             fillStatement(statement, product);
 
-            return statement.executeUpdate() > 0;
+            boolean saved = statement.executeUpdate() > 0;
+            if (saved) {
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) product.setId(keys.getLong(1));
+                }
+            }
+            return saved;
 
         } catch (Exception e) {
 

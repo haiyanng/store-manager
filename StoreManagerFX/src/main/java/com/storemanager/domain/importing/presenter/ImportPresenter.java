@@ -64,7 +64,7 @@ public class ImportPresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load import workspace");
+                    view.setStatus("Unable to load import workspace");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
@@ -98,8 +98,12 @@ public class ImportPresenter extends BaseModulePresenter {
                 );
             }
 
+            if (unitCost.stripTrailingZeros().scale() > 2) {
+                throw new IllegalArgumentException("Unit cost must have at most 2 decimal places");
+            }
+
             ImportCartItem existingItem =
-                    findImportItem(product);
+                    findImportItem(product, unitCost);
 
             if (existingItem == null) {
                 importItems.add(
@@ -111,9 +115,8 @@ public class ImportPresenter extends BaseModulePresenter {
                 );
             } else {
                 existingItem.setQuantity(
-                        existingItem.getQuantity() + quantity
+                        Math.addExact(existingItem.getQuantity(), quantity)
                 );
-                existingItem.setUnitCost(unitCost);
             }
 
             view.clearEntryForm();
@@ -191,7 +194,8 @@ public class ImportPresenter extends BaseModulePresenter {
     }
 
     private ImportCartItem findImportItem(
-            Product product
+            Product product,
+            BigDecimal unitCost
     ) {
 
         return importItems
@@ -201,6 +205,7 @@ public class ImportPresenter extends BaseModulePresenter {
                                 && product.getId().equals(
                                 item.getProduct().getId()
                         )
+                                && item.getUnitCost().compareTo(unitCost) == 0
                 )
                 .findFirst()
                 .orElse(null);

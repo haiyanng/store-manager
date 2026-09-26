@@ -1,5 +1,6 @@
 package com.storemanager.domain.importing.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.importing.model.ImportCartItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
 import com.storemanager.domain.importing.presenter.ImportPresenter;
@@ -17,7 +18,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class ImportController {
@@ -80,6 +80,12 @@ public class ImportController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(importItemTable, "No items added. Select a product and choose Add item.");
+        UiFeedback.emptyTable(receiptTable, "No import receipts found.");
+        UiFeedback.moneyColumn(itemUnitCostColumn);
+        UiFeedback.moneyColumn(itemSubtotalColumn);
+        UiFeedback.moneyColumn(receiptTotalColumn);
+
 
         presenter =
                 new ImportPresenter(
@@ -183,9 +189,7 @@ public class ImportController {
     ) {
 
         totalLabel.setText(
-                totalCost == null
-                        ? "0.00"
-                        : totalCost.toPlainString()
+                UiFeedback.money(totalCost)
         );
     }
 
@@ -218,21 +222,13 @@ public class ImportController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, receiptTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureImportItemTable() {

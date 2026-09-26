@@ -20,7 +20,7 @@
     <Label text="User Management"
            styleClass="content-title"/>
 
-    <Label text="Create test users for dashboard runtime"
+    <Label text="Manage staff accounts, roles and employee links."
            styleClass="content-description"/>
 
     <HBox spacing="10">
@@ -40,7 +40,7 @@
                   promptText="Linked employee"/>
 
         <Button fx:id="clearLinkButton"
-                text="Clear Link"
+                text="Clear link"
                 onAction="#onClearEmployeeLink"/>
 
         <Button fx:id="createButton"
@@ -48,7 +48,7 @@
                 onAction="#onCreateUser"/>
 
         <Button fx:id="editButton"
-                text="Edit"
+                text="Save changes"
                 onAction="#onEditUser"/>
 
         <Button fx:id="deleteButton"
@@ -76,7 +76,7 @@
                          prefWidth="220"/>
 
             <TableColumn fx:id="activeColumn"
-                         text="Active"
+                         text="Status"
                          prefWidth="120"/>
         </columns>
     </TableView>

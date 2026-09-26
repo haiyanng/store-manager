@@ -39,11 +39,11 @@
                   promptText="Branch"
                   prefWidth="260"/>
 
-        <Button text="Check In"
+        <Button text="Check in"
                 styleClass="module-button"
                 onAction="#onCheckIn"/>
 
-        <Button text="Check Out"
+        <Button text="Check out"
                 styleClass="module-button"
                 onAction="#onCheckOut"/>
 

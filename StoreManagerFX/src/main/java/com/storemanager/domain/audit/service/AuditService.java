@@ -6,11 +6,26 @@ import com.storemanager.domain.audit.model.AuditLog;
 import com.storemanager.domain.audit.model.AuditLogFilter;
 import com.storemanager.domain.audit.model.AuditLogViewDto;
 import com.storemanager.domain.audit.repository.AuditLogRepository;
+import com.storemanager.domain.audit.repository.AuditLogFileRepository;
 import com.storemanager.domain.user.model.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class AuditService {
+
+    private static final Gson CHANGE_JSON = new GsonBuilder().serializeNulls().create();
+
+    public boolean recordChange(String module, String action, String entityType, Long entityId,
+                                boolean success, String reason, Map<String, Object> before,
+                                Map<String, Object> after, Map<String, Object> attempted) {
+        return recordEvent(module, action, entityType, entityId, success, reason,
+                CHANGE_JSON.toJson(AuditSnapshots.fields(
+                        "before", before, "after", after, "attempted", attempted)));
+    }
 
     public static final String ACTION_LOGIN = "LOGIN";
     public static final String ACTION_LOGIN_SUCCESS = "LOGIN_SUCCESS";
@@ -29,6 +44,9 @@ public class AuditService {
 
     private final AuditLogRepository auditLogRepository =
             new AuditLogRepository();
+
+    private final AuditLogFileRepository auditLogFileRepository =
+            new AuditLogFileRepository();
 
     public boolean record(
             String action,
@@ -113,7 +131,11 @@ public class AuditService {
         log.setDetailsJson(clean(detailsJson));
         log.setDetails(clean(detailsJson));
         log.setBranchId(branchId);
+        log.setCreatedAt(LocalDateTime.now());
 
+        // Persist to text independently, even if the database write subsequently fails.
+        // The return value retains its existing meaning: database persistence succeeded.
+        auditLogFileRepository.save(log);
         return auditLogRepository.save(log);
     }
 

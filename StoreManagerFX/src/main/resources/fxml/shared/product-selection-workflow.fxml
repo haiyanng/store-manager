@@ -13,11 +13,11 @@
       spacing="10">
 
     <VBox spacing="4">
-        <Label text="Quick Product Dropdown"
+        <Label text="Select product"
                styleClass="analytics-section-title"/>
 
         <ComboBox fx:id="quickPickComboBox"
-                  promptText="Quick pick product"
+                  promptText="Choose a product"
                   maxWidth="Infinity"/>
     </VBox>
 

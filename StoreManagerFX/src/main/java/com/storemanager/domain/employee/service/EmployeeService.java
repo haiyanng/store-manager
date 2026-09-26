@@ -1,6 +1,8 @@
 package com.storemanager.domain.employee.service;
 
-import com.storemanager.core.session.AppSession;
+import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.audit.service.AuditSnapshots;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
 import com.storemanager.domain.branch.model.Branch;
@@ -18,6 +20,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EmployeeService {
+
+    private final AuditService auditService = new AuditService();
 
     private final EmployeeRepository employeeRepository =
             new EmployeeRepository();
@@ -58,41 +62,59 @@ public class EmployeeService {
                 .toList();
     }
 
-    public boolean create(
-            Employee employee
-    ) {
-
-        validate(employee);
-
-        return employeeRepository.save(employee);
+    public boolean create(Employee employee) {
+        return change(employee, "EMPLOYEE_CREATE");
     }
 
-    public boolean update(
-            Employee employee
-    ) {
-
-        if (employee.getId() == null) {
-            throw new RuntimeException(
-                    "Employee is required"
-            );
-        }
-
-        validate(employee);
-
-        return employeeRepository.update(employee);
+    public boolean update(Employee employee) {
+        return change(employee, "EMPLOYEE_UPDATE");
     }
 
-    public boolean delete(
-            Employee employee
-    ) {
+    public boolean delete(Employee employee) {
+        return change(employee, "EMPLOYEE_DELETE");
+    }
 
-        if (employee == null || employee.getId() == null) {
-            throw new RuntimeException(
-                    "Employee is required"
-            );
+    private boolean change(Employee employee, String action) {
+        validateWriteAccess(action);
+        Map<String, Object> before = null;
+        Map<String, Object> attempted = AuditSnapshots.employee(employee);
+        Map<String, Object> after;
+        boolean success;
+        try {
+            if (employee == null) throw new IllegalArgumentException("Employee is required");
+            boolean creating = action.endsWith("_CREATE");
+            boolean deleting = action.endsWith("_DELETE");
+            Employee stored = null;
+            if (!creating) {
+                if (employee.getId() == null) throw new IllegalArgumentException("Select a employee first");
+                stored = employeeRepository.findById(employee.getId());
+                if (stored == null) throw new IllegalArgumentException("Employee no longer exists. Refresh the list and try again.");
+                before = AuditSnapshots.employee(stored);
+            }
+            Employee candidate = employee;
+            if (!deleting) validate(candidate);
+            attempted = deleting ? null : AuditSnapshots.employee(candidate);
+            success = creating ? employeeRepository.save(candidate)
+                    : deleting ? employeeRepository.delete(candidate) : employeeRepository.update(candidate);
+            after = success ? (deleting ? null : AuditSnapshots.employee(candidate)) : before;
+            if (success && !deleting) employee.setActive(candidate.isActive());
+        } catch (RuntimeException e) {
+            auditService.recordChange("EMPLOYEE", action, "EMPLOYEE", employee == null ? null : employee.getId(),
+                    false, e.getMessage(), before, before, attempted);
+            throw e;
         }
+        auditService.recordChange("EMPLOYEE", action, "EMPLOYEE", employee.getId(), success,
+                success ? null : "Unable to save employee changes. Check the data and database connection.",
+                before, after, success ? null : attempted);
+        return success;
+    }
 
-        return employeeRepository.delete(employee);
+    private void validateWriteAccess(String action) {
+        if (!PermissionGuard.canViewEmployee()) {
+            auditService.recordPermissionDenied(action, "EMPLOYEE", null,
+                    "Employee management denied", null, "OWNER/MANAGER");
+            throw new IllegalStateException("Current user cannot manage employees");
+        }
     }
 
     public Map<Long, User> findUsersById() {

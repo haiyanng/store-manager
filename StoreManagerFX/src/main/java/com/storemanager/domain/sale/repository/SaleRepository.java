@@ -91,7 +91,7 @@ public class SaleRepository {
             return orderId;
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Cannot save sale order",
+                    "Cannot save order",
                     e
             );
         }
@@ -324,7 +324,7 @@ public class SaleRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(
-                    "Cannot load total sale revenue",
+                    "Cannot load total order revenue",
                     e
             );
         }
@@ -363,7 +363,7 @@ public class SaleRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(
-                    "Cannot load sale revenue for period",
+                    "Cannot load order revenue for period",
                     e
             );
         }
@@ -402,7 +402,7 @@ public class SaleRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(
-                    "Cannot load sale order count for period",
+                    "Cannot load order count for period",
                     e
             );
         }
@@ -447,7 +447,7 @@ public class SaleRepository {
             e.printStackTrace();
 
             throw new RuntimeException(
-                    "Sale table initialization failed",
+                    "Order table initialization failed",
                     e
             );
         }
@@ -496,7 +496,7 @@ public class SaleRepository {
 
             if (!keys.next()) {
                 throw new RuntimeException(
-                        "Cannot create sale order"
+                        "Cannot create order"
                 );
             }
 

@@ -28,10 +28,8 @@ import com.storemanager.core.util.TimeFormatUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -998,11 +996,6 @@ public class AttendanceAnomalyService {
     private boolean canManageAnomalyReview() {
 
         return canAdminReview() || PermissionGuard.isManager();
-    }
-
-    private boolean canManagerReport() {
-
-        return PermissionGuard.isManager();
     }
 
     private AttendanceAnomaly requireAnomaly(

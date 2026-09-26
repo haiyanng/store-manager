@@ -161,7 +161,7 @@ public class InventoryRepository {
                         );
 
                 int newQuantity =
-                        currentQuantity + quantityDelta;
+                        Math.addExact(currentQuantity, quantityDelta);
 
                 if (newQuantity < 0) {
                     throw new RuntimeException(
@@ -213,7 +213,7 @@ public class InventoryRepository {
                     );
 
             int newQuantity =
-                    currentQuantity + quantityDelta;
+                    Math.addExact(currentQuantity, quantityDelta);
 
             if (newQuantity < 0) {
                 throw new RuntimeException(

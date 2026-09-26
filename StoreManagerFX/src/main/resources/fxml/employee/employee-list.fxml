@@ -23,7 +23,7 @@
             <Label text="Create, update, and manage employees"
                    styleClass="content-description"/>
         </VBox>
-        <Button text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
+        <Button fx:id="refreshButton" text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
     </HBox>
 
     <VBox spacing="18" styleClass="record-editor" maxWidth="Infinity">
@@ -33,9 +33,9 @@
             <Button fx:id="deleteButton" text="Delete"
                     styleClass="record-danger-button" onAction="#onDelete"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Clear" styleClass="module-secondary-button" onAction="#onClear"/>
-            <Button fx:id="updateButton" text="Update" styleClass="module-secondary-button" onAction="#onUpdate"/>
-            <Button text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
+            <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
+            <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
+            <Button fx:id="createButton" text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
         </HBox>
     </VBox>
 
@@ -85,11 +85,13 @@
                          prefWidth="130"/>
 
             <TableColumn fx:id="activeColumn"
-                         text="Active"
+                         text="Status"
                          minWidth="65"
                          prefWidth="100"/>
         </columns>
     </TableView>
+
+    <Label fx:id="statusLabel" text="Ready" styleClass="content-description"/>
 
     <padding>
         <Insets top="0"

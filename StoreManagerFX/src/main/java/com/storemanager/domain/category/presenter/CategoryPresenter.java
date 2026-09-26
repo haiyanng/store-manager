@@ -56,7 +56,7 @@ public class CategoryPresenter extends BaseCrudPresenter<Category> {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load categories");
+                    view.setStatus("Unable to load categories");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)

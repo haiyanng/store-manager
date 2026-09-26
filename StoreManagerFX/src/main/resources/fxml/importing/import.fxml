@@ -19,7 +19,7 @@
         <Label text="Import"
                styleClass="content-title"/>
 
-        <Label text="Create stock acquisition receipts and increase inventory with transaction history."
+        <Label text="Record incoming stock, quantities and purchase costs."
                styleClass="content-description"/>
     </VBox>
 
@@ -39,19 +39,19 @@
                        styleClass="module-input"/>
 
             <TextField fx:id="unitCostField"
-                       promptText="Unit cost"
+                       promptText="Unit cost (VND)"
                        prefWidth="120"
                        styleClass="module-input"/>
 
-            <Button text="Add"
+            <Button text="Add item"
                     styleClass="module-button"
                     onAction="#onAddItem"/>
 
-            <Button text="Remove"
+            <Button text="Remove item"
                     styleClass="module-button"
                     onAction="#onRemoveItem"/>
 
-            <Button text="Clear"
+            <Button text="Clear items"
                     styleClass="module-button"
                     onAction="#onClearItems"/>
         </HBox>
@@ -73,11 +73,11 @@
                              prefWidth="130"/>
 
                 <TableColumn fx:id="itemQuantityColumn"
-                             text="Qty"
+                             text="Quantity"
                              prefWidth="80"/>
 
                 <TableColumn fx:id="itemUnitCostColumn"
-                             text="Unit cost"
+                             text="Unit cost (VND)"
                              prefWidth="120"/>
 
                 <TableColumn fx:id="itemSubtotalColumn"
@@ -93,7 +93,7 @@
                styleClass="content-description"/>
 
         <Label fx:id="totalLabel"
-               text="0.00"
+               text="0 VND"
                styleClass="content-title"/>
 
         <Region HBox.hgrow="ALWAYS"/>
@@ -102,7 +102,7 @@
                 styleClass="module-button"
                 onAction="#onRefresh"/>
 
-        <Button text="Finalize Import"
+        <Button text="Complete import"
                 styleClass="module-button"
                 onAction="#onFinalizeImport"/>
     </HBox>

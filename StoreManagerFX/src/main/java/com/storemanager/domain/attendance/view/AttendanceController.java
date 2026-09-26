@@ -1,5 +1,6 @@
 package com.storemanager.domain.attendance.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.presenter.AttendancePresenter;
@@ -17,7 +18,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.StringConverter;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public class AttendanceController {
@@ -77,6 +77,9 @@ public class AttendanceController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(sessionTable, "No records found.");
+        UiFeedback.emptyTable(monthlyTable, "No records found.");
+
 
         presenter =
                 new AttendancePresenter(
@@ -221,7 +224,7 @@ public class AttendanceController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, sessionTable, monthlyTable);
     }
 
     public void refreshBranchContextLabel() {
@@ -258,15 +261,7 @@ public class AttendanceController {
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureEmployeeComboBox() {

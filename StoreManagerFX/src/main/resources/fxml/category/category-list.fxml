@@ -20,10 +20,10 @@
             <Label text="Category"
                    styleClass="content-title"/>
 
-            <Label text="Manage lightweight catalog reference data."
+            <Label text="Manage product categories and their status."
                    styleClass="content-description"/>
         </VBox>
-        <Button text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
+        <Button fx:id="refreshButton" text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
     </HBox>
 
     <VBox spacing="18" styleClass="record-editor" maxWidth="Infinity">
@@ -33,9 +33,9 @@
             <Button fx:id="deactivateButton" text="Deactivate"
                     styleClass="record-danger-button" onAction="#onDeactivate"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Clear" styleClass="module-secondary-button" onAction="#onClear"/>
-            <Button fx:id="updateButton" text="Update" styleClass="module-secondary-button" onAction="#onUpdate"/>
-            <Button text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
+            <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
+            <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
+            <Button fx:id="createButton" text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
         </HBox>
     </VBox>
 
@@ -65,7 +65,7 @@
                          prefWidth="120"/>
 
             <TableColumn fx:id="activeColumn" maxWidth="140"
-                         text="Active"
+                         text="Status"
                          minWidth="90"
                          prefWidth="90"/>
         </columns>

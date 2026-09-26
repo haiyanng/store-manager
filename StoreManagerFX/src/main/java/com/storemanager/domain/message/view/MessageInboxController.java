@@ -1,5 +1,6 @@
 package com.storemanager.domain.message.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.message.model.MessageConversationRow;
@@ -90,6 +91,9 @@ public class MessageInboxController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(conversationTable, "No conversations found.");
+        UiFeedback.emptyTable(historyTable, "No records found.");
+
 
         User currentUser = AppSession.getCurrentUser();
         if (currentUser == null) {
@@ -213,17 +217,13 @@ public class MessageInboxController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, conversationTable, historyTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureTables() {

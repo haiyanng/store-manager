@@ -1,5 +1,6 @@
 package com.storemanager.domain.product.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.product.model.Product;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -11,7 +12,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.StringConverter;
 
 import java.util.ArrayList;
@@ -55,6 +55,8 @@ public class ProductSelectionWorkflowController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(resultTable, "No products match your search.");
+
 
         configureQuickPickComboBox();
         configureResultTable();

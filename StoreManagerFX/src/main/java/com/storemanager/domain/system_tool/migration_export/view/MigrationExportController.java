@@ -1,5 +1,6 @@
 package com.storemanager.domain.system_tool.migration_export.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationHistoryEntry;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
@@ -112,6 +113,8 @@ public class MigrationExportController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(historyTable, "No records found.");
+
 
         presenter =
                 new MigrationExportPresenter(
@@ -376,15 +379,7 @@ public class MigrationExportController {
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     public void clearSelectedPackage() {

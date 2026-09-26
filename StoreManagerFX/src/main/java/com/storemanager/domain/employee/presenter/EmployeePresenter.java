@@ -2,6 +2,7 @@ package com.storemanager.domain.employee.presenter;
 
 import com.storemanager.core.runtime.BaseCrudPresenter;
 import com.storemanager.core.runtime.CrudMode;
+import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.service.EmployeeService;
@@ -34,12 +35,18 @@ public class EmployeePresenter extends BaseCrudPresenter<Employee> {
     }
 
     public void refreshTable() {
-
-        view.setEmployees(
-                employeeService.findEmployeeListViews()
-        );
-
-        updateActionState();
+        view.setBusy(true);
+        view.setStatus("Loading employees...");
+        AsyncTaskRunner.run(employeeService::findEmployeeListViews,
+                employees -> {
+                    view.setEmployees(employees);
+                    view.setStatus("Ready");
+                    updateActionState();
+                },
+                error -> {
+                    view.setStatus("Unable to load employees");
+                    view.showError(error.getMessage());
+                }, () -> view.setBusy(false));
     }
 
     public void selectEmployee(

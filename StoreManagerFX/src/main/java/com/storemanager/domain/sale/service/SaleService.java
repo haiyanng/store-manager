@@ -240,8 +240,8 @@ public class SaleService {
         );
 
         notificationService.notifyCurrentUser(
-                "Sale finalized",
-                "Sale order #"
+                "Order finalized",
+                "Order #"
                         + orderId
                         + " was saved",
                 NotificationType.INVENTORY
@@ -276,7 +276,7 @@ public class SaleService {
 
                 if (orderId == null) {
                     throw new RuntimeException(
-                            "Cannot create sale order"
+                            "Cannot create order"
                     );
                 }
 
@@ -296,7 +296,7 @@ public class SaleService {
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Cannot finalize sale atomically",
+                    "Cannot finalize order atomically",
                     e
             );
         }
@@ -407,38 +407,6 @@ public class SaleService {
     }
 
     private void createInventorySaleTransaction(
-            Long orderId,
-            SaleOrderItem item
-    ) {
-
-        InventoryTransaction transaction =
-                new InventoryTransaction();
-
-        transaction.setProductId(
-                item.getProductId()
-        );
-        transaction.setType(
-                InventoryTransactionType.SALE
-        );
-        transaction.setQuantity(
-                item.getQuantity()
-        );
-        transaction.setReason(
-                "Sale order #" + orderId
-        );
-
-        boolean success =
-                inventoryService.adjustStock(transaction);
-
-        if (!success) {
-            throw new RuntimeException(
-                    "Cannot reduce inventory for product "
-                            + item.getProductId()
-            );
-        }
-    }
-
-    private void createInventorySaleTransaction(
             Connection connection,
             Long orderId,
             SaleOrderItem item
@@ -457,7 +425,7 @@ public class SaleService {
                 item.getQuantity()
         );
         transaction.setReason(
-                "Sale order #" + orderId
+                "Order #" + orderId
         );
 
         boolean success =
@@ -540,12 +508,12 @@ public class SaleService {
                     "SALE_VIEW",
                     "SALE",
                     null,
-                    "Sale access denied",
+                    "Order access denied",
                     null,
                     "OWNER/MANAGER/STAFF"
             );
             throw new RuntimeException(
-                    "Sale access denied"
+                    "Order access denied"
             );
         }
     }
@@ -557,12 +525,12 @@ public class SaleService {
                     "SALE_CREATE",
                     "SALE",
                     null,
-                    "Sale creation denied",
+                    "Order creation denied",
                     null,
                     "OWNER/MANAGER/STAFF"
             );
             throw new RuntimeException(
-                    "Current user cannot create sales"
+                    "Current user cannot create orders"
             );
         }
     }

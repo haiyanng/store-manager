@@ -3,7 +3,6 @@ package com.storemanager.domain.dashboard.presenter;
 import com.storemanager.core.runtime.BaseModulePresenter;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.core.runtime.async.LoadingState;
-import com.storemanager.domain.attendance.model.AttendanceRuntimeStatus;
 import com.storemanager.domain.attendance.service.AttendanceService;
 import com.storemanager.domain.dashboard.view.DashboardHomeController;
 

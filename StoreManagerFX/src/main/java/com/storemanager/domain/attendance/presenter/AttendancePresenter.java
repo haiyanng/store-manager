@@ -91,7 +91,7 @@ public class AttendancePresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load attendance");
+                    view.setStatus("Unable to load attendance");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)

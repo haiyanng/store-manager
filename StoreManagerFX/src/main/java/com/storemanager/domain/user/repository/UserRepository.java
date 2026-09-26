@@ -146,7 +146,7 @@ public class UserRepository {
                                     active
                                 )
                                 VALUES (?, ?, ?, ?)
-                                """
+                                """, Statement.RETURN_GENERATED_KEYS
                         )
 
         ) {
@@ -172,10 +172,13 @@ public class UserRepository {
             );
 
             statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) user.setId(keys.getLong(1));
+            }
 
         } catch (Exception e) {
 
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to create account. Check the username and database connection.", e);
         }
     }
 

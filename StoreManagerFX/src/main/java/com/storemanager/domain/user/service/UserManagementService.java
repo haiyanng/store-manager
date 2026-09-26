@@ -4,6 +4,8 @@ import com.storemanager.core.security.PasswordHasher;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.audit.service.AuditSnapshots;
+import java.util.Map;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
 import com.storemanager.domain.user.model.RoleType;
@@ -138,7 +140,13 @@ public class UserManagementService {
         user.setRole(role);
         user.setActive(true);
 
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (RuntimeException e) {
+            auditService.recordChange("USER_MANAGEMENT", "USER_CREATE", "USER", null, false,
+                    e.getMessage(), null, null, AuditSnapshots.user(user));
+            throw e;
+        }
 
         User createdUser =
                 userRepository
@@ -151,20 +159,9 @@ public class UserManagementService {
                                 )
                         );
 
-        updateEmployeeLink(
-                createdUser,
-                linkedEmployee
-        );
-
-        auditService.recordEvent(
-                "USER_MANAGEMENT",
-                "USER_CREATE",
-                "USER",
-                createdUser.getId(),
-                true,
-                null,
-                "{\"username\":\"" + escape(createdUser.getUsername()) + "\",\"role\":\"" + createdUser.getRole() + "\"}"
-        );
+        auditService.recordChange("USER_MANAGEMENT", "USER_CREATE", "USER", createdUser.getId(),
+                true, null, null, AuditSnapshots.user(createdUser), null);
+        updateEmployeeLink(createdUser, linkedEmployee);
     }
 
     public boolean updateUser(
@@ -241,8 +238,10 @@ public class UserManagementService {
             );
         }
 
-        RoleType oldRole =
-                target.getRole();
+        User stored = userRepository.findById(target.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Account no longer exists. Refresh and try again."));
+        Map<String, Object> before = AuditSnapshots.user(stored);
+        RoleType oldRole = stored.getRole();
 
         target.setUsername(
                 username.trim()
@@ -259,24 +258,15 @@ public class UserManagementService {
         boolean updated =
                 userRepository.updateUser(target);
 
-        if (!updated) {
-            return false;
-        }
+        Map<String, Object> attempted = AuditSnapshots.fields("username", username, "role", role,
+                "password_changed", rawPassword != null && !rawPassword.isEmpty());
+        auditService.recordChange("USER_MANAGEMENT", oldRole == role ? "USER_UPDATE" : "USER_ROLE_CHANGE",
+                "USER", target.getId(), updated, updated ? null : "Unable to update account",
+                before, updated ? AuditSnapshots.user(target) : before, attempted);
+        if (!updated) return false;
+        updateEmployeeLink(target, linkedEmployee);
 
-        updateEmployeeLink(
-                target,
-                linkedEmployee
-        );
 
-        auditService.recordEvent(
-                "USER_MANAGEMENT",
-                oldRole == role ? "USER_UPDATE" : "USER_ROLE_CHANGE",
-                "USER",
-                target.getId(),
-                true,
-                null,
-                "{\"username\":\"" + escape(target.getUsername()) + "\",\"role\":\"" + target.getRole() + "\"}"
-        );
 
         return true;
     }
@@ -315,63 +305,47 @@ public class UserManagementService {
             );
         }
 
-        employeeRepository.clearUserLink(
-                target.getId()
-        );
+        User stored = userRepository.findById(target.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Account no longer exists. Refresh and try again."));
+        Map<String, Object> before = AuditSnapshots.user(stored);
+        updateEmployeeLink(stored, null);
         boolean deleted =
                 userRepository.deleteUser(target);
 
-        if (deleted) {
-            auditService.recordEvent(
-                    "USER_MANAGEMENT",
-                    "USER_DELETE",
-                    "USER",
-                    target.getId(),
-                    true,
-                    null,
-                    "{\"username\":\"" + escape(target.getUsername()) + "\"}"
-            );
-        }
+        auditService.recordChange("USER_MANAGEMENT", "USER_DELETE", "USER", target.getId(), deleted,
+                deleted ? null : "Unable to delete account", before, deleted ? null : before, null);
 
         return deleted;
     }
 
-    private void updateEmployeeLink(
-            User user,
-            Employee linkedEmployee
-    ) {
-
-        if (user == null || user.getId() == null) {
-            throw new RuntimeException(
-                    "User is required"
-            );
+    private void updateEmployeeLink(User user, Employee linkedEmployee) {
+        if (user == null || user.getId() == null) throw new IllegalArgumentException("Account is required");
+        Employee previous = employeeRepository.findByUserId(user.getId());
+        Long previousId = previous == null ? null : previous.getId();
+        Long requestedId = linkedEmployee == null ? null : linkedEmployee.getId();
+        if (java.util.Objects.equals(previousId, requestedId)) return;
+        Map<String, Object> before = AuditSnapshots.fields("employee_id", previousId);
+        Map<String, Object> attempted = AuditSnapshots.fields("employee_id", requestedId);
+        boolean linked;
+        try {
+            if (linkedEmployee != null) {
+                if (requestedId == null) throw new IllegalArgumentException("Select an employee first");
+                Employee actual = employeeRepository.findById(requestedId);
+                if (actual == null) throw new IllegalArgumentException("Selected employee no longer exists");
+                if (actual.getUserId() != null && !actual.getUserId().equals(user.getId()))
+                    throw new IllegalArgumentException("Employee is already linked to another account");
+            }
+            linked = linkedEmployee == null ? employeeRepository.clearUserLink(user.getId())
+                    : employeeRepository.linkUserToEmployee(user.getId(), requestedId);
+        } catch (RuntimeException e) {
+            auditService.recordChange("USER_MANAGEMENT", "USER_EMPLOYEE_LINK", "USER", user.getId(),
+                    false, e.getMessage(), before, before, attempted);
+            throw e;
         }
-
-        if (linkedEmployee == null) {
-            employeeRepository.clearUserLink(
-                    user.getId()
-            );
-            return;
-        }
-
-        if (linkedEmployee.getUserId() != null
-                && !linkedEmployee.getUserId().equals(user.getId())) {
-            throw new RuntimeException(
-                    "Employee is already linked to another account"
-            );
-        }
-
-        boolean linked =
-                employeeRepository.linkUserToEmployee(
-                        user.getId(),
-                        linkedEmployee.getId()
-                );
-
-        if (!linked) {
-            throw new RuntimeException(
-                    "Cannot link account to employee"
-            );
-        }
+        auditService.recordChange("USER_MANAGEMENT", "USER_EMPLOYEE_LINK", "USER", user.getId(), linked,
+                linked ? null : "Unable to update employee link", before, linked ? attempted : before,
+                linked ? null : attempted);
+        if (!linked) throw new IllegalStateException("Employee link could not be updated. Refresh and try again.");
     }
 
     private void validateUserManagementAccess() {

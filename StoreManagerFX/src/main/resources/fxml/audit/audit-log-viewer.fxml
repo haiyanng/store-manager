@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -20,7 +21,7 @@
     <VBox spacing="4">
         <Label text="Audit Logs"
                styleClass="content-title"/>
-        <Label text="Append-only security and business traceability"
+        <Label text="Review who changed records, when, and what changed."
                styleClass="content-description"/>
     </VBox>
 
@@ -35,9 +36,9 @@
                    promptText="Module"
                    styleClass="module-input"/>
         <ComboBox fx:id="successComboBox"
-                  promptText="Success"/>
+                  promptText="Result"/>
         <TextField fx:id="userIdField"
-                   promptText="User id"
+                   promptText="User ID"
                    styleClass="module-input"/>
         <DatePicker fx:id="fromDatePicker"/>
         <DatePicker fx:id="toDatePicker"/>
@@ -49,13 +50,13 @@
                 styleClass="module-button"
                 onAction="#onSearch"/>
         <Button fx:id="clearButton"
-                text="Clear"
+                text="Clear filters"
                 styleClass="module-button"
                 onAction="#onClear"/>
     </HBox>
 
     <TableView fx:id="auditLogTable"
-               prefHeight="620"
+               prefHeight="340" minHeight="180" VBox.vgrow="ALWAYS"
                styleClass="analytics-table">
         <columns>
             <TableColumn fx:id="createdAtColumn" text="Created at"/>
@@ -64,13 +65,16 @@
             <TableColumn fx:id="actionColumn" text="Action"/>
             <TableColumn fx:id="entityTypeColumn" text="Entity"/>
             <TableColumn fx:id="entityIdColumn" text="Entity ID"/>
-            <TableColumn fx:id="successColumn" text="Success"/>
+            <TableColumn fx:id="successColumn" text="Result"/>
             <TableColumn fx:id="reasonColumn" text="Reason"/>
             <TableColumn fx:id="branchIdColumn" text="Branch ID"/>
-            <TableColumn fx:id="detailsJsonColumn" text="Details JSON"/>
-            <TableColumn fx:id="detailsColumn" text="Details"/>
+            <TableColumn fx:id="detailsJsonColumn" text="Changes" prefWidth="260"/>
         </columns>
     </TableView>
+
+    <Label text="Event details" styleClass="record-section-title"/>
+    <TextArea fx:id="eventDetailsArea" editable="false" wrapText="true"
+              prefHeight="170" promptText="Select an event to inspect its changes and copy the details."/>
 
     <Label fx:id="statusLabel"
            text="Ready"

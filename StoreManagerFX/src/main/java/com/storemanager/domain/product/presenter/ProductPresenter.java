@@ -70,7 +70,7 @@ public class ProductPresenter extends BaseCrudPresenter<Product> {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load products");
+                    view.setStatus("Unable to load products");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
@@ -133,7 +133,7 @@ public class ProductPresenter extends BaseCrudPresenter<Product> {
     public void deleteProduct() {
 
         if (!hasSelection()) {
-            view.showError("Select a product to delete");
+            view.showError("Select a product to deactivate");
             return;
         }
 
@@ -145,7 +145,7 @@ public class ProductPresenter extends BaseCrudPresenter<Product> {
                     );
 
             if (!success) {
-                view.showError("Cannot delete product");
+                view.showError("Unable to deactivate product");
                 return;
             }
 

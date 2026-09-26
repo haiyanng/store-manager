@@ -113,69 +113,9 @@ public class DashboardShellController {
     }
 
     @FXML
-    public void onDashboard() {
-
-        navigateTo(DashboardMenuRegistry.DASHBOARD);
-    }
-
-    @FXML
-    public void onEmployee() {
-
-        navigateTo(DashboardMenuRegistry.EMPLOYEE);
-    }
-
-    @FXML
-    public void onAttendance() {
-
-        navigateTo(DashboardMenuRegistry.ATTENDANCE);
-    }
-
-    @FXML
-    public void onUserManagement() {
-
-        navigateTo(DashboardMenuRegistry.USER_MANAGEMENT);
-    }
-
-    @FXML
-    public void onProduct() {
-
-        navigateTo(DashboardMenuRegistry.PRODUCT);
-    }
-
-    @FXML
-    public void onCategory() {
-
-        navigateTo(DashboardMenuRegistry.CATEGORY);
-    }
-
-    @FXML
-    public void onInventory() {
-
-        navigateTo(DashboardMenuRegistry.INVENTORY);
-    }
-
-    @FXML
     public void onImport() {
 
         navigateTo(DashboardMenuRegistry.IMPORT);
-    }
-
-    @FXML
-    public void onOrder() {
-
-        navigateTo(DashboardMenuRegistry.ORDER);
-    }
-
-    @FXML
-    public void onSystemTools() {
-
-        navigateTo(DashboardMenuRegistry.SYSTEM_TOOLS);
-    }
-
-    @FXML
-    public void onAuditLogs() {
-
-        navigateTo(DashboardMenuRegistry.AUDIT_LOGS);
     }
 
     @FXML
@@ -428,7 +368,6 @@ public class DashboardShellController {
             case DashboardMenuRegistry.INVENTORY -> "▤";
             case DashboardMenuRegistry.IMPORT -> "↧";
             case DashboardMenuRegistry.ORDER -> "◉";
-            case DashboardMenuRegistry.ONLINE_ORDER -> "◎";
             case DashboardMenuRegistry.SYSTEM_TOOLS -> "⚒";
             case DashboardMenuRegistry.AUDIT_LOGS -> "☑";
             case DashboardMenuRegistry.NOTIFICATIONS -> "●";

@@ -3,7 +3,6 @@ package com.storemanager.domain.message.presenter;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.message.model.MessageConversationRow;
-import com.storemanager.domain.message.model.MessageHistoryRow;
 import com.storemanager.domain.message.service.MessageService;
 import com.storemanager.domain.message.view.MessageInboxController;
 import javafx.animation.KeyFrame;
@@ -98,7 +97,7 @@ public class MessageInboxPresenter {
                 throwable -> {
                     loadingState = LoadingState.ERROR;
                     if (interactive) {
-                        view.setStatus("Cannot load messages");
+                        view.setStatus("Unable to load messages");
                         view.showError(throwable.getMessage());
                     }
                 },

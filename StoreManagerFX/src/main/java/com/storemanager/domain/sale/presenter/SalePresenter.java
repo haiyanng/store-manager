@@ -6,7 +6,6 @@ import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
-import com.storemanager.domain.sale.model.SaleOrderItemDetail;
 import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.service.SaleService;
 import com.storemanager.domain.sale.view.SaleController;
@@ -52,7 +51,7 @@ public class SalePresenter extends BaseModulePresenter {
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("Loading sale workspace...");
+        view.setStatus("Loading order workspace...");
         view.clearSelectedProductPreview();
 
         AsyncTaskRunner.run(
@@ -76,7 +75,7 @@ public class SalePresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load sale workspace");
+                    view.setStatus("Unable to load order workspace");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
@@ -109,7 +108,7 @@ public class SalePresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load order details");
+                    view.setStatus("Unable to load order details");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
@@ -147,7 +146,7 @@ public class SalePresenter extends BaseModulePresenter {
                 );
             } else {
                 existingItem.setQuantity(
-                        existingItem.getQuantity() + quantity
+                        Math.addExact(existingItem.getQuantity(), quantity)
                 );
             }
 
@@ -190,7 +189,7 @@ public class SalePresenter extends BaseModulePresenter {
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("Finalizing sale...");
+        view.setStatus("Finalizing order...");
 
         List<SaleCartItem> saleItems =
                 new ArrayList<>(cartItems);
@@ -201,13 +200,13 @@ public class SalePresenter extends BaseModulePresenter {
                     cartItems.clear();
                     view.clearEntryForm();
                     updateCartView();
-                    view.setStatus("Sale order #" + orderId + " created");
+                    view.setStatus("Order #" + orderId + " created");
                     loadSaleData();
                 },
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot finalize sale");
+                    view.setStatus("Cannot finalize order");
                     view.showError(throwable.getMessage());
                     view.setBusy(false);
                 },

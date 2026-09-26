@@ -328,38 +328,6 @@ public class ImportService {
     }
 
     private void createInventoryImportTransaction(
-            Long receiptId,
-            ImportItem item
-    ) {
-
-        InventoryTransaction transaction =
-                new InventoryTransaction();
-
-        transaction.setProductId(
-                item.getProductId()
-        );
-        transaction.setType(
-                InventoryTransactionType.IMPORT
-        );
-        transaction.setQuantity(
-                item.getQuantity()
-        );
-        transaction.setReason(
-                "Import receipt #" + receiptId
-        );
-
-        boolean success =
-                inventoryService.adjustStock(transaction);
-
-        if (!success) {
-            throw new RuntimeException(
-                    "Cannot increase inventory for product "
-                            + item.getProductId()
-            );
-        }
-    }
-
-    private void createInventoryImportTransaction(
             Connection connection,
             Long receiptId,
             ImportItem item
@@ -453,6 +421,10 @@ public class ImportService {
                 throw new RuntimeException(
                         "Unit cost cannot be negative"
                 );
+            }
+
+            if (cartItem.getUnitCost().stripTrailingZeros().scale() > 2) {
+                throw new IllegalArgumentException("Unit cost must have at most 2 decimal places");
             }
         }
     }

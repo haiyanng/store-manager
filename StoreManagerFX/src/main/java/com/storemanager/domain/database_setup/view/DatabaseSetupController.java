@@ -49,15 +49,15 @@ public class DatabaseSetupController {
         if (success) {
 
             showInfo(
-                    "Kết nối thành công",
-                    "Đã kết nối được tới MySQL."
+                    "Connection successful",
+                    "Connected to MySQL successfully."
             );
 
         } else {
 
             showError(
-                    "Kết nối thất bại",
-                    "Kiểm tra lại host, port, username, password hoặc MySQL service."
+                    "Connection failed",
+                    "Check the host, port, username and password, and make sure MySQL is running."
             );
         }
     }
@@ -74,8 +74,8 @@ public class DatabaseSetupController {
         if (!success) {
 
             showError(
-                    "Không thể lưu cấu hình",
-                    "Kết nối MySQL thất bại hoặc không thể ghi file config."
+                    "Unable to save configuration",
+                    "Unable to connect to MySQL or save the configuration file."
             );
         }
     }

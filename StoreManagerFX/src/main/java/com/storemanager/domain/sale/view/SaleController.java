@@ -1,5 +1,6 @@
 package com.storemanager.domain.sale.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.storage.ImageStorageService;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
@@ -23,7 +24,6 @@ import javafx.scene.image.ImageView;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class SaleController {
@@ -122,6 +122,15 @@ public class SaleController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(cartTable, "Your order is empty. Select a product and choose Add item.");
+        UiFeedback.emptyTable(orderTable, "No orders found.");
+        UiFeedback.emptyTable(orderDetailTable, "Select an order to view its items.");
+        UiFeedback.moneyColumn(cartUnitPriceColumn);
+        UiFeedback.moneyColumn(cartSubtotalColumn);
+        UiFeedback.moneyColumn(orderTotalColumn);
+        UiFeedback.moneyColumn(detailUnitPriceColumn);
+        UiFeedback.moneyColumn(detailSubtotalColumn);
+
 
         presenter =
                 new SalePresenter(
@@ -240,9 +249,7 @@ public class SaleController {
     ) {
 
         totalLabel.setText(
-                totalAmount == null
-                        ? "0.00"
-                        : totalAmount.toPlainString()
+                UiFeedback.money(totalAmount)
         );
     }
 
@@ -316,21 +323,17 @@ public class SaleController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        if (status.toLowerCase().contains("details")) {
+            UiFeedback.status(statusLabel, status, orderDetailTable);
+        } else {
+            UiFeedback.status(statusLabel, status, orderTable);
+        }
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureCartTable() {
@@ -458,7 +461,7 @@ public class SaleController {
 
             if (image.isError()) {
                 System.err.println(
-                        "[SALE_PREVIEW] Cannot load product image: "
+                        "[SALE_PREVIEW] Unable to load product image: "
                                 + imagePath
                 );
                 return;
@@ -471,7 +474,7 @@ public class SaleController {
         } catch (Exception e) {
 
             System.err.println(
-                    "[SALE_PREVIEW] Cannot load product image: "
+                    "[SALE_PREVIEW] Unable to load product image: "
                             + imagePath
             );
         }

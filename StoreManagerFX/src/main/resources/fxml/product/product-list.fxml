@@ -20,21 +20,21 @@
             <Label text="Product"
                    styleClass="content-title"/>
 
-            <Label text="Manage catalog items. Stock is handled by Inventory."
+            <Label text="Manage products, prices and availability."
                    styleClass="content-description"/>
         </VBox>
-        <Button text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
+        <Button fx:id="refreshButton" text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
     </HBox>
 
     <VBox spacing="18" styleClass="record-editor" maxWidth="Infinity">
         <Label text="Product details" styleClass="record-section-title"/>
         <fx:include fx:id="productForm" source="product-form.fxml"/>
         <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="record-actions">
-            <Button fx:id="deleteButton" text="Delete"
+            <Button fx:id="deleteButton" text="Deactivate"
                     styleClass="record-danger-button" onAction="#onDelete"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Clear" styleClass="module-secondary-button" onAction="#onClear"/>
-            <Button fx:id="updateButton" text="Update" styleClass="module-secondary-button" onAction="#onUpdate"/>
+            <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
+            <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
             <Button fx:id="createButton" text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
         </HBox>
     </VBox>
@@ -75,7 +75,7 @@
                          prefWidth="160"/>
 
             <TableColumn fx:id="basePriceColumn"
-                         text="Base price"
+                         text="Base price (VND)"
                          minWidth="90"
                          prefWidth="110"/>
 
@@ -85,7 +85,7 @@
                          prefWidth="90"/>
 
             <TableColumn fx:id="activeColumn"
-                         text="Active"
+                         text="Status"
                          minWidth="65"
                          prefWidth="90"/>
         </columns>

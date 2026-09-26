@@ -4,11 +4,9 @@ import com.storemanager.core.runtime.BaseModulePresenter;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.audit.model.AuditLogFilter;
-import com.storemanager.domain.audit.model.AuditLogViewDto;
 import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.audit.view.AuditLogController;
 
-import java.util.List;
 
 public class AuditLogPresenter extends BaseModulePresenter {
 
@@ -50,7 +48,7 @@ public class AuditLogPresenter extends BaseModulePresenter {
                 },
                 throwable -> {
                     loadingState = LoadingState.ERROR;
-                    view.setStatus("Cannot load audit logs");
+                    view.setStatus("Unable to load audit logs");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)

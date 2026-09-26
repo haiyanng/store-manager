@@ -11,7 +11,6 @@ import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalySeverit
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyStatus;
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyType;
 import com.storemanager.domain.attendance_anomaly.service.AttendanceAnomalyService;
-import com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyFormController;
 import com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyListController;
 import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.employee.model.Employee;
@@ -79,7 +78,7 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
                 },
                 throwable -> {
                     loadingState = LoadingState.ERROR;
-                    view.setStatus("Cannot load attendance anomalies");
+                    view.setStatus("Unable to load attendance anomalies");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)

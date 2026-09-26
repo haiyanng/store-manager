@@ -14,7 +14,6 @@ import com.storemanager.domain.dashboard.model.DashboardCashFlowSummary;
 import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
 import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
 import com.storemanager.domain.dashboard.model.DashboardMetricCard;
-import com.storemanager.domain.dashboard.model.DashboardOnlineOrderSnapshot;
 import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
 import com.storemanager.domain.dashboard.model.ManagerDashboardDto;
 import com.storemanager.domain.dashboard.model.OwnerDashboardDto;
@@ -23,15 +22,17 @@ import com.storemanager.domain.employee.service.EmployeeService;
 import com.storemanager.domain.importing.service.ImportService;
 import com.storemanager.domain.inventory.service.InventoryService;
 import com.storemanager.domain.sale.service.SaleService;
+import com.storemanager.domain.product.model.Product;
+import com.storemanager.domain.product.service.ProductService;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.core.util.TimeFormatUtil;
+import com.storemanager.core.util.MoneyFormatUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,7 @@ public class DashboardAnalyticsService {
     private final InventoryService inventoryService =
             new InventoryService();
 
-    private final DashboardOnlineOrderService onlineOrderService =
-            new DashboardOnlineOrderService();
+    private final ProductService productService = new ProductService();
 
     public DashboardAnalyticsSnapshot loadDashboardAnalytics() {
 
@@ -67,6 +67,14 @@ public class DashboardAnalyticsService {
 
         if (currentUser == null) {
             throw new RuntimeException("User session is required");
+        }
+
+        if (!PermissionGuard.canViewDashboard()) {
+            throw new RuntimeException("Dashboard access denied");
+        }
+
+        if (PermissionGuard.isViewer()) {
+            return buildViewerSnapshot(currentUser);
         }
 
         if (PermissionGuard.isEmployee()) {
@@ -78,6 +86,20 @@ public class DashboardAnalyticsService {
         }
 
         return buildExecutiveSnapshot(currentUser);
+    }
+
+    private DashboardAnalyticsSnapshot buildViewerSnapshot(User currentUser) {
+        List<Product> products = productService.findAllIncludingInactive();
+        DashboardAnalyticsSnapshot snapshot = createBaseSnapshot(
+                currentUser.getRole(), "Catalog Overview", "View products and categories");
+        snapshot.setMetrics(List.of(
+                new DashboardMetricCard("Products", String.valueOf(products.size()), "All catalog records"),
+                new DashboardMetricCard("Active products",
+                        String.valueOf(products.stream().filter(Product::isActive).count()), "Available catalog records"),
+                new DashboardMetricCard("Categories", String.valueOf(productService.findCategories().size()),
+                        "Product categories")
+        ));
+        return snapshot;
     }
 
     private DashboardAnalyticsSnapshot buildEmployeeSnapshot(
@@ -204,9 +226,6 @@ public class DashboardAnalyticsService {
         dto.setSalesOverview(buildSalesOverviewSummary());
         dto.setBranchOperationalSummaries(buildBranchSummaries());
         dto.setEmployeeLocations(buildEmployeeLocationRows());
-        dto.setOnlineOrderDashboard(
-                onlineOrderService.loadDashboard()
-        );
 
         return dto;
     }
@@ -230,9 +249,6 @@ public class DashboardAnalyticsService {
         dto.setEmployeeLocations(buildEmployeeLocationRows());
         dto.setCashFlowSummaries(buildCashFlowSummaries());
         dto.setInventoryAlerts(buildInventoryAlertRows());
-        dto.setOnlineOrderDashboard(
-                onlineOrderService.loadDashboard()
-        );
 
         return dto;
     }
@@ -317,11 +333,6 @@ public class DashboardAnalyticsService {
         );
     }
 
-    private List<DashboardMetricCard> buildExecutiveMetrics() {
-
-        return buildOwnerMetrics();
-    }
-
     private List<DashboardMetricCard> buildOwnerMetrics() {
 
         BigDecimal revenueMonth =
@@ -372,27 +383,6 @@ public class DashboardAnalyticsService {
                         "Low stock items requiring attention"
                 )
         );
-    }
-
-    private String buildOwnAttendanceSummary(
-            Employee employee
-    ) {
-
-        if (employee == null) {
-            return "No employee profile linked to the current account";
-        }
-
-        BigDecimal hours =
-                sumAttendanceHoursForEmployeeCurrentMonth(employee);
-
-        long sessions =
-                countAttendanceSessionsForEmployeeCurrentMonth(employee);
-
-        return "Current month: "
-                + formatDurationHours(hours)
-                + " across "
-                + sessions
-                + " sessions";
     }
 
     private String buildOwnBranchesSummary(
@@ -587,43 +577,6 @@ public class DashboardAnalyticsService {
         return List.of(monthSummary, totalSummary);
     }
 
-    private BigDecimal sumAttendanceHoursForEmployee(
-            Employee employee
-    ) {
-
-        if (employee == null) {
-            return BigDecimal.ZERO;
-        }
-
-        return attendanceService.findSessionsByEmployeeId(
-                        employee.getId()
-                )
-                .stream()
-                .filter(this::isCurrentMonthSession)
-                .filter(session -> session.getWorkedHours() != null)
-                .map(AttendanceSession::getWorkedHours)
-                .reduce(
-                        BigDecimal.ZERO,
-                        BigDecimal::add
-                );
-    }
-
-    private long countAttendanceSessionsForEmployee(
-            Employee employee
-    ) {
-
-        if (employee == null) {
-            return 0L;
-        }
-
-        return attendanceService.findSessionsByEmployeeId(
-                        employee.getId()
-                )
-                .stream()
-                .filter(this::isCurrentMonthSession)
-                .count();
-    }
-
     private long countAssignedBranchesForEmployee(
             Employee employee
     ) {
@@ -685,24 +638,6 @@ public class DashboardAnalyticsService {
                         BigDecimal.ZERO,
                         BigDecimal::add
                 );
-    }
-
-    private long countAttendanceSessionsForEmployeeCurrentMonth(
-            Employee employee
-    ) {
-
-        if (employee == null) {
-            return 0L;
-        }
-
-        LocalDate today = LocalDate.now();
-
-        return attendanceService.findSessionsByEmployeeId(
-                        employee.getId()
-                )
-                .stream()
-                .filter(session -> isSameMonth(session.getCheckInTime(), today))
-                .count();
     }
 
     private long countTotalEmployees() {
@@ -983,13 +918,7 @@ public class DashboardAnalyticsService {
     private String formatMoney(
             BigDecimal value
     ) {
-
-        BigDecimal normalized =
-                value == null
-                        ? BigDecimal.ZERO
-                        : value.setScale(2, RoundingMode.HALF_UP);
-
-        return normalized.toPlainString();
+        return MoneyFormatUtil.format(value);
     }
 
     private String formatHours(

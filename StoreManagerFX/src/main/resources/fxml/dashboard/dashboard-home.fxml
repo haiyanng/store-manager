@@ -96,12 +96,12 @@
         <FlowPane hgap="10"
                   vgap="10">
             <Button fx:id="quickCheckInButton"
-                    text="Check-In"
+                    text="Check in"
                     styleClass="module-button"
                     onAction="#onQuickCheckIn"/>
 
             <Button fx:id="quickCheckOutButton"
-                    text="Check-Out"
+                    text="Check out"
                     styleClass="module-button"
                     onAction="#onQuickCheckOut"/>
         </FlowPane>
@@ -150,26 +150,6 @@
         </TableView>
     </VBox>
 
-    <VBox fx:id="onlineOrderSection" spacing="12" styleClass="analytics-section">
-        <Label text="Online Orders" styleClass="analytics-section-title"/>
-        <Label text="Read-only order summary and recent activity" styleClass="analytics-section-text"/>
-
-        <FlowPane fx:id="onlineOrderMetricsPane"
-                  hgap="14"
-                  vgap="14"
-                  prefWrapLength="1200"
-                  styleClass="analytics-grid"/>
-
-        <TableView fx:id="onlineOrderTable" prefHeight="240" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="onlineOrderIdColumn" text="Order ID"/>
-                <TableColumn fx:id="onlineOrderCustomerColumn" text="Customer"/>
-                <TableColumn fx:id="onlineOrderStatusColumn" text="Status"/>
-                <TableColumn fx:id="onlineOrderTotalColumn" text="Total Amount"/>
-                <TableColumn fx:id="onlineOrderCreatedAtColumn" text="Created Time"/>
-            </columns>
-        </TableView>
-    </VBox>
 
     <VBox fx:id="ownerSection" spacing="12" styleClass="analytics-section">
         <Label text="Business Control" styleClass="analytics-section-title"/>
@@ -191,7 +171,7 @@
         <TableView fx:id="inventoryAlertTable" prefHeight="220" styleClass="analytics-table">
             <columns>
                 <TableColumn fx:id="inventoryProductColumn" text="Product"/>
-                <TableColumn fx:id="inventoryQuantityColumn" text="Qty"/>
+                <TableColumn fx:id="inventoryQuantityColumn" text="Quantity"/>
                 <TableColumn fx:id="inventoryAlertColumn" text="Alert"/>
             </columns>
         </TableView>

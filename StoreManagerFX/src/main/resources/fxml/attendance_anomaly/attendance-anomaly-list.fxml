@@ -36,7 +36,7 @@
             <DatePicker fx:id="fromDatePicker" promptText="From"/>
             <DatePicker fx:id="toDatePicker" promptText="To"/>
             <Button fx:id="applyFilterButton" text="Apply" onAction="#onApplyFilters"/>
-            <Button fx:id="clearFilterButton" text="Clear" onAction="#onClearFilters"/>
+            <Button fx:id="clearFilterButton" text="Clear filters" onAction="#onClearFilters"/>
             <Button fx:id="refreshButton" text="Refresh" onAction="#onRefresh"/>
         </HBox>
     </VBox>
@@ -68,7 +68,7 @@
 
             <VBox fx:id="managerActionsBox" spacing="8">
                 <Button fx:id="submitReportButton"
-                        text="Submit Report"
+                        text="Submit report"
                         styleClass="module-button"
                         maxWidth="Infinity"
                         onAction="#onSubmitReport"/>
@@ -88,13 +88,13 @@
                         onAction="#onDismiss"/>
 
                 <Button fx:id="saveAttendanceButton"
-                        text="Save Attendance Edits"
+                        text="Save attendance changes"
                         styleClass="module-button"
                         maxWidth="Infinity"
                         onAction="#onSaveAttendanceEdits"/>
 
                 <Button fx:id="updateNotificationButton"
-                        text="Update Employee Notification"
+                        text="Update employee notification"
                         styleClass="module-button"
                         maxWidth="Infinity"
                         onAction="#onUpdateEmployeeNotification"/>

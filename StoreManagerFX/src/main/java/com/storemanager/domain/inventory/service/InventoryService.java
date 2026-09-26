@@ -221,13 +221,7 @@ public class InventoryService {
 
         if (type == InventoryTransactionType.SALE) {
             allowed =
-                    PermissionGuard.canCreateSale()
-                            || PermissionGuard.canModifyOnlineOrders();
-        } else if (type == InventoryTransactionType.IMPORT
-                || type == InventoryTransactionType.ADJUSTMENT) {
-            allowed =
-                    PermissionGuard.canAdjustInventory()
-                            || PermissionGuard.canModifyOnlineOrders();
+                    PermissionGuard.canCreateSale();
         } else {
             allowed =
                     PermissionGuard.canAdjustInventory();

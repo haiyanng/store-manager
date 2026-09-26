@@ -1,6 +1,8 @@
 package com.storemanager.domain.dashboard.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.navigation.SceneManager;
+import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.dashboard.model.DashboardAnalyticsSnapshot;
 import com.storemanager.domain.dashboard.model.DashboardAttendanceHistoryRow;
@@ -9,8 +11,6 @@ import com.storemanager.domain.dashboard.model.DashboardCashFlowSummary;
 import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
 import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
 import com.storemanager.domain.dashboard.model.DashboardMetricCard;
-import com.storemanager.domain.dashboard.model.DashboardOnlineOrderRow;
-import com.storemanager.domain.dashboard.model.DashboardOnlineOrderSnapshot;
 import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
 import com.storemanager.domain.dashboard.model.ManagerDashboardDto;
 import com.storemanager.domain.dashboard.model.OwnerDashboardDto;
@@ -105,8 +105,6 @@ public class DashboardHomeController {
     @FXML
     private VBox managerSection;
 
-    @FXML
-    private VBox onlineOrderSection;
 
     @FXML
     private Label branchEmployeeCountLabel;
@@ -150,26 +148,12 @@ public class DashboardHomeController {
     @FXML
     private TableColumn<DashboardEmployeeLocationRow, Long> locationAssignmentsColumn;
 
-    @FXML
-    private FlowPane onlineOrderMetricsPane;
 
-    @FXML
-    private TableView<DashboardOnlineOrderRow> onlineOrderTable;
 
-    @FXML
-    private TableColumn<DashboardOnlineOrderRow, Long> onlineOrderIdColumn;
 
-    @FXML
-    private TableColumn<DashboardOnlineOrderRow, String> onlineOrderCustomerColumn;
 
-    @FXML
-    private TableColumn<DashboardOnlineOrderRow, String> onlineOrderStatusColumn;
 
-    @FXML
-    private TableColumn<DashboardOnlineOrderRow, BigDecimal> onlineOrderTotalColumn;
 
-    @FXML
-    private TableColumn<DashboardOnlineOrderRow, String> onlineOrderCreatedAtColumn;
 
     @FXML
     private VBox ownerSection;
@@ -294,6 +278,15 @@ public class DashboardHomeController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(attendanceHistoryTable, "No records found.");
+        UiFeedback.emptyTable(branchSummaryTable, "No records found.");
+        UiFeedback.emptyTable(locationTable, "No records found.");
+        UiFeedback.emptyTable(cashFlowTable, "No records found.");
+        UiFeedback.emptyTable(inventoryAlertTable, "No records found.");
+        UiFeedback.moneyColumn(cashFlowRevenueColumn);
+        UiFeedback.moneyColumn(cashFlowImportColumn);
+        UiFeedback.moneyColumn(cashFlowProductColumn);
+
 
         User currentUser = AppSession.getCurrentUser();
         if (currentUser == null) {
@@ -309,7 +302,9 @@ public class DashboardHomeController {
 
         configureTables();
         presenter.initialize();
-        attendancePresenter.initialize();
+        if (PermissionGuard.isEmployee()) {
+            attendancePresenter.initialize();
+        }
     }
 
     public void renderSnapshot(
@@ -345,7 +340,10 @@ public class DashboardHomeController {
 
         if (ownerDashboard != null) {
             renderOwnerDashboard(ownerDashboard);
+            return;
         }
+
+        renderMetrics(snapshot.getMetrics());
     }
 
     public void showDataUnavailable() {
@@ -355,9 +353,6 @@ public class DashboardHomeController {
         setStatus("Data unavailable");
 
         renderMetrics(List.of());
-        if (onlineOrderMetricsPane != null) {
-            onlineOrderMetricsPane.getChildren().clear();
-        }
 
         setLabel(todayHoursLabel);
         setLabel(monthHoursLabel);
@@ -378,9 +373,6 @@ public class DashboardHomeController {
         locationTable.setItems(FXCollections.observableArrayList());
         cashFlowTable.setItems(FXCollections.observableArrayList());
         inventoryAlertTable.setItems(FXCollections.observableArrayList());
-        if (onlineOrderTable != null) {
-            onlineOrderTable.setItems(FXCollections.observableArrayList());
-        }
 
         hideAllSections();
     }
@@ -404,9 +396,6 @@ public class DashboardHomeController {
         }
         employeeSection.setDisable(busy);
         managerSection.setDisable(busy);
-        if (onlineOrderSection != null) {
-            onlineOrderSection.setDisable(busy);
-        }
         ownerSection.setDisable(busy);
     }
 
@@ -423,17 +412,13 @@ public class DashboardHomeController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, attendanceHistoryTable, branchSummaryTable, locationTable, cashFlowTable, inventoryAlertTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     @FXML
@@ -527,7 +512,6 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, true);
         setSectionVisible(quickAttendanceSection, true);
         setSectionVisible(managerSection, false);
-        setSectionVisible(onlineOrderSection, false);
         setSectionVisible(ownerSection, false);
 
         renderMetrics(dto.getMetrics());
@@ -550,7 +534,6 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, false);
         setSectionVisible(quickAttendanceSection, false);
         setSectionVisible(managerSection, true);
-        setSectionVisible(onlineOrderSection, true);
         setSectionVisible(ownerSection, false);
 
         renderMetrics(dto.getMetrics());
@@ -572,7 +555,6 @@ public class DashboardHomeController {
                 )
         );
 
-        renderOnlineOrderDashboard(dto.getOnlineOrderDashboard());
     }
 
     private void renderOwnerDashboard(
@@ -582,7 +564,6 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, false);
         setSectionVisible(quickAttendanceSection, false);
         setSectionVisible(managerSection, true);
-        setSectionVisible(onlineOrderSection, true);
         setSectionVisible(ownerSection, true);
 
         renderMetrics(dto.getMetrics());
@@ -621,75 +602,6 @@ public class DashboardHomeController {
                 )
         );
 
-        renderOnlineOrderDashboard(dto.getOnlineOrderDashboard());
-    }
-
-    private void renderOnlineOrderDashboard(
-            DashboardOnlineOrderSnapshot snapshot
-    ) {
-
-        setSectionVisible(onlineOrderSection, true);
-
-        DashboardOnlineOrderSnapshot safeSnapshot =
-                snapshot == null ? new DashboardOnlineOrderSnapshot() : snapshot;
-
-        onlineOrderMetricsPane.getChildren().setAll(
-                createMetricCards(
-                        List.of(
-                                new DashboardMetricCard(
-                                        "Total Orders",
-                                        String.valueOf(safeSnapshot.getTotalOrders()),
-                                        "All online order records"
-                                ),
-                                new DashboardMetricCard(
-                                        "Pending Orders",
-                                        String.valueOf(safeSnapshot.getPendingOrders()),
-                                        "Waiting for confirmation"
-                                ),
-                                new DashboardMetricCard(
-                                        "Confirmed Orders",
-                                        String.valueOf(safeSnapshot.getConfirmedOrders()),
-                                        "Stock reserved at confirmation"
-                                ),
-                                new DashboardMetricCard(
-                                        "Delivering Orders",
-                                        String.valueOf(safeSnapshot.getDeliveringOrders()),
-                                        "Orders currently in delivery"
-                                ),
-                                new DashboardMetricCard(
-                                        "Delivered Orders",
-                                        String.valueOf(safeSnapshot.getDeliveredOrders()),
-                                        "Completed online deliveries"
-                                ),
-                                new DashboardMetricCard(
-                                        "Cancelled Orders",
-                                        String.valueOf(safeSnapshot.getCancelledOrders()),
-                                        "Orders closed by cancellation"
-                                ),
-                                new DashboardMetricCard(
-                                        "Total Revenue",
-                                        formatMoney(safeSnapshot.getTotalRevenue()),
-                                        "Delivered orders only"
-                                ),
-                                new DashboardMetricCard(
-                                        "Revenue Today",
-                                        formatMoney(safeSnapshot.getRevenueToday()),
-                                        "Delivered revenue for today"
-                                ),
-                                new DashboardMetricCard(
-                                        "Orders Today",
-                                        String.valueOf(safeSnapshot.getOrdersToday()),
-                                        "Orders created today"
-                                )
-                        )
-                )
-        );
-
-        onlineOrderTable.setItems(
-                FXCollections.observableArrayList(
-                        safeSnapshot.getRecentOrders()
-                )
-        );
     }
 
     private String buildOwnerAttendanceOverview(
@@ -724,7 +636,6 @@ public class DashboardHomeController {
         setSectionVisible(employeeSection, false);
         setSectionVisible(quickAttendanceSection, false);
         setSectionVisible(managerSection, false);
-        setSectionVisible(onlineOrderSection, false);
         setSectionVisible(ownerSection, false);
     }
 
@@ -761,9 +672,6 @@ public class DashboardHomeController {
                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
         );
         inventoryAlertTable.setColumnResizePolicy(
-                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
-        );
-        onlineOrderTable.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
         );
 
@@ -868,76 +776,6 @@ public class DashboardHomeController {
                 )
         );
 
-        onlineOrderIdColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getOrderId()
-                )
-        );
-        onlineOrderCustomerColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getCustomerName()
-                )
-        );
-        onlineOrderStatusColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getStatus()
-                )
-        );
-        onlineOrderTotalColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getTotalAmount()
-                )
-        );
-        onlineOrderCreatedAtColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        TimeFormatUtil.formatDateTime(
-                                cellData.getValue().getCreatedAt()
-                        )
-                )
-        );
-    }
-
-    private List<VBox> createMetricCards(
-            List<DashboardMetricCard> cards
-    ) {
-
-        if (cards == null || cards.isEmpty()) {
-            return List.of();
-        }
-
-        return cards.stream()
-                .map(this::createMetricCard)
-                .toList();
-    }
-
-    private VBox createMetricCard(
-            DashboardMetricCard card
-    ) {
-
-        VBox box = new VBox(4);
-        box.getStyleClass().add("analytics-card");
-        box.setPrefWidth(240);
-        box.setMinWidth(220);
-
-        Label title = new Label(valueOrDefault(card.getTitle()));
-        title.getStyleClass().add("analytics-card-title");
-
-        Label value = new Label(valueOrDefault(card.getValue()));
-        value.getStyleClass().add("analytics-card-value");
-
-        Label detail = new Label(valueOrDefault(card.getDetail()));
-        detail.getStyleClass().add("analytics-card-detail");
-        detail.setWrapText(true);
-
-        box.getChildren().addAll(title, value, detail);
-        return box;
-    }
-
-    private String formatMoney(
-            BigDecimal value
-    ) {
-
-        return value == null ? "0.00" : value.toPlainString();
     }
 
     private void renderMetrics(

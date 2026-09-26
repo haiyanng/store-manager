@@ -36,7 +36,7 @@
 
             <CheckBox fx:id="productsCheckBox" text="Products"/>
             <CheckBox fx:id="employeesCheckBox" text="Employees"/>
-            <CheckBox fx:id="salesCheckBox" text="Sales"/>
+            <CheckBox fx:id="salesCheckBox" text="Orders"/>
             <CheckBox fx:id="attendanceCheckBox" text="Attendance"/>
             <CheckBox fx:id="imagesCheckBox" text="Images"/>
             <CheckBox fx:id="auditLogsCheckBox" text="Audit Logs"/>

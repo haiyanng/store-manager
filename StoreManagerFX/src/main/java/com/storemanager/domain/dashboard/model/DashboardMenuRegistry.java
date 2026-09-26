@@ -17,7 +17,6 @@ public final class DashboardMenuRegistry {
     public static final String INVENTORY = "inventory";
     public static final String IMPORT = "import";
     public static final String ORDER = "order";
-    public static final String ONLINE_ORDER = "online_order";
     public static final String SYSTEM_TOOLS = "system_tools";
     public static final String AUDIT_LOGS = "audit_logs";
     public static final String NOTIFICATIONS = "notifications";
@@ -77,6 +76,13 @@ public final class DashboardMenuRegistry {
                             ALL_ROLES
                     ),
                     new DashboardMenuItem(
+                            ORDER,
+                            "Order",
+                            "/fxml/sale/sale.fxml",
+                            true,
+                            STAFF_WORKFLOW_ROLES
+                    ),
+                    new DashboardMenuItem(
                             EMPLOYEE,
                             "Employee",
                             "/fxml/employee/employee-list.fxml",
@@ -129,20 +135,6 @@ public final class DashboardMenuRegistry {
                             IMPORT,
                             "Import",
                             "/fxml/importing/import.fxml",
-                            true,
-                            MANAGER_WORKFLOW_ROLES
-                    ),
-                    new DashboardMenuItem(
-                            ORDER,
-                            "Order",
-                            "/fxml/sale/sale.fxml",
-                            true,
-                            STAFF_WORKFLOW_ROLES
-                    ),
-                    new DashboardMenuItem(
-                            ONLINE_ORDER,
-                            "Online Orders",
-                            "/fxml/onlineorder/online-order.fxml",
                             true,
                             MANAGER_WORKFLOW_ROLES
                     ),

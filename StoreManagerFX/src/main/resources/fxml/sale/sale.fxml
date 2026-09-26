@@ -18,10 +18,10 @@
       spacing="18">
 
     <VBox spacing="6">
-        <Label text="Sale"
+        <Label text="Order"
                styleClass="content-title"/>
 
-        <Label text="Create sale orders and reduce inventory with transaction history."
+        <Label text="Create in-store orders and track completed sales."
                styleClass="content-description"/>
     </VBox>
 
@@ -79,7 +79,7 @@
                            styleClass="analytics-card-detail"/>
 
                     <Label fx:id="selectedProductPreviewPriceLabel"
-                           text="Unit price: 0.00"
+                           text="Unit price: 0 VND"
                            styleClass="analytics-card-detail"/>
 
                     <Label fx:id="selectedProductPreviewStockLabel"
@@ -95,15 +95,15 @@
                        prefWidth="90"
                        styleClass="module-input"/>
 
-            <Button text="Add"
+            <Button text="Add item"
                     styleClass="module-button"
                     onAction="#onAddToCart"/>
 
-            <Button text="Remove"
+            <Button text="Remove item"
                     styleClass="module-button"
                     onAction="#onRemoveItem"/>
 
-            <Button text="Clear"
+            <Button text="Clear items"
                     styleClass="module-button"
                     onAction="#onClearCart"/>
         </HBox>
@@ -125,7 +125,7 @@
                              prefWidth="130"/>
 
                 <TableColumn fx:id="cartQuantityColumn"
-                             text="Qty"
+                             text="Quantity"
                              prefWidth="80"/>
 
                 <TableColumn fx:id="cartUnitPriceColumn"
@@ -145,7 +145,7 @@
                styleClass="content-description"/>
 
         <Label fx:id="totalLabel"
-               text="0.00"
+               text="0 VND"
                styleClass="content-title"/>
 
         <Region HBox.hgrow="ALWAYS"/>
@@ -154,7 +154,7 @@
                 styleClass="module-button"
                 onAction="#onRefresh"/>
 
-        <Button text="Finalize Sale"
+        <Button text="Complete order"
                 styleClass="module-button"
                 onAction="#onFinalizeSale"/>
     </HBox>
@@ -201,7 +201,7 @@
                              prefWidth="130"/>
 
                 <TableColumn fx:id="detailQuantityColumn"
-                             text="Qty"
+                             text="Quantity"
                              prefWidth="80"/>
 
                 <TableColumn fx:id="detailUnitPriceColumn"

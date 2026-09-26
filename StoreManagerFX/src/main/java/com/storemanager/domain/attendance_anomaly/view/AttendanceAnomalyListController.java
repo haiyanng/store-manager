@@ -1,5 +1,6 @@
 package com.storemanager.domain.attendance_anomaly.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomaly;
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyFilter;
@@ -24,7 +25,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -118,6 +118,10 @@ public class AttendanceAnomalyListController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(anomalyTable, "No attendance anomalies match the current filters.");
+        UiFeedback.datePicker(fromDatePicker);
+        UiFeedback.datePicker(toDatePicker);
+
 
         presenter =
                 new AttendanceAnomalyPresenter(this);
@@ -356,18 +360,13 @@ public class AttendanceAnomalyListController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, anomalyTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureFilters() {

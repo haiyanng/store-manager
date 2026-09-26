@@ -23,9 +23,9 @@
                        preserveRatio="true" smooth="true"/>
         </StackPane>
         <VBox spacing="6" alignment="CENTER" maxWidth="140">
-            <Button text="Select Image" onAction="#onSelectImage"
+            <Button text="Select image" onAction="#onSelectImage"
                     maxWidth="Infinity" styleClass="module-secondary-button"/>
-            <Button text="Remove Image" onAction="#onRemoveImage"
+            <Button text="Remove image" onAction="#onRemoveImage"
                     maxWidth="Infinity" styleClass="module-secondary-button"/>
         </VBox>
     </HBox>

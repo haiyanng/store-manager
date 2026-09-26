@@ -68,7 +68,7 @@ public class InventoryPresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load inventory");
+                    view.setStatus("Unable to load inventory");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)

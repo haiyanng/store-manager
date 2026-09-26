@@ -1,5 +1,7 @@
 package com.storemanager.domain.employee.view;
 
+import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.presenter.EmployeePresenter;
@@ -50,10 +52,20 @@ public class EmployeeListController {
     @FXML
     private Button deleteButton;
 
+    private boolean busy;
+    @FXML private Button createButton;
+    @FXML private Button clearButton;
+    @FXML private Button refreshButton;
+    @FXML private javafx.scene.Node employeeForm;
+    @FXML private javafx.scene.control.Label statusLabel;
+
     private EmployeePresenter presenter;
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(employeeTable, "No employees yet. Use Create to add an employee.");
+        UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
+
 
         presenter =
                 new EmployeePresenter(
@@ -109,22 +121,31 @@ public class EmployeeListController {
 
     @FXML
     public void onCreate() {
+        try {
 
         presenter.saveEmployee(
                 employeeFormController.readEmployee()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onUpdate() {
+        try {
 
         presenter.saveEmployee(
                 employeeFormController.readEmployee()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onDelete() {
+        if (!UiFeedback.confirm("Delete employee?", "This permanently deletes the selected employee record.")) return;
 
         presenter.deleteEmployee();
     }
@@ -171,35 +192,34 @@ public class EmployeeListController {
         employeeFormController.clear();
     }
 
-    public void setUpdateEnabled(
-            boolean enabled
-    ) {
-
-        updateButton.setDisable(
-                !enabled
-        );
+    public void setUpdateEnabled(boolean enabled) {
+        setBusy(busy);
     }
 
-    public void setDeleteEnabled(
-            boolean enabled
-    ) {
+    public void setDeleteEnabled(boolean enabled) {
+        setBusy(busy);
+    }
 
-        deleteButton.setDisable(
-                !enabled
-        );
+    public void setBusy(boolean busy) {
+        this.busy = busy;
+        boolean allowed = PermissionGuard.canViewEmployee();
+        boolean selected = employeeTable.getSelectionModel().getSelectedItem() != null;
+        employeeTable.setDisable(busy);
+        employeeForm.setDisable(busy || !allowed);
+        refreshButton.setDisable(busy);
+        clearButton.setDisable(busy);
+        createButton.setDisable(busy || !allowed || selected);
+        updateButton.setDisable(busy || !allowed || !selected);
+        deleteButton.setDisable(busy || !allowed || !selected);
+    }
+
+    public void setStatus(String status) {
+        UiFeedback.status(statusLabel, status, employeeTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 }

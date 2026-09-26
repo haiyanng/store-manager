@@ -1,5 +1,6 @@
 package com.storemanager.domain.inventory.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.inventory.model.InventoryItem;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.presenter.InventoryPresenter;
@@ -66,6 +67,9 @@ public class InventoryListController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(inventoryTable, "No stock records found.");
+        UiFeedback.emptyTable(transactionTable, "No inventory transactions found.");
+
 
         presenter =
                 new InventoryPresenter(
@@ -118,21 +122,13 @@ public class InventoryListController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, inventoryTable, transactionTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureInventoryTable() {

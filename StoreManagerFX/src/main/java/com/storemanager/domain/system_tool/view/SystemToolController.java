@@ -1,5 +1,6 @@
 package com.storemanager.domain.system_tool.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.system_tool.presenter.SystemToolPresenter;
 import com.storemanager.domain.system_tool.backup.model.BackupSummary;
 import com.storemanager.core.util.TimeFormatUtil;
@@ -205,15 +206,7 @@ public class SystemToolController {
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private String formatBytes(

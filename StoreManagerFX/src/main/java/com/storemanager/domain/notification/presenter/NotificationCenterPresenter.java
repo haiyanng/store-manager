@@ -9,7 +9,6 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
 
-import java.util.List;
 
 public class NotificationCenterPresenter {
 
@@ -100,7 +99,7 @@ public class NotificationCenterPresenter {
                 throwable -> {
                     loadingState = LoadingState.ERROR;
                     if (interactive) {
-                        view.setStatus("Cannot load notifications");
+                        view.setStatus("Unable to load notifications");
                         view.showError(throwable.getMessage());
                     }
                 },

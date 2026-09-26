@@ -1,5 +1,6 @@
 package com.storemanager.domain.auth.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.domain.auth.dto.LoginResponse;
 import com.storemanager.domain.auth.presenter.LoginPresenter;
@@ -120,20 +121,6 @@ public class LoginController {
     private void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(
-                null
-        );
-
-        alert.setContentText(
-                message
-        );
-
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 }
