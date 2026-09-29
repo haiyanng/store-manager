@@ -58,10 +58,6 @@ OWNER thực hiện sao lưu trong System Tools, chọn chương trình `mysqldu
 
 Ứng dụng xuất ra file tạm trong cùng thư mục đích. Chỉ khi `mysqldump` kết thúc thành công và file có dữ liệu, ứng dụng mới chuyển file tạm thành file đã chọn. Nếu quá trình xuất bị lỗi, bản sao lưu cũ tại đường dẫn đó vẫn được giữ và thông báo hiển thị nguyên nhân từ `mysqldump`. Đây là sao lưu do người dùng thực hiện; chưa có lịch sao lưu tự động.
 
-## Thiết kế xem trước
-
-Mở `design-preview/index.html` bằng trình duyệt. Đây là bản thiết kế với dữ liệu minh họa, độc lập với dữ liệu MySQL.
-
 ## Phạm vi hiện tại
 
 Đã gỡ chức năng bán hàng online, ứng dụng mua hàng của khách và các backend/web liên quan. Ứng dụng không tạo hoặc sử dụng bảng đặt hàng online nữa. Các bảng và dữ liệu online đã tồn tại trong database được giữ nguyên để bảo toàn lịch sử.

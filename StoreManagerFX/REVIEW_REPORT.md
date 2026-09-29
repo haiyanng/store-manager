@@ -32,7 +32,7 @@ Giữ các handler ảnh được FXML gọi, các service/repository chi nhánh
 
 - Maven `clean compile javafx:run` với `-Dmaven.test.skip=true`: biên dịch thành công 181 file Java theo Java 21.
 - Kiểm tra tĩnh 23 FXML: XML hợp lệ, controller, field được inject, handler và đường dẫn tài nguyên đều khớp.
-- `node --check design-preview/app.js`: đạt.
+- Kiểm tra cú pháp JavaScript của bản xem trước giao diện: đạt tại thời điểm rà soát. Bản xem trước này đã được gỡ khỏi project sau đó.
 - `git diff --check`: đạt; Git có thông báo chuyển đổi LF/CRLF theo cấu hình Windows.
 - Lần mở đầu gặp kết nối database bị từ chối vì MySQL chưa chạy. Sau khi bật lại MySQL của XAMPP, truy vấn đọc xác nhận MariaDB 10.4.32 và database `family_business_manager_db`; mở lại JavaFX nhận `Database initialized successfully`.
 - Maven còn cảnh báo effective model của dependency JavaFX 21. Cảnh báo này không chặn biên dịch hoặc khởi động; chưa thay phiên bản thư viện trong đợt dọn mã này.
