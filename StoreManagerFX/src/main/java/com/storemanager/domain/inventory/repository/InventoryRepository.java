@@ -52,10 +52,7 @@ public class InventoryRepository {
             return items;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return items;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -90,10 +87,7 @@ public class InventoryRepository {
             return transactions;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return transactions;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

@@ -59,12 +59,17 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
 
     public void refreshTable() {
 
+        AttendanceAnomalyFilter filter;
+        try {
+            filter = view.readFilter();
+        } catch (IllegalArgumentException e) {
+            view.showError(e.getMessage());
+            return;
+        }
         loadingState = LoadingState.LOADING;
         view.setBusy(true);
         view.setStatus("Loading attendance anomalies...");
 
-        AttendanceAnomalyFilter filter =
-                view.readFilter();
         AttendanceAnomaly previousSelection = selectedAnomaly;
 
         AsyncTaskRunner.run(

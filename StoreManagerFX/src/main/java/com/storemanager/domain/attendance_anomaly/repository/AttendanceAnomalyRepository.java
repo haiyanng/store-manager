@@ -186,8 +186,7 @@ public class AttendanceAnomalyRepository {
             return anomalies;
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return anomalies;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

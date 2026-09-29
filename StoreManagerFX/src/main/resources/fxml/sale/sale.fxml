@@ -79,7 +79,7 @@
                            styleClass="analytics-card-detail"/>
 
                     <Label fx:id="selectedProductPreviewPriceLabel"
-                           text="Unit price: 0 VND"
+                           text="Unit price: 0.00"
                            styleClass="analytics-card-detail"/>
 
                     <Label fx:id="selectedProductPreviewStockLabel"
@@ -145,7 +145,7 @@
                styleClass="content-description"/>
 
         <Label fx:id="totalLabel"
-               text="0 VND"
+               text="0.00"
                styleClass="content-title"/>
 
         <Region HBox.hgrow="ALWAYS"/>

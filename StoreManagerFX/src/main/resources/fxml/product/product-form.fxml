@@ -57,8 +57,8 @@
                        maxWidth="Infinity" styleClass="module-input"/>
         </VBox>
         <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="1">
-            <Label text="Base price (VND)" styleClass="record-field-label"/>
-            <TextField fx:id="basePriceField" promptText="Base price (VND)" minWidth="0"
+            <Label text="Base price" styleClass="record-field-label"/>
+            <TextField fx:id="basePriceField" promptText="Base price" minWidth="0"
                        maxWidth="Infinity" styleClass="module-input"/>
         </VBox>
         <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="1">

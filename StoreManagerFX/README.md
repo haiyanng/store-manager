@@ -2,6 +2,8 @@
 
 Ứng dụng JavaFX quản lý cửa hàng và bán hàng tại quầy, dùng Java 21 và MySQL JDBC.
 
+Tài liệu chi tiết về đồ án, hướng dẫn sử dụng và các nghiệp vụ minh họa: [MO_TA_DO_AN.md](MO_TA_DO_AN.md).
+
 ## Chức năng
 
 - Bán hàng tại quầy (Order), kiểm tra và trừ tồn kho khi chốt đơn.
@@ -40,6 +42,15 @@ Ví dụ định dạng (ID và thời gian minh họa):
 ```text
 2026-09-26 10:00:00.000 | user=admin | user_id=1 | module=AUTHENTICATION | action=LOGIN_SUCCESS | target=USER | target_id=1 | result=SUCCESS | branch_id=- | reason=- | details={"username":"admin"}
 ```
+
+### Chi tiết audit và trải nghiệm giao diện
+
+- Các thao tác tạo/sửa/xóa hoặc vô hiệu hóa Employee, Product, Category và User có dữ liệu `before`, `after`; thao tác thất bại có lý do và dữ liệu `attempted` khi có thể xác định. Chỉ các trường được cho phép mới được đưa vào audit, không ghi mật khẩu hay mã băm mật khẩu.
+- Quản lý tài khoản ghi cả lỗi kiểm tra dữ liệu, đổi quyền và liên kết/gỡ liên kết nhân viên. Việc lưu tài khoản và liên kết nhân viên là hai bước riêng, có sự kiện riêng; nếu tài khoản đã lưu nhưng liên kết thất bại, giao diện thông báo rõ phần đã hoàn thành.
+- Tác vụ qua `AsyncTaskRunner` giữ ID và tên tài khoản tại thời điểm bắt đầu để ghi audit, kể cả khi phiên đăng nhập thay đổi trong lúc chạy. Thông tin này không thay thế kiểm tra quyền nghiệp vụ.
+- Lỗi truy vấn danh sách ở các màn hình đã cập nhật được báo là lỗi tải dữ liệu, thay vì hiển thị như một danh sách rỗng thành công. Đăng nhập khi mất kết nối database cũng hiển thị lỗi kết nối và ghi nhận thất bại.
+- User Management tải dữ liệu ở nền, có `Refresh`, `Clear form` và khóa nút khi đang xử lý. Chọn tài khoản để sửa; để trống Password khi không muốn đổi mật khẩu. Chọn `Clear link` rồi `Save changes` để lưu việc gỡ liên kết nhân viên.
+- Giao diện giữ tiếng Anh. Số tiền dùng chung định dạng `1,234.50`, chưa gắn đơn vị tiền tệ và không quy đổi giá trị trong database. Bộ lọc ngày dùng `yyyy-MM-dd`, kiểm tra ngày không hợp lệ và khoảng ngày bị đảo.
 
 ## Sao lưu database
 

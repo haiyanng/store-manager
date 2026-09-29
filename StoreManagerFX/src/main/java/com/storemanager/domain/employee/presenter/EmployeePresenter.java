@@ -60,16 +60,18 @@ public class EmployeePresenter extends BaseCrudPresenter<Employee> {
             return;
         }
 
-        Employee employee =
-                employeeService.findById(
-                        employeeRow.getEmployeeId()
-                );
+        Employee employee;
+        try {
+            employee = employeeService.findById(employeeRow.getEmployeeId());
+        } catch (RuntimeException e) {
+            clearForm();
+            view.showError(e.getMessage());
+            return;
+        }
 
         if (employee == null) {
             view.showError("Employee not found");
-            enterCreateMode();
-            view.clearEmployeeForm();
-            updateActionState();
+            clearForm();
             return;
         }
 

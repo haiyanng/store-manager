@@ -248,10 +248,7 @@ public class EmployeeRepository {
             return null;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return null;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

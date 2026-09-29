@@ -1,6 +1,7 @@
 package com.storemanager.domain.audit.service;
 
 import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.core.runtime.async.AuditActorContext;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.audit.model.AuditLog;
 import com.storemanager.domain.audit.model.AuditLogFilter;
@@ -112,16 +113,9 @@ public class AuditService {
         AuditLog log =
                 new AuditLog();
 
-        User currentUser =
-                AppSession.getCurrentUser();
-
-        String actorUsername =
-                currentUser == null ? "System" : currentUser.getUsername();
-
-        log.setUserId(
-                currentUser == null ? null : currentUser.getId()
-        );
-        log.setActorUsername(clean(actorUsername));
+        AuditActorContext.Actor actor = AuditActorContext.capture();
+        log.setUserId(actor.userId());
+        log.setActorUsername(clean(actor.username()));
         log.setModule(clean(module == null ? moduleFromEntity(targetType) : module));
         log.setAction(action.trim());
         log.setEntityType(targetType.trim());

@@ -75,7 +75,7 @@
                          prefWidth="160"/>
 
             <TableColumn fx:id="basePriceColumn"
-                         text="Base price (VND)"
+                         text="Base price"
                          minWidth="90"
                          prefWidth="110"/>
 

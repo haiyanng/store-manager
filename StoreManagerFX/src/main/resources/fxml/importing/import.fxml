@@ -39,7 +39,7 @@
                        styleClass="module-input"/>
 
             <TextField fx:id="unitCostField"
-                       promptText="Unit cost (VND)"
+                       promptText="Unit cost"
                        prefWidth="120"
                        styleClass="module-input"/>
 
@@ -77,7 +77,7 @@
                              prefWidth="80"/>
 
                 <TableColumn fx:id="itemUnitCostColumn"
-                             text="Unit cost (VND)"
+                             text="Unit cost"
                              prefWidth="120"/>
 
                 <TableColumn fx:id="itemSubtotalColumn"
@@ -93,7 +93,7 @@
                styleClass="content-description"/>
 
         <Label fx:id="totalLabel"
-               text="0 VND"
+               text="0.00"
                styleClass="content-title"/>
 
         <Region HBox.hgrow="ALWAYS"/>

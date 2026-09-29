@@ -4,3 +4,12 @@
 .env
 .env.*
 !.env.example
+
+# Publish the management project without local documents or generated files
+*.[dD][oO][cC]
+*.[dD][oO][cC][xXmM]
+*.[dD][oO][tT]
+*.[dD][oO][tT][xXmM]
+/*.pdf
+.DS_Store
+*.class

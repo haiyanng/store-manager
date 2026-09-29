@@ -76,10 +76,7 @@ public class UserRepository {
             return Optional.empty();
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return Optional.empty();
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -120,10 +117,7 @@ public class UserRepository {
             return Optional.empty();
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return Optional.empty();
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -307,10 +301,7 @@ public class UserRepository {
             return users;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return users;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

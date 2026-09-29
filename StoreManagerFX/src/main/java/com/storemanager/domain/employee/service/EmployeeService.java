@@ -86,7 +86,7 @@ public class EmployeeService {
             boolean deleting = action.endsWith("_DELETE");
             Employee stored = null;
             if (!creating) {
-                if (employee.getId() == null) throw new IllegalArgumentException("Select a employee first");
+                if (employee.getId() == null) throw new IllegalArgumentException("Select an employee first");
                 stored = employeeRepository.findById(employee.getId());
                 if (stored == null) throw new IllegalArgumentException("Employee no longer exists. Refresh the list and try again.");
                 before = AuditSnapshots.employee(stored);

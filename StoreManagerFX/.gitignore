@@ -45,3 +45,10 @@ build/
 # Machine-specific runtime data
 /app-config.json
 /data/images/
+
+# Local Word documents and compiled classes
+*.[dD][oO][cC]
+*.[dD][oO][cC][xXmM]
+*.[dD][oO][tT]
+*.[dD][oO][tT][xXmM]
+*.class

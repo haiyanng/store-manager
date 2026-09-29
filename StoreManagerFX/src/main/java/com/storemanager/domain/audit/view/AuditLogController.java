@@ -13,7 +13,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -158,6 +157,8 @@ public class AuditLogController {
         userIdField.clear();
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
+        fromDatePicker.getEditor().clear();
+        toDatePicker.getEditor().clear();
         presenter.refresh();
     }
 
@@ -171,8 +172,8 @@ public class AuditLogController {
         filter.setModule(clean(moduleField.getText()));
         filter.setSuccess(parseSuccess(successComboBox.getValue()));
         filter.setUserId(parseLong(userIdField.getText()));
-        filter.setFromDate(fromDatePicker.getValue());
-        filter.setToDate(toDatePicker.getValue());
+        filter.setFromDate(UiFeedback.readDate(fromDatePicker));
+        filter.setToDate(UiFeedback.readDate(toDatePicker));
         if (filter.getFromDate() != null && filter.getToDate() != null
                 && filter.getFromDate().isAfter(filter.getToDate())) {
             throw new IllegalArgumentException("From date must be on or before To date");

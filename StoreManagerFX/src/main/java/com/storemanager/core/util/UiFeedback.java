@@ -63,11 +63,11 @@ public final class UiFeedback {
             } else if (failed) {
                 // A stale list must not masquerade as fresh data after a failed refresh.
                 table.getItems().clear();
-                Label error = new Label(message + ".\nUse Refresh to try again.");
+                Label error = new Label(message + ".\nTry loading the list again.");
                 error.setWrapText(true);
                 error.setStyle("-fx-text-fill: #b42318;");
                 table.setPlaceholder(error);
-            } else if (message.equals("Ready") || message.endsWith(" records loaded")) {
+            } else if (message.equals("Ready") || message.startsWith("Ready.") || message.endsWith(" records loaded")) {
                 table.setPlaceholder(new Label((String) table.getProperties().getOrDefault(EMPTY_TEXT, "No records found.")));
             }
         }
@@ -83,6 +83,18 @@ public final class UiFeedback {
                 return value == null || value.isBlank() ? null : LocalDate.parse(value.trim(), DateTimeFormatter.ISO_LOCAL_DATE);
             }
         });
+    }
+
+    public static LocalDate readDate(DatePicker picker) {
+        String text = picker.getEditor().getText();
+        try {
+            LocalDate value = text == null || text.isBlank() ? null
+                    : LocalDate.parse(text.trim(), DateTimeFormatter.ISO_LOCAL_DATE);
+            picker.setValue(value);
+            return value;
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Enter a valid date in yyyy-MM-dd format", e);
+        }
     }
 
     public static void showError(String message) {

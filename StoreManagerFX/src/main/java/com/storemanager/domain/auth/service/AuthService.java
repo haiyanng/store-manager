@@ -21,10 +21,13 @@ public class AuthService {
             String rawPassword
     ) {
 
-        Optional<User> optionalUser =
-                userRepository.findByUsername(
-                        username
-                );
+        Optional<User> optionalUser;
+        try {
+            optionalUser = userRepository.findByUsername(username);
+        } catch (RuntimeException e) {
+            auditService.recordLoginFailure(username, "Unable to verify account: database unavailable");
+            throw e;
+        }
 
         if (optionalUser.isEmpty()) {
             auditService.recordLoginFailure(

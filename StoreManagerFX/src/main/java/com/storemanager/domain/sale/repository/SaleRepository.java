@@ -129,10 +129,7 @@ public class SaleRepository {
             return orders;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return orders;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -165,10 +162,7 @@ public class SaleRepository {
             return orders;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return orders;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -201,10 +195,7 @@ public class SaleRepository {
             return items;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return items;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -246,10 +237,7 @@ public class SaleRepository {
             return items;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return items;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

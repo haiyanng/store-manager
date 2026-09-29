@@ -203,8 +203,12 @@ public class AttendanceAnomalyListController {
             filter.setBranchId(branch.getId());
         }
 
-        filter.setFromDate(fromDatePicker.getValue());
-        filter.setToDate(toDatePicker.getValue());
+        filter.setFromDate(UiFeedback.readDate(fromDatePicker));
+        filter.setToDate(UiFeedback.readDate(toDatePicker));
+        if (filter.getFromDate() != null && filter.getToDate() != null
+                && filter.getFromDate().isAfter(filter.getToDate())) {
+            throw new IllegalArgumentException("From date must be on or before To date");
+        }
         return filter;
     }
 
@@ -217,6 +221,8 @@ public class AttendanceAnomalyListController {
         branchFilterComboBox.setValue(null);
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
+        fromDatePicker.getEditor().clear();
+        toDatePicker.getEditor().clear();
     }
 
     public void setAnomalies(

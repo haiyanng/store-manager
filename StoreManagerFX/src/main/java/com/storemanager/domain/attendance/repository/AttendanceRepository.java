@@ -55,10 +55,7 @@ public class AttendanceRepository {
             return sessions;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return sessions;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -168,10 +165,7 @@ public class AttendanceRepository {
             return totals;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return totals;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -434,10 +428,7 @@ public class AttendanceRepository {
             return sessions;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return sessions;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

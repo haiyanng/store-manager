@@ -9,7 +9,7 @@ public final class MoneyFormatUtil {
     private MoneyFormatUtil() { }
 
     public static String format(BigDecimal amount) {
-        DecimalFormat format = new DecimalFormat("#,##0.##", DecimalFormatSymbols.getInstance(Locale.US));
-        return format.format(amount == null ? BigDecimal.ZERO : amount) + " VND";
+        DecimalFormat format = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.US));
+        return format.format(amount == null ? BigDecimal.ZERO : amount);
     }
 }

@@ -185,9 +185,7 @@ public class AuditLogRepository {
             return logs;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-            return logs;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

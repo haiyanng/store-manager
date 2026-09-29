@@ -509,12 +509,6 @@ public class SaleController {
             BigDecimal value
     ) {
 
-        if (value == null) {
-            return "0.00";
-        }
-
-        return value
-                .setScale(2, java.math.RoundingMode.HALF_UP)
-                .toPlainString();
+        return UiFeedback.money(value);
     }
 }
