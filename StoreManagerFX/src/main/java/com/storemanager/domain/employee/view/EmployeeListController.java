@@ -7,7 +7,6 @@ import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.presenter.EmployeePresenter;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -33,9 +32,6 @@ public class EmployeeListController {
 
     @FXML
     private TableColumn<EmployeeListViewDto, String> positionColumn;
-
-    @FXML
-    private TableColumn<EmployeeListViewDto, String> branchColumn;
 
     @FXML
     private TableColumn<EmployeeListViewDto, String> linkedUsernameColumn;
@@ -66,7 +62,6 @@ public class EmployeeListController {
         UiFeedback.emptyTable(employeeTable, "No employees yet. Use Create to add an employee.");
         UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
 
-
         presenter =
                 new EmployeePresenter(
                         this
@@ -90,10 +85,6 @@ public class EmployeeListController {
 
         positionColumn.setCellValueFactory(
                 new javafx.scene.control.cell.PropertyValueFactory<>("position")
-        );
-
-        branchColumn.setCellValueFactory(
-                new javafx.scene.control.cell.PropertyValueFactory<>("branchDisplayName")
         );
 
         linkedUsernameColumn.setCellValueFactory(

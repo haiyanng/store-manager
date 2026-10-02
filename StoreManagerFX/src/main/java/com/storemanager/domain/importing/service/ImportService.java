@@ -366,14 +366,7 @@ public class ImportService {
     private void validateImportAccess() {
 
         if (!PermissionGuard.canAdjustInventory()) {
-            auditService.recordPermissionDenied(
-                    "IMPORT_CREATE",
-                    "IMPORT",
-                    null,
-                    "Import access denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied("IMPORT_CREATE", "IMPORT", null, "Import access denied", "OWNER/MANAGER");
             throw new RuntimeException(
                     "Current user cannot import inventory"
             );

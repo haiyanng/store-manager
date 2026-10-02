@@ -94,22 +94,6 @@
                        text="Role"
                        styleClass="meta-value"/>
             </VBox>
-
-            <VBox alignment="CENTER_RIGHT"
-                  spacing="3">
-                <Label text="Branch"
-                       styleClass="meta-label"/>
-
-                <Label fx:id="activeBranchLabel"
-                       text="🏢 Branch: Unassigned"
-                       styleClass="meta-value"/>
-            </VBox>
-
-            <ComboBox fx:id="activeBranchComboBox"
-                      prefWidth="220"
-                      maxWidth="220"
-                      styleClass="branch-selector"
-                      onAction="#onBranchSelected"/>
         </HBox>
     </top>
 

@@ -210,7 +210,7 @@ public class NotificationRepository {
         notification.setUserId(resultSet.getLong("user_id"));
         notification.setTitle(resultSet.getString("title"));
         notification.setContent(resultSet.getString("content"));
-        notification.setType(NotificationType.valueOf(resultSet.getString("type")));
+        notification.setType(NotificationType.fromStoredValue(resultSet.getString("type")));
         notification.setRead(resultSet.getBoolean("is_read"));
 
         Timestamp createdAt =

@@ -34,10 +34,6 @@ public class OfflineExportManifestGenerator {
                 new LinkedHashMap<>();
 
         recordCounts.put(
-                OfflineExportSpecV1.BRANCHES_FILE,
-                size(bundle.branches())
-        );
-        recordCounts.put(
                 OfflineExportSpecV1.USERS_FILE,
                 size(bundle.users())
         );

@@ -12,7 +12,6 @@ import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyStatus;
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyType;
 import com.storemanager.domain.attendance_anomaly.service.AttendanceAnomalyService;
 import com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyListController;
-import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
@@ -33,8 +32,6 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
     private AttendanceAnomaly selectedAnomaly;
 
     private Map<Long, Employee> employeesById = Map.of();
-
-    private Map<Long, Branch> branchesById = Map.of();
 
     public AttendanceAnomalyPresenter(
             AttendanceAnomalyListController view
@@ -116,8 +113,7 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
         view.showAnomaly(
                 anomaly,
                 session,
-                getEmployeeName(anomaly.getEmployeeId()),
-                getBranchName(anomaly.getBranchId())
+                getEmployeeName(anomaly.getEmployeeId())
         );
         view.setActionState(true);
     }
@@ -285,18 +281,6 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
         return employee.toString();
     }
 
-    public String getBranchName(
-            Long branchId
-    ) {
-
-        Branch branch = branchesById.get(branchId);
-        if (branch == null || branch.getName() == null) {
-            return branchId == null ? "" : "Branch #" + branchId;
-        }
-
-        return branch.toString();
-    }
-
     public boolean hasSelection() {
 
         return selectedAnomaly != null
@@ -307,8 +291,6 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
 
         List<Employee> employees =
                 anomalyService.findReviewEmployees();
-        List<Branch> branches =
-                anomalyService.findReviewBranches();
 
         employeesById =
                 employees.stream()
@@ -319,18 +301,9 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
                                         (left, right) -> left
                                 )
                         );
-        branchesById =
-                branches.stream()
-                        .collect(
-                                Collectors.toMap(
-                                        Branch::getId,
-                                        branch -> branch,
-                                        (left, right) -> left
-                                )
-                        );
 
         view.setEmployees(employees);
-        view.setBranches(branches);
+
         view.setStatuses(List.of(AttendanceAnomalyStatus.values()));
         view.setTypes(List.of(AttendanceAnomalyType.values()));
         view.setSeverities(List.of(AttendanceAnomalySeverity.values()));

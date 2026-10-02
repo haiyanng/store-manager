@@ -11,9 +11,6 @@ public final class OfflineExportSpecV1 {
     public static final String MANIFEST_FILE =
             "manifest.json";
 
-    public static final String BRANCHES_FILE =
-            "branches.json";
-
     public static final String USERS_FILE =
             "users.json";
 

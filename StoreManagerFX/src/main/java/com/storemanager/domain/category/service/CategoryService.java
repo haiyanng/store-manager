@@ -108,14 +108,7 @@ public class CategoryService {
     private void validateCategoryViewAccess() {
 
         if (!PermissionGuard.canViewProduct()) {
-            auditService.recordPermissionDenied(
-                    "CATEGORY_VIEW",
-                    "CATEGORY",
-                    null,
-                    "Category access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF/VIEWER"
-            );
+            auditService.recordPermissionDenied("CATEGORY_VIEW", "CATEGORY", null, "Category access denied", "OWNER/MANAGER/STAFF/VIEWER");
             throw new RuntimeException("Category access denied");
         }
     }
@@ -125,14 +118,7 @@ public class CategoryService {
     ) {
 
         if (!PermissionGuard.canModifyProduct()) {
-            auditService.recordPermissionDenied(
-                    action,
-                    "CATEGORY",
-                    null,
-                    "Category modification denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied(action, "CATEGORY", null, "Category modification denied", "OWNER/MANAGER");
             throw new RuntimeException("Current user cannot modify categories");
         }
     }

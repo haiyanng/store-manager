@@ -8,13 +8,11 @@ import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalySeverit
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyStatus;
 import com.storemanager.domain.attendance_anomaly.model.AttendanceAnomalyType;
 import com.storemanager.domain.attendance_anomaly.presenter.AttendanceAnomalyPresenter;
-import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -43,9 +41,6 @@ public class AttendanceAnomalyListController {
     private ComboBox<Employee> employeeFilterComboBox;
 
     @FXML
-    private ComboBox<Branch> branchFilterComboBox;
-
-    @FXML
     private DatePicker fromDatePicker;
 
     @FXML
@@ -68,9 +63,6 @@ public class AttendanceAnomalyListController {
 
     @FXML
     private TableColumn<AttendanceAnomaly, String> anomalyEmployeeColumn;
-
-    @FXML
-    private TableColumn<AttendanceAnomaly, String> anomalyBranchColumn;
 
     @FXML
     private TableColumn<AttendanceAnomaly, String> anomalyTypeColumn;
@@ -121,7 +113,6 @@ public class AttendanceAnomalyListController {
         UiFeedback.emptyTable(anomalyTable, "No attendance anomalies match the current filters.");
         UiFeedback.datePicker(fromDatePicker);
         UiFeedback.datePicker(toDatePicker);
-
 
         presenter =
                 new AttendanceAnomalyPresenter(this);
@@ -197,12 +188,6 @@ public class AttendanceAnomalyListController {
             filter.setEmployeeId(employee.getId());
         }
 
-        Branch branch =
-                branchFilterComboBox.getValue();
-        if (branch != null) {
-            filter.setBranchId(branch.getId());
-        }
-
         filter.setFromDate(UiFeedback.readDate(fromDatePicker));
         filter.setToDate(UiFeedback.readDate(toDatePicker));
         if (filter.getFromDate() != null && filter.getToDate() != null
@@ -218,7 +203,7 @@ public class AttendanceAnomalyListController {
         typeFilterComboBox.setValue(null);
         severityFilterComboBox.setValue(null);
         employeeFilterComboBox.setValue(null);
-        branchFilterComboBox.setValue(null);
+
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
         fromDatePicker.getEditor().clear();
@@ -242,15 +227,6 @@ public class AttendanceAnomalyListController {
 
         employeeFilterComboBox.setItems(
                 FXCollections.observableArrayList(employees)
-        );
-    }
-
-    public void setBranches(
-            List<Branch> branches
-    ) {
-
-        branchFilterComboBox.setItems(
-                FXCollections.observableArrayList(branches)
         );
     }
 
@@ -284,16 +260,13 @@ public class AttendanceAnomalyListController {
     public void showAnomaly(
             AttendanceAnomaly anomaly,
             AttendanceSession session,
-            String employeeName,
-            String branchName
+            String employeeName
     ) {
 
         anomalyFormController.showAnomaly(
                 anomaly,
                 session,
-                employeeName,
-                branchName
-        );
+                employeeName);
     }
 
     public void clearDetail() {
@@ -381,7 +354,6 @@ public class AttendanceAnomalyListController {
         typeFilterComboBox.setPromptText("Type");
         severityFilterComboBox.setPromptText("Severity");
         employeeFilterComboBox.setPromptText("Employee");
-        branchFilterComboBox.setPromptText("Branch");
 
         employeeFilterComboBox.setConverter(new StringConverter<>() {
             @Override
@@ -395,17 +367,6 @@ public class AttendanceAnomalyListController {
             }
         });
 
-        branchFilterComboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(Branch branch) {
-                return branch == null ? "" : branch.toString();
-            }
-
-            @Override
-            public Branch fromString(String value) {
-                return null;
-            }
-        });
     }
 
     private void configureTable() {
@@ -420,13 +381,7 @@ public class AttendanceAnomalyListController {
                         )
                 )
         );
-        anomalyBranchColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        presenter.getBranchName(
-                                cellData.getValue().getBranchId()
-                        )
-                )
-        );
+
         anomalyTypeColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
                         valueOrEmpty(cellData.getValue().getType())

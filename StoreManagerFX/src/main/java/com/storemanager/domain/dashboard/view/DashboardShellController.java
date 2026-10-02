@@ -5,7 +5,6 @@ import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.domain.auth.service.AuthService;
-import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.dashboard.model.DashboardMenuItem;
 import com.storemanager.domain.dashboard.model.DashboardMenuRegistry;
 import com.storemanager.domain.dashboard.presenter.DashboardShellPresenter;
@@ -13,19 +12,16 @@ import com.storemanager.domain.message.service.MessageService;
 import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
-import javafx.collections.FXCollections;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 
 public class DashboardShellController {
 
@@ -34,12 +30,6 @@ public class DashboardShellController {
 
     @FXML
     private Label roleLabel;
-
-    @FXML
-    private Label activeBranchLabel;
-
-    @FXML
-    private ComboBox<Branch> activeBranchComboBox;
 
     @FXML
     private Button notificationButton;
@@ -70,8 +60,6 @@ public class DashboardShellController {
 
     private Timeline badgeTimeline;
 
-    private boolean initializingBranchSelector;
-
     @FXML
     public void initialize() {
 
@@ -98,7 +86,6 @@ public class DashboardShellController {
                 currentRole.name()
         );
 
-        initializeBranchContext();
         renderSidebarMenu();
         applyTopbarWorkflowVisibility();
 
@@ -138,109 +125,6 @@ public class DashboardShellController {
 
         SceneManager.switchScene(
                 "/fxml/auth/login.fxml"
-        );
-    }
-
-    @FXML
-    public void onBranchSelected() {
-
-        if (initializingBranchSelector) {
-            return;
-        }
-
-        Branch selectedBranch =
-                activeBranchComboBox.getValue();
-
-        if (selectedBranch == null) {
-            return;
-        }
-
-        if (!presenter.canSwitchBranch(selectedBranch)) {
-            showAccessDenied();
-            return;
-        }
-
-        presenter.setActiveBranch(selectedBranch);
-        refreshActiveBranchLabel();
-    }
-
-    private void initializeBranchContext() {
-
-        configureBranchComboBox();
-
-        DashboardShellPresenter.BranchSelectorState branchState =
-                presenter.resolveBranchSelectorState();
-
-        initializingBranchSelector = true;
-
-        try {
-            activeBranchComboBox.setItems(
-                    FXCollections.observableArrayList(
-                            branchState.branches()
-                    )
-            );
-            activeBranchComboBox.setVisible(
-                    branchState.visible()
-            );
-            activeBranchComboBox.setManaged(
-                    branchState.visible()
-            );
-            activeBranchComboBox.setDisable(
-                    !branchState.visible()
-                            || !branchState.enabled()
-            );
-
-            if (branchState.selectedBranch() != null) {
-                activeBranchComboBox.setValue(
-                        branchState.selectedBranch()
-                );
-                presenter.setActiveBranch(
-                        branchState.selectedBranch()
-                );
-            } else {
-                activeBranchComboBox.setValue(null);
-                presenter.setActiveBranch(null);
-            }
-        } finally {
-            initializingBranchSelector = false;
-        }
-
-        refreshActiveBranchLabel();
-    }
-
-    private void configureBranchComboBox() {
-
-        activeBranchComboBox.setConverter(
-                new StringConverter<>() {
-                    @Override
-                    public String toString(Branch branch) {
-                        return branch == null ? "" : branch.getName();
-                    }
-
-                    @Override
-                    public Branch fromString(String value) {
-                        return null;
-                    }
-                }
-        );
-
-        activeBranchComboBox.setPromptText(
-                "Select branch"
-        );
-    }
-
-    private void refreshActiveBranchLabel() {
-
-        String branchName =
-                AppSession.getActiveBranchName();
-
-        if (branchName == null || branchName.isBlank()) {
-            activeBranchLabel.setText("🏢 Branch: Unassigned");
-            return;
-        }
-
-        activeBranchLabel.setText(
-                "🏢 Branch: " + branchName
         );
     }
 

@@ -31,9 +31,6 @@ public class AttendanceAnomalyFormController {
     private Label employeeLabel;
 
     @FXML
-    private Label branchLabel;
-
-    @FXML
     private Label typeLabel;
 
     @FXML
@@ -82,8 +79,7 @@ public class AttendanceAnomalyFormController {
     public void showAnomaly(
             AttendanceAnomaly anomaly,
             AttendanceSession session,
-            String employeeName,
-            String branchName
+            String employeeName
     ) {
 
         if (anomaly == null) {
@@ -96,7 +92,7 @@ public class AttendanceAnomalyFormController {
                 valueOrDash(anomaly.getAttendanceSessionId())
         );
         employeeLabel.setText(valueOrDash(employeeName));
-        branchLabel.setText(valueOrDash(branchName));
+
         typeLabel.setText(valueOrDash(anomaly.getType()));
         severityLabel.setText(valueOrDash(anomaly.getSeverity()));
         statusLabel.setText(valueOrDash(anomaly.getStatus()));
@@ -123,7 +119,7 @@ public class AttendanceAnomalyFormController {
         anomalyIdLabel.setText("-");
         attendanceSessionIdLabel.setText("-");
         employeeLabel.setText("-");
-        branchLabel.setText("-");
+
         typeLabel.setText("-");
         severityLabel.setText("-");
         statusLabel.setText("-");

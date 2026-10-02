@@ -67,7 +67,6 @@
             <TableColumn fx:id="entityIdColumn" text="Entity ID"/>
             <TableColumn fx:id="successColumn" text="Result"/>
             <TableColumn fx:id="reasonColumn" text="Reason"/>
-            <TableColumn fx:id="branchIdColumn" text="Branch ID"/>
             <TableColumn fx:id="detailsJsonColumn" text="Changes" prefWidth="260"/>
         </columns>
     </TableView>

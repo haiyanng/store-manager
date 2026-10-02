@@ -23,14 +23,7 @@ public class DatabaseRestoreService {
     ) {
 
         if (!PermissionGuard.canRestoreDatabase()) {
-            auditService.recordPermissionDenied(
-                    "DATABASE_RESTORE",
-                    "RESTORE",
-                    null,
-                    "Restore access denied",
-                    null,
-                    "OWNER"
-            );
+            auditService.recordPermissionDenied("DATABASE_RESTORE", "RESTORE", null, "Restore access denied", "OWNER");
             throw new RuntimeException(
                     "Current user cannot restore database"
             );

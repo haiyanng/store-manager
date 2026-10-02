@@ -177,14 +177,7 @@ public class InventoryService {
     private void validateInventoryAccess() {
 
         if (!PermissionGuard.canViewInventory()) {
-            auditService.recordPermissionDenied(
-                    "INVENTORY_VIEW",
-                    "INVENTORY",
-                    null,
-                    "Inventory access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF"
-            );
+            auditService.recordPermissionDenied("INVENTORY_VIEW", "INVENTORY", null, "Inventory access denied", "OWNER/MANAGER/STAFF");
             throw new RuntimeException(
                     "Inventory access denied"
             );
@@ -196,14 +189,7 @@ public class InventoryService {
     ) {
 
         if (!PermissionGuard.canAdjustInventory()) {
-            auditService.recordPermissionDenied(
-                    action,
-                    "INVENTORY",
-                    null,
-                    "Inventory adjustment denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied(action, "INVENTORY", null, "Inventory adjustment denied", "OWNER/MANAGER");
             throw new RuntimeException(
                     "Current user cannot adjust inventory"
             );
@@ -228,14 +214,7 @@ public class InventoryService {
         }
 
         if (!allowed) {
-            auditService.recordPermissionDenied(
-                    "INVENTORY_TRANSACTION",
-                    "INVENTORY",
-                    null,
-                    "Inventory transaction denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied("INVENTORY_TRANSACTION", "INVENTORY", null, "Inventory transaction denied", "OWNER/MANAGER");
             throw new RuntimeException(
                     "Current user cannot update inventory"
             );

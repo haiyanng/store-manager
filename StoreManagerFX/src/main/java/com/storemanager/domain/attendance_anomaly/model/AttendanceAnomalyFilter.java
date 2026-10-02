@@ -1,8 +1,6 @@
 package com.storemanager.domain.attendance_anomaly.model;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AttendanceAnomalyFilter {
 
@@ -13,10 +11,6 @@ public class AttendanceAnomalyFilter {
     private AttendanceAnomalySeverity severity;
 
     private Long employeeId;
-
-    private Long branchId;
-
-    private List<Long> branchIds = new ArrayList<>();
 
     private LocalDate fromDate;
 
@@ -55,22 +49,6 @@ public class AttendanceAnomalyFilter {
 
     public void setEmployeeId(Long employeeId) {
         this.employeeId = employeeId;
-    }
-
-    public Long getBranchId() {
-        return branchId;
-    }
-
-    public void setBranchId(Long branchId) {
-        this.branchId = branchId;
-    }
-
-    public List<Long> getBranchIds() {
-        return branchIds;
-    }
-
-    public void setBranchIds(List<Long> branchIds) {
-        this.branchIds = branchIds == null ? new ArrayList<>() : new ArrayList<>(branchIds);
     }
 
     public LocalDate getFromDate() {

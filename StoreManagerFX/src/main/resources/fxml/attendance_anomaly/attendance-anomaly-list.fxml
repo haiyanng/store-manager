@@ -29,7 +29,6 @@
             <ComboBox fx:id="typeFilterComboBox" prefWidth="170"/>
             <ComboBox fx:id="severityFilterComboBox" prefWidth="150"/>
             <ComboBox fx:id="employeeFilterComboBox" prefWidth="210"/>
-            <ComboBox fx:id="branchFilterComboBox" prefWidth="180"/>
         </HBox>
 
         <HBox spacing="10">
@@ -50,7 +49,6 @@
             <columns>
                 <TableColumn fx:id="anomalyIdColumn" text="ID" prefWidth="70"/>
                 <TableColumn fx:id="anomalyEmployeeColumn" text="Employee" prefWidth="190"/>
-                <TableColumn fx:id="anomalyBranchColumn" text="Branch" prefWidth="160"/>
                 <TableColumn fx:id="anomalyTypeColumn" text="Type" prefWidth="160"/>
                 <TableColumn fx:id="anomalySeverityColumn" text="Severity" prefWidth="90"/>
                 <TableColumn fx:id="anomalyStatusColumn" text="Status" prefWidth="120"/>

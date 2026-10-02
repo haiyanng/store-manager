@@ -7,9 +7,7 @@ import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.service.AttendanceService;
 import com.storemanager.domain.attendance.view.AttendanceController;
-import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.employee.model.Employee;
-import com.storemanager.core.session.AppSession;
 
 import java.util.List;
 import java.util.Map;
@@ -24,15 +22,10 @@ public class AttendancePresenter extends BaseModulePresenter {
     private Map<Long, Employee> employeesById =
             Map.of();
 
-    private Map<Long, Branch> branchesById =
-            Map.of();
-
     private List<AttendanceSession> sessions =
             List.of();
 
     private Employee currentEmployee;
-
-    private Branch currentActiveBranch;
 
     private LoadingState loadingState =
             LoadingState.IDLE;
@@ -51,6 +44,7 @@ public class AttendancePresenter extends BaseModulePresenter {
     }
 
     public void loadAttendanceData() {
+        if (loadingState == LoadingState.LOADING) return;
 
         loadingState =
                 LoadingState.LOADING;
@@ -62,8 +56,6 @@ public class AttendancePresenter extends BaseModulePresenter {
                         attendanceService.getCurrentEmployee(),
                         attendanceService.findEmployees(),
                         attendanceService.findEmployeesById(),
-                        attendanceService.findBranches(),
-                        attendanceService.findBranchesById(),
                         attendanceService.findAllSessions(),
                         attendanceService.findCurrentMonthTotals()
                 ),
@@ -72,17 +64,11 @@ public class AttendancePresenter extends BaseModulePresenter {
                             data.currentEmployee();
                     employeesById =
                             data.employeesById();
-                    branchesById =
-                            data.branchesById();
                     sessions =
                             data.sessions();
-                    currentActiveBranch =
-                            resolveCurrentActiveBranch(data.branches());
                     view.setEmployees(data.employees());
-                    view.setBranches(data.branches());
                     view.setSessions(sessions);
                     view.setMonthlyTotals(data.monthlyTotals());
-                    view.refreshBranchContextLabel();
                     view.refreshSessionStatusLabel();
                     loadingState =
                             LoadingState.SUCCESS;
@@ -99,25 +85,23 @@ public class AttendancePresenter extends BaseModulePresenter {
     }
 
     public void checkIn(
-            Employee employee,
-            Branch branch
+            Employee employee
     ) {
 
         runAttendanceAction(
                 "Checking in...",
-                () -> attendanceService.checkIn(employee, branch),
+                () -> attendanceService.checkIn(employee),
                 "Cannot check in employee"
         );
     }
 
     public void checkOut(
-            Employee employee,
-            Branch branch
+            Employee employee
     ) {
 
         runAttendanceAction(
                 "Checking out...",
-                () -> attendanceService.checkOut(employee, branch),
+                () -> attendanceService.checkOut(employee),
                 "Cannot check out employee"
         );
     }
@@ -140,24 +124,6 @@ public class AttendancePresenter extends BaseModulePresenter {
         return employee.getFullName();
     }
 
-    public String getBranchName(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return "";
-        }
-
-        Branch branch =
-                branchesById.get(branchId);
-
-        if (branch == null) {
-            return "";
-        }
-
-        return branch.getName();
-    }
-
     public LoadingState getLoadingState() {
         return loadingState;
     }
@@ -172,62 +138,13 @@ public class AttendancePresenter extends BaseModulePresenter {
         return currentEmployee;
     }
 
-    public Branch getActiveBranch() {
-
-        return currentActiveBranch;
-    }
-
-    public String getActiveBranchName() {
-
-        if (currentActiveBranch != null
-                && currentActiveBranch.getName() != null) {
-            return currentActiveBranch.getName();
-        }
-
-        return AppSession.getActiveBranchName();
-    }
-
-    public String describeSessionStatus(
-            Employee employee,
-            Branch branch
-    ) {
-
-        Employee targetEmployee =
-                employee != null ? employee : currentEmployee;
-
-        if (targetEmployee == null) {
-            return "Session: select an employee";
-        }
-
-        AttendanceSession openSession =
-                sessions.stream()
-                        .filter(session ->
-                                targetEmployee.getId().equals(
-                                        session.getEmployeeId()
-                                )
-                        )
-                        .filter(session ->
-                                branch == null
-                                        || session.getBranchId() == null
-                                        || session.getBranchId().equals(
-                                        branch.getId()
-                                )
-                        )
-                        .filter(session -> session.getCheckOutTime() == null)
-                        .findFirst()
-                        .orElse(null);
-
-        if (openSession == null) {
-            return "Session: no active session";
-        }
-
-        String branchName =
-                getBranchName(openSession.getBranchId());
-
-        return "Session: active since "
-                + openSession.getCheckInTime()
-                + " at "
-                + branchName;
+    public String describeSessionStatus(Employee employee) {
+        Employee target = employee != null ? employee : currentEmployee;
+        if (target == null) return isSelfServiceMode()
+                ? "No linked employee. Contact the owner." : "Session: select an employee";
+        return sessions.stream().filter(s -> target.getId().equals(s.getEmployeeId()) && s.getCheckOutTime() == null)
+                .findFirst().map(s -> "Session: active since " + com.storemanager.core.util.TimeFormatUtil.formatDateTime(s.getCheckInTime()))
+                .orElse("Session: no active session");
     }
 
     private void runAttendanceAction(
@@ -235,7 +152,7 @@ public class AttendancePresenter extends BaseModulePresenter {
             AttendanceAction action,
             String errorMessage
     ) {
-
+        if (loadingState == LoadingState.LOADING) return;
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
@@ -245,12 +162,14 @@ public class AttendancePresenter extends BaseModulePresenter {
                 action::run,
                 success -> {
                     if (!success) {
+                        loadingState = LoadingState.ERROR;
                         view.showError(errorMessage);
                         view.setStatus(errorMessage);
                         view.setBusy(false);
                         return;
                     }
 
+                    loadingState = LoadingState.SUCCESS;
                     view.clearSelection();
                     loadAttendanceData();
                 },
@@ -274,32 +193,9 @@ public class AttendancePresenter extends BaseModulePresenter {
             Employee currentEmployee,
             List<Employee> employees,
             Map<Long, Employee> employeesById,
-            List<Branch> branches,
-            Map<Long, Branch> branchesById,
             List<AttendanceSession> sessions,
             List<AttendanceMonthlyTotal> monthlyTotals
     ) {
     }
 
-    private Branch resolveCurrentActiveBranch(
-            List<Branch> branches
-    ) {
-
-        Long activeBranchId =
-                AppSession.getActiveBranchId();
-
-        if (activeBranchId != null) {
-            for (Branch branch : branches) {
-                if (activeBranchId.equals(branch.getId())) {
-                    return branch;
-                }
-            }
-        }
-
-        if (!branches.isEmpty()) {
-            return branches.get(0);
-        }
-
-        return null;
-    }
 }

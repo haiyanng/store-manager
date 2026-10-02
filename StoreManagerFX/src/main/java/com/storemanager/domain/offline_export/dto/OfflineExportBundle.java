@@ -3,7 +3,7 @@ package com.storemanager.domain.offline_export.dto;
 import java.util.List;
 
 public record OfflineExportBundle(
-        List<BranchSnapshot> branches,
+
         List<UserSnapshot> users,
         List<EmployeeSnapshot> employees,
         List<CategorySnapshot> categories,

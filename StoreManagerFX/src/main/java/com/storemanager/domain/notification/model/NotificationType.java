@@ -7,6 +7,15 @@ public enum NotificationType {
     INVENTORY,
     ATTENDANCE,
     ATTENDANCE_ANOMALY,
-    SYSTEM,
-    BRANCH
+    SYSTEM;
+
+    public static NotificationType fromStoredValue(String value) {
+        if (value == null) return SYSTEM;
+        try {
+            return valueOf(value);
+        } catch (IllegalArgumentException e) {
+            // Retired notification categories remain readable as system history.
+            return SYSTEM;
+        }
+    }
 }

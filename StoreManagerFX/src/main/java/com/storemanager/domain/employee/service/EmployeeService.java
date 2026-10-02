@@ -3,10 +3,7 @@ package com.storemanager.domain.employee.service;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.audit.service.AuditService;
 import com.storemanager.domain.audit.service.AuditSnapshots;
-import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
-import com.storemanager.domain.branch.model.Branch;
-import com.storemanager.domain.branch.repository.BranchRepository;
 import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
@@ -25,9 +22,6 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository =
             new EmployeeRepository();
-
-    private final BranchRepository branchRepository =
-            new BranchRepository();
 
     private final AttendanceRepository attendanceRepository =
             new AttendanceRepository();
@@ -111,8 +105,7 @@ public class EmployeeService {
 
     private void validateWriteAccess(String action) {
         if (!PermissionGuard.canViewEmployee()) {
-            auditService.recordPermissionDenied(action, "EMPLOYEE", null,
-                    "Employee management denied", null, "OWNER/MANAGER");
+            auditService.recordPermissionDenied(action, "EMPLOYEE", null, "Employee management denied", "OWNER/MANAGER");
             throw new IllegalStateException("Current user cannot manage employees");
         }
     }
@@ -161,7 +154,7 @@ public class EmployeeService {
                 new EmployeeListViewDto();
 
         if (employee == null) {
-            dto.setBranchDisplayName("Unassigned");
+
             return dto;
         }
 
@@ -186,90 +179,8 @@ public class EmployeeService {
                         ? ""
                         : linkedUser.getRole().name()
         );
-        dto.setBranchDisplayName(
-                resolveBranchDisplayName(employee)
-        );
 
         return dto;
-    }
-
-    private String resolveBranchDisplayName(
-            Employee employee
-    ) {
-
-        if (employee == null || employee.getId() == null) {
-            return "Unassigned";
-        }
-
-        AttendanceSession activeSession =
-                attendanceRepository.findOpenSessionByEmployeeId(
-                        employee.getId()
-                );
-
-        if (activeSession != null
-                && activeSession.getBranchId() != null) {
-            String branchName =
-                    resolveBranchName(activeSession.getBranchId());
-            return branchName + " (Working)";
-        }
-
-        Branch currentBranch =
-                resolveCurrentAssignedBranch(employee.getId());
-
-        if (currentBranch != null) {
-            return currentBranch.getName();
-        }
-
-        return "Unassigned";
-    }
-
-    private Branch resolveCurrentAssignedBranch(
-            Long employeeId
-    ) {
-
-        if (employeeId == null) {
-            return null;
-        }
-
-        var activeAssignment =
-                branchRepository.findActiveAssignmentByEmployeeId(
-                        employeeId
-                );
-
-        if (activeAssignment == null
-                || activeAssignment.getBranchId() == null) {
-            return null;
-        }
-
-        Branch branch =
-                branchRepository.findBranchById(
-                        activeAssignment.getBranchId()
-                );
-
-        if (branch == null || !branch.isActive()) {
-            return null;
-        }
-
-        return branch;
-    }
-
-    private String resolveBranchName(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return "Unassigned";
-        }
-
-        Branch branch =
-                branchRepository.findBranchById(branchId);
-
-        if (branch == null || branch.getName() == null
-                || branch.getName().isBlank()) {
-            return "Branch #" + branchId;
-        }
-
-        return branch.getName();
     }
 
     private void validate(

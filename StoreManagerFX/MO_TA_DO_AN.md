@@ -4,11 +4,11 @@
 
 Tài liệu mô tả chức năng, hướng dẫn sử dụng và nghiệp vụ tiêu biểu.
 
-Đối chiếu với mã nguồn hiện tại ngày 29/09/2026.
+Đối chiếu với mã nguồn hiện tại ngày 02/10/2026.
 
 ## 1. Giới thiệu đồ án
 
-StoreManagerFX là ứng dụng máy tính dành cho việc quản lý hoạt động của một cửa hàng. Ứng dụng tập trung vào các công việc thường ngày: quản lý sản phẩm, nhập hàng, bán hàng tại quầy, theo dõi tồn kho, quản lý nhân viên, ghi nhận chấm công và tra cứu lịch sử thao tác.
+StoreManagerFX là ứng dụng máy tính dành cho một cửa hàng duy nhất; mọi giao dịch và báo cáo sử dụng chung phạm vi cửa hàng. Ứng dụng tập trung vào các công việc thường ngày: quản lý sản phẩm, nhập hàng, bán hàng tại quầy, theo dõi tồn kho, quản lý nhân viên, ghi nhận chấm công và tra cứu lịch sử thao tác.
 
 Thay vì ghi thông tin trên nhiều sổ hoặc bảng tính riêng, người sử dụng làm việc trên cùng một hệ thống. Một lần nhập hàng thành công vừa tạo phiếu nhập vừa tăng tồn kho. Một đơn bán hàng hoàn tất vừa lưu các mặt hàng đã bán vừa giảm tồn kho. Chủ cửa hàng có thể xem dữ liệu tổng hợp và tra nhật ký để biết tài khoản nào đã thực hiện một thao tác.
 
@@ -49,7 +49,7 @@ Thay vì ghi thông tin trên nhiều sổ hoặc bảng tính riêng, người 
 
 **OWNER — Chủ cửa hàng:** có quyền quản trị ứng dụng, bao gồm quản lý tài khoản, xem audit log, sao lưu và phục hồi database. OWNER cũng sử dụng các chức năng vận hành như nhập hàng, bán hàng và quản lý nhân viên.
 
-**MANAGER — Quản lý:** thực hiện các công việc vận hành: quản lý nhân viên, sản phẩm, danh mục, nhập hàng, bán hàng và xem xét bất thường chấm công trong phạm vi được phép. MANAGER không được quản lý tài khoản hoặc truy cập các công cụ dữ liệu dành riêng cho OWNER.
+**MANAGER — Quản lý:** thực hiện các công việc vận hành: quản lý nhân viên, sản phẩm, danh mục, nhập hàng, bán hàng và xem xét bất thường chấm công trong cửa hàng. MANAGER không được quản lý tài khoản hoặc truy cập các công cụ dữ liệu dành riêng cho OWNER.
 
 **STAFF — Nhân viên:** sử dụng bán hàng tại quầy, xem hàng hóa, xem tồn kho, truy cập chấm công và các tiện ích trao đổi nội bộ. STAFF không được sửa danh mục/sản phẩm hoặc tạo tài khoản mới.
 
@@ -67,13 +67,13 @@ Tên vai trò cũ `EMPLOYEE` được chuyển thành `STAFF` khi đọc từ da
 | Employee | Có | Có | Không | Không |
 | Import | Có | Có | Không | Không |
 | View Inventory | Có | Có | Có | Không |
-| Attendance | Có | Có | Có, xem lưu ý bên dưới | Không |
+| Attendance | Có | Có | Chỉ bản thân | Không |
 | Attendance Anomalies | Xem, báo cáo, xử lý | Xem và gửi báo cáo theo phạm vi | Không | Không |
 | User Management | Có | Không | Không | Không |
 | Audit Logs, System Tools | Có | Không | Không | Không |
 | Notifications, Messages | Có | Có | Có | Không |
 
-Đây là bảng mô tả luồng giao diện hiện có. Có một giới hạn cần lưu ý: phần kiểm tra chấm công tự phục vụ vẫn còn so sánh trực tiếp với `EMPLOYEE`, trong khi tài khoản đọc từ database được chuẩn hóa thành `STAFF`. Vì vậy, không nên khẳng định phiên bản hiện tại đã giới hạn đầy đủ STAFF chỉ được chấm công cho chính mình. Điểm này cần được hoàn thiện trước khi sử dụng thực tế với nhiều nhân viên.
+STAFF chỉ xem và chấm công cho hồ sơ nhân viên đang hoạt động liên kết với tài khoản của mình. OWNER và MANAGER có thể chọn nhân viên để quản lý chấm công trong cửa hàng. Nếu chưa liên kết tài khoản với hồ sơ nhân viên, người dùng cần liên hệ OWNER; không cần phân công địa điểm làm việc.
 
 ### 3.3. Phân biệt tài khoản và hồ sơ nhân viên
 
@@ -226,30 +226,30 @@ Về nguyên tắc, `tồn cuối = tồn đầu + lượng nhập − lượng 
 
 ### 5.9. Attendance — Ghi nhận chấm công
 
-Attendance lưu các phiên làm việc gồm nhân viên, chi nhánh, giờ vào, giờ ra, số giờ và tài khoản thực hiện.
+Attendance lưu các phiên làm việc gồm nhân viên, giờ vào, giờ ra, số giờ và tài khoản thực hiện.
 
 1. Mở Attendance.
-2. Kiểm tra nhân viên và Branch đang được chọn theo các trường mà tài khoản được phép sử dụng.
+2. OWNER/MANAGER chọn nhân viên cần chấm công; với STAFF, hệ thống chọn và khóa hồ sơ liên kết của chính tài khoản.
 3. Khi bắt đầu làm việc, nhấn Check in.
 4. Khi kết thúc, nhấn Check out cho phiên đang mở.
 5. Xem Attendance history và Current month totals.
 
-Một nhân viên không được Check in thêm nếu vẫn còn phiên chưa Check out. Check out yêu cầu có phiên đang mở và đúng chi nhánh. Nhân viên phải có phân công hợp lệ tại chi nhánh được chọn.
+Một nhân viên không được Check in thêm nếu vẫn còn phiên chưa Check out. Check out yêu cầu có phiên đang mở của nhân viên. Hồ sơ nhân viên phải còn hoạt động; STAFF không được thao tác cho nhân viên khác.
 
-Mặc dù màn hình quản lý chi nhánh riêng đã bị gỡ, dữ liệu Branch và phân công nhân viên vẫn được dùng trong chấm công, Dashboard và một số bộ lọc. Vì vậy, để demo chấm công phải có dữ liệu phân công phù hợp; chỉ tạo User và Employee chưa đủ để bảo đảm Check in thành công. Xem thêm giới hạn phân quyền STAFF ở mục 3.2.
+Ứng dụng vận hành theo mô hình một cửa hàng, không yêu cầu dữ liệu phân công chi nhánh. Các phiên làm việc cũ được giữ nguyên và vẫn có thể kết thúc bằng Check out sau khi nâng cấp.
 
 ### 5.10. Attendance Anomalies — Xem xét bất thường chấm công
 
 Attendance trả lời “nhân viên đã vào/ra lúc nào”, còn Attendance Anomalies trả lời “bản ghi nào cần được xem xét”.
 
-Các loại bất thường hiện có gồm vào quá sớm/muộn, ra quá sớm/muộn, thời gian làm việc quá ngắn/dài, thiếu giờ ra và làm ngoài ca. Việc phát hiện dựa trên quy tắc ca làm và các ngưỡng thời gian. Nếu không có quy tắc riêng phù hợp, code có quy tắc mặc định; đây chưa phải một công cụ lập lịch ca đầy đủ trên giao diện.
+Các loại bất thường hiện có gồm vào quá sớm/muộn, ra quá sớm/muộn, thời gian làm việc quá ngắn/dài, thiếu giờ ra và làm ngoài ca. Việc phát hiện dựa trên quy tắc ca làm và các ngưỡng thời gian. Quy tắc đang hoạt động có ID mới nhất được áp dụng chung cho cửa hàng. Nếu chưa có, hệ thống dùng ca mặc định 09:00–18:00; đây chưa phải công cụ lập lịch ca đầy đủ trên giao diện.
 
 Luồng xử lý:
 
 1. OWNER hoặc MANAGER mở Attendance Anomalies.
-2. Lọc theo nhân viên, chi nhánh, loại, mức độ, trạng thái hoặc khoảng ngày; nhấn Apply.
+2. Lọc theo nhân viên, loại, mức độ, trạng thái hoặc khoảng ngày; nhấn Apply.
 3. Chọn một bất thường và đọc chi tiết phiên chấm công.
-4. MANAGER gửi giải trình bằng Submit report trong phạm vi được phép.
+4. MANAGER gửi giải trình bằng Submit report trong cửa hàng.
 5. OWNER xem báo cáo, chỉnh dữ liệu giờ làm nếu cần bằng Save attendance changes, rồi chọn Resolve hoặc Dismiss theo kết quả kiểm tra.
 6. OWNER có thể điều chỉnh việc thông báo cho nhân viên bằng Update employee notification.
 
@@ -329,7 +329,7 @@ Các số tiền dưới đây chỉ là giá trị minh họa, chưa gắn đơ
 
 **Thực hiện:** tạo Employee với họ tên Nguyễn Minh An, Position là Thu ngân và trạng thái Active. Sau đó vào User Management, tạo Username `minhan`, chọn Role STAFF và Linked employee là Nguyễn Minh An.
 
-**Kết quả:** nhân viên có tài khoản riêng để đăng nhập. STAFF có thể vào Order nhưng không có User Management, Audit Logs hoặc System Tools. Việc tạo tài khoản và liên kết nhân viên có audit tương ứng. Chấm công cần thêm điều kiện phân công chi nhánh, không tự hoàn tất chỉ bằng bước tạo tài khoản.
+**Kết quả:** nhân viên có tài khoản riêng để đăng nhập. STAFF có thể vào Order nhưng không có User Management, Audit Logs hoặc System Tools. Việc tạo tài khoản và liên kết nhân viên có audit tương ứng. Khi hồ sơ liên kết còn hoạt động, STAFF có thể chấm công cho chính mình mà không cần phân công chi nhánh.
 
 **Trường hợp không hợp lệ:** Username đã tồn tại hoặc Employee đã liên kết với một tài khoản khác. Hệ thống từ chối và thông báo để sửa thông tin.
 
@@ -419,7 +419,7 @@ Kiến trúc được tổ chức theo luồng `FXML → Controller → Presente
 | Import receipt và Import item | Một phiếu nhập có nhiều dòng, mỗi dòng lưu sản phẩm, số lượng và giá nhập |
 | Sale order và Sale order item | Một đơn bán có nhiều dòng, lưu số lượng và đơn giá của giao dịch |
 | Inventory transaction | Ghi biến động số lượng và liên hệ với nghiệp vụ phát sinh |
-| Attendance session | Liên hệ nhân viên, chi nhánh, thời gian làm việc và người thực hiện |
+| Attendance session | Liên hệ nhân viên, thời gian làm việc và người thực hiện |
 | Attendance anomaly | Liên hệ phiên chấm công cần xem xét và trạng thái xử lý |
 | Audit log | Ghi tài khoản thực hiện và đối tượng bị tác động trong một sự kiện |
 
@@ -432,7 +432,7 @@ Các dòng nhập/bán lưu đơn giá riêng của giao dịch. Vì vậy, thay
 - Không có bán hàng online, đăng ký tài khoản công khai hoặc quy trình giao hàng.
 - Chưa có quản lý hạn sử dụng, lô hàng hoặc xuất kho theo hạn dùng.
 - Chưa có luồng đổi trả/hủy đơn hoàn tất trên màn hình Order, cổng thanh toán hoặc hóa đơn điện tử.
-- Chấm công chưa phải hệ thống tính lương. Cần thống nhất STAFF/EMPLOYEE và hoàn thiện luồng phân công chi nhánh sau khi đã gỡ màn hình quản lý chi nhánh riêng.
+- Chấm công chưa phải hệ thống tính lương hoặc lập lịch nhiều ca; quy tắc ca hiện áp dụng chung cho cửa hàng.
 - Audit đã được tích hợp ở nhiều nghiệp vụ nhưng không bảo đảm ghi mọi thao tác hoặc lưu đồng thời thành công ở cả file và database; chưa có cơ chế tự dọn file theo thời gian.
 - Backup hiện là thao tác thủ công; chưa có lịch sao lưu tự động hay cơ chế sao lưu USB tự động.
 - Gói Migration & Export chưa nhập ngược đầy đủ mọi nhóm dữ liệu có thể xuất; chưa đồng bộ cloud.
@@ -451,7 +451,7 @@ Một buổi demo có thể đi theo trình tự sau để người xem hiểu �
 4. Nhập 10 chai giá 5,000 và 10 chai giá 6,000 trong cùng phiếu; chỉ ra tổng đúng là 110,000 và kho tăng 20 chai.
 5. Đăng nhập STAFF, bán 3 chai với tổng 24,000; kiểm tra kho còn 17 và mở chi tiết đơn.
 6. Thử số lượng vượt tồn để minh họa kiểm tra nghiệp vụ.
-7. Dùng dữ liệu nhân viên/chi nhánh đã chuẩn bị hợp lệ để trình bày Check in, Check out và một bất thường có sẵn. Giải thích rõ giới hạn hiện tại của phân quyền chấm công.
+7. Dùng tài khoản STAFF đã liên kết với hồ sơ nhân viên đang hoạt động để trình bày Check in/Check out. Dùng MANAGER/OWNER để xem xét bất thường của cửa hàng.
 8. Đăng nhập OWNER, tra audit của các thao tác vừa thực hiện và mở file audit text tương ứng nếu cần minh họa cách lưu.
 9. Tạo một bản backup SQL và giải thích cách phục hồi. Chỉ trình bày quy trình Restore khi demo thông thường; thao tác phục hồi thật cần bộ dữ liệu demo riêng vì có thể thay đổi database đang dùng.
 

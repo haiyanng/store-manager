@@ -74,9 +74,6 @@ public class AuditLogController {
     private TableColumn<AuditLogViewDto, Long> entityIdColumn;
 
     @FXML
-    private TableColumn<AuditLogViewDto, Long> branchIdColumn;
-
-    @FXML
     private TableColumn<AuditLogViewDto, String> successColumn;
 
     @FXML
@@ -98,7 +95,6 @@ public class AuditLogController {
         UiFeedback.emptyTable(auditLogTable, "No audit events match the current filters.");
         UiFeedback.datePicker(fromDatePicker);
         UiFeedback.datePicker(toDatePicker);
-
 
         User currentUser =
                 AppSession.getCurrentUser();
@@ -251,11 +247,7 @@ public class AuditLogController {
                         cellData.getValue().getEntityId()
                 )
         );
-        branchIdColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getBranchId()
-                )
-        );
+
         successColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
                         Boolean.FALSE.equals(cellData.getValue().getSuccess())

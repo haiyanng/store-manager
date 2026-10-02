@@ -7,7 +7,6 @@ import com.storemanager.domain.attendance.model.AttendanceSession;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -93,9 +92,7 @@ public class AttendanceRepository {
             return null;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-            return null;
+            throw new IllegalStateException("Unable to load attendance. Check the database connection and try again.", e);
         }
     }
 
@@ -205,10 +202,7 @@ public class AttendanceRepository {
             return null;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return null;
+            throw new IllegalStateException("Unable to load attendance. Check the database connection and try again.", e);
         }
     }
 
@@ -225,11 +219,10 @@ public class AttendanceRepository {
                                 """
                                 INSERT INTO attendance_sessions (
                                     employee_id,
-                                    branch_id,
                                     check_in_time,
                                     created_by_user_id
                                 )
-                                VALUES (?, ?, ?, ?)
+                                VALUES (?, ?, ?)
                                 """,
                                 Statement.RETURN_GENERATED_KEYS
                         )
@@ -239,12 +232,8 @@ public class AttendanceRepository {
                     1,
                     session.getEmployeeId()
             );
-            statement.setLong(
-                    2,
-                    session.getBranchId()
-            );
             statement.setTimestamp(
-                    3,
+                    2,
                     Timestamp.valueOf(
                             TimeFormatUtil.truncateToSeconds(
                                     session.getCheckInTime()
@@ -254,12 +243,12 @@ public class AttendanceRepository {
 
             if (session.getCreatedByUserId() == null) {
                 statement.setObject(
-                        4,
+                        3,
                         null
                 );
             } else {
                 statement.setLong(
-                        4,
+                        3,
                         session.getCreatedByUserId()
                 );
             }
@@ -347,7 +336,6 @@ public class AttendanceRepository {
                                 """
                                 UPDATE attendance_sessions
                                 SET employee_id = ?,
-                                    branch_id = ?,
                                     check_in_time = ?,
                                     check_out_time = ?,
                                     worked_hours = ?
@@ -358,14 +346,8 @@ public class AttendanceRepository {
 
             statement.setLong(1, session.getEmployeeId());
 
-            if (session.getBranchId() == null) {
-                statement.setObject(2, null);
-            } else {
-                statement.setLong(2, session.getBranchId());
-            }
-
             statement.setTimestamp(
-                    3,
+                    2,
                     session.getCheckInTime() == null
                             ? null
                             : Timestamp.valueOf(
@@ -375,7 +357,7 @@ public class AttendanceRepository {
                             )
             );
             statement.setTimestamp(
-                    4,
+                    3,
                     session.getCheckOutTime() == null
                             ? null
                             : Timestamp.valueOf(
@@ -384,8 +366,8 @@ public class AttendanceRepository {
                                     )
                             )
             );
-            statement.setBigDecimal(5, session.getWorkedHours());
-            statement.setLong(6, session.getId());
+            statement.setBigDecimal(4, session.getWorkedHours());
+            statement.setLong(5, session.getId());
 
             return statement.executeUpdate() > 0;
 
@@ -447,7 +429,6 @@ public class AttendanceRepository {
                     CREATE TABLE IF NOT EXISTS attendance_sessions (
                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
                         employee_id BIGINT NOT NULL,
-                        branch_id BIGINT NULL,
                         check_in_time TIMESTAMP NOT NULL,
                         check_out_time TIMESTAMP NULL,
                         worked_hours DECIMAL(10, 2) NULL,
@@ -457,8 +438,6 @@ public class AttendanceRepository {
                     """
             );
 
-            addBranchIdColumnIfMissing(connection);
-
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -466,42 +445,6 @@ public class AttendanceRepository {
             throw new RuntimeException(
                     "Attendance table initialization failed",
                     e
-            );
-        }
-    }
-
-    private void addBranchIdColumnIfMissing(
-            Connection connection
-    ) throws Exception {
-
-        DatabaseMetaData metaData =
-                connection.getMetaData();
-
-        try (
-                ResultSet columns =
-                        metaData.getColumns(
-                                null,
-                                null,
-                                "attendance_sessions",
-                                "branch_id"
-                        )
-        ) {
-
-            if (columns.next()) {
-                return;
-            }
-        }
-
-        try (
-                Statement statement =
-                        connection.createStatement()
-        ) {
-
-            statement.execute(
-                    """
-                    ALTER TABLE attendance_sessions
-                    ADD COLUMN branch_id BIGINT NULL
-                    """
             );
         }
     }
@@ -515,14 +458,6 @@ public class AttendanceRepository {
 
         session.setId(resultSet.getLong("id"));
         session.setEmployeeId(resultSet.getLong("employee_id"));
-        long branchId =
-                resultSet.getLong("branch_id");
-
-        if (resultSet.wasNull()) {
-            session.setBranchId(null);
-        } else {
-            session.setBranchId(branchId);
-        }
         session.setCheckInTime(
                 toLocalDateTime(
                         resultSet.getTimestamp("check_in_time")

@@ -55,14 +55,7 @@ public class DatabaseBackupService {
     ) {
 
         if (!PermissionGuard.canBackupDatabase()) {
-            auditService.recordPermissionDenied(
-                    "DATABASE_BACKUP",
-                    "BACKUP",
-                    null,
-                    "Backup access denied",
-                    null,
-                    "OWNER"
-            );
+            auditService.recordPermissionDenied("DATABASE_BACKUP", "BACKUP", null, "Backup access denied", "OWNER");
             throw new RuntimeException(
                     "Current user cannot backup database"
             );

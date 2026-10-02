@@ -77,10 +77,6 @@
                text="🟠 Not working"
                styleClass="analytics-section-text"/>
 
-        <Label fx:id="quickAttendanceBranchLabel"
-               text="Branch: -"
-               styleClass="analytics-section-text"/>
-
         <Label fx:id="quickAttendanceSessionLabel"
                text="Session: no active session"
                styleClass="analytics-section-text"/>
@@ -111,12 +107,10 @@
         <Label text="My Work" styleClass="analytics-section-title"/>
         <Label fx:id="todayHoursLabel" text="Today's worked hours: -" styleClass="analytics-section-text"/>
         <Label fx:id="monthHoursLabel" text="Current month worked hours: -" styleClass="analytics-section-text"/>
-        <Label fx:id="assignedBranchesLabel" text="Assigned branches: -" styleClass="analytics-section-text"/>
 
         <TableView fx:id="attendanceHistoryTable" prefHeight="240" styleClass="analytics-table">
             <columns>
                 <TableColumn fx:id="historyDateColumn" text="Date"/>
-                <TableColumn fx:id="historyBranchColumn" text="Branch"/>
                 <TableColumn fx:id="historyCheckInColumn" text="Check-in"/>
                 <TableColumn fx:id="historyCheckOutColumn" text="Check-out"/>
                 <TableColumn fx:id="historyHoursColumn" text="Hours"/>
@@ -125,31 +119,12 @@
     </VBox>
 
     <VBox fx:id="managerSection" spacing="12" styleClass="analytics-section">
-        <Label text="Branch Operations" styleClass="analytics-section-title"/>
-        <Label fx:id="branchEmployeeCountLabel" text="Branch employee count: -" styleClass="analytics-section-text"/>
+        <Label text="Store Operations" styleClass="analytics-section-title"/>
         <Label fx:id="checkedInLabel" text="Employees currently checked-in: -" styleClass="analytics-section-text"/>
         <Label fx:id="attendanceOverviewLabel" text="Attendance overview: -" styleClass="analytics-section-text"/>
-        <Label fx:id="inventoryOverviewLabel" text="Branch inventory overview: -" styleClass="analytics-section-text"/>
-        <Label fx:id="salesOverviewLabel" text="Branch sales overview: -" styleClass="analytics-section-text"/>
-
-        <TableView fx:id="branchSummaryTable" prefHeight="220" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="branchNameColumn" text="Branch"/>
-                <TableColumn fx:id="branchSessionsColumn" text="Sessions"/>
-                <TableColumn fx:id="branchHoursColumn" text="Hours"/>
-                <TableColumn fx:id="branchEmployeesColumn" text="Employees"/>
-            </columns>
-        </TableView>
-
-        <TableView fx:id="locationTable" prefHeight="220" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="locationEmployeeColumn" text="Employee"/>
-                <TableColumn fx:id="locationBranchesColumn" text="Branches"/>
-                <TableColumn fx:id="locationAssignmentsColumn" text="Assignments"/>
-            </columns>
-        </TableView>
+        <Label fx:id="inventoryOverviewLabel" text="Inventory overview: -" styleClass="analytics-section-text"/>
+        <Label fx:id="salesOverviewLabel" text="Sales overview: -" styleClass="analytics-section-text"/>
     </VBox>
-
 
     <VBox fx:id="ownerSection" spacing="12" styleClass="analytics-section">
         <Label text="Business Control" styleClass="analytics-section-title"/>

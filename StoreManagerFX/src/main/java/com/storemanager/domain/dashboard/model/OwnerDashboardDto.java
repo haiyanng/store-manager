@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OwnerDashboardDto {
+    private String attendanceOverview;
+    public String getAttendanceOverview() { return attendanceOverview; }
+    public void setAttendanceOverview(String value) { attendanceOverview = value; }
 
     private String title;
 
@@ -21,12 +24,6 @@ public class OwnerDashboardDto {
     private String revenueTotals;
 
     private String inventoryAlertsSummary;
-
-    private List<DashboardBranchSummary> branchOperationalSummaries =
-            new ArrayList<>();
-
-    private List<DashboardEmployeeLocationRow> employeeLocations =
-            new ArrayList<>();
 
     private List<DashboardCashFlowSummary> cashFlowSummaries =
             new ArrayList<>();
@@ -99,24 +96,6 @@ public class OwnerDashboardDto {
 
     public void setInventoryAlertsSummary(String inventoryAlertsSummary) {
         this.inventoryAlertsSummary = inventoryAlertsSummary;
-    }
-
-
-
-    public List<DashboardBranchSummary> getBranchOperationalSummaries() {
-        return branchOperationalSummaries;
-    }
-
-    public void setBranchOperationalSummaries(List<DashboardBranchSummary> branchOperationalSummaries) {
-        this.branchOperationalSummaries = branchOperationalSummaries;
-    }
-
-    public List<DashboardEmployeeLocationRow> getEmployeeLocations() {
-        return employeeLocations;
-    }
-
-    public void setEmployeeLocations(List<DashboardEmployeeLocationRow> employeeLocations) {
-        this.employeeLocations = employeeLocations;
     }
 
     public List<DashboardCashFlowSummary> getCashFlowSummaries() {

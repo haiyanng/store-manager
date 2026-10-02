@@ -1,6 +1,6 @@
 # StoreManagerFX
 
-Ứng dụng JavaFX quản lý cửa hàng và bán hàng tại quầy, dùng Java 21 và MySQL JDBC.
+Ứng dụng JavaFX quản lý một cửa hàng duy nhất và bán hàng tại quầy, dùng Java 21 và MySQL JDBC.
 
 Tài liệu chi tiết về đồ án, hướng dẫn sử dụng và các nghiệp vụ minh họa: [MO_TA_DO_AN.md](MO_TA_DO_AN.md).
 
@@ -32,7 +32,7 @@ mvn "-Dmaven.test.skip=true" clean compile javafx:run
 Các sự kiện đi qua `AuditService` được tự động ghi thêm vào file UTF-8 `logs/audit-YYYY-MM-DD.txt`, đồng thời vẫn lưu vào bảng `audit_logs`. Thư mục `logs` tính từ thư mục chạy ứng dụng (thư mục chứa `pom.xml` khi chạy theo hướng dẫn trên).
 
 - File được tạo khi phát sinh sự kiện đầu tiên trong ngày; khởi động lại ứng dụng vẫn ghi tiếp file đó. Sang ngày mới tạo file mới theo ngày giờ của máy.
-- Mỗi dòng gồm thời gian, tài khoản/ID người thực hiện, module, hành động, đối tượng/ID, kết quả, chi nhánh, lý do và chi tiết. Đăng nhập thất bại chưa có phiên người dùng sẽ mang actor `System`, còn tên đăng nhập đã thử nằm trong chi tiết.
+- Mỗi dòng gồm thời gian, tài khoản/ID người thực hiện, module, hành động, đối tượng/ID, kết quả, lý do và chi tiết. Đăng nhập thất bại chưa có phiên người dùng sẽ mang actor `System`, còn tên đăng nhập đã thử nằm trong chi tiết.
 - Không lấy mật khẩu hoặc thông tin kết nối database để ghi file. Nội dung ghi chú nhiều dòng được chuyển thành ký tự hiển thị `\n`/`\r` để mỗi sự kiện chỉ chiếm một dòng.
 - File được ghi trước lần lưu database; lỗi lưu database không xóa dòng đã ghi. Nếu không ghi được file, chương trình báo lỗi ra console và vẫn thử lưu database. Kết quả `SUCCESS`/`FAILED` trên dòng log là kết quả thao tác nghiệp vụ, không phải trạng thái lưu database.
 - Chỉ ghi các thao tác đã tích hợp audit, không tự ghi mọi lần bấm chuột và không xuất lại lịch sử cũ. File chưa tự dọn theo thời gian; có thể sao chép thư mục `logs` sang USB để lưu giữ. Log được loại khỏi Git.
@@ -40,7 +40,7 @@ Các sự kiện đi qua `AuditService` được tự động ghi thêm vào fil
 Ví dụ định dạng (ID và thời gian minh họa):
 
 ```text
-2026-09-26 10:00:00.000 | user=admin | user_id=1 | module=AUTHENTICATION | action=LOGIN_SUCCESS | target=USER | target_id=1 | result=SUCCESS | branch_id=- | reason=- | details={"username":"admin"}
+2026-09-26 10:00:00.000 | user=admin | user_id=1 | module=AUTHENTICATION | action=LOGIN_SUCCESS | target=USER | target_id=1 | result=SUCCESS | reason=- | details={"username":"admin"}
 ```
 
 ### Chi tiết audit và trải nghiệm giao diện
@@ -57,6 +57,14 @@ Ví dụ định dạng (ID và thời gian minh họa):
 OWNER thực hiện sao lưu trong System Tools, chọn chương trình `mysqldump` (XAMPP thường ở `C:\xampp\mysql\bin\mysqldump.exe`) và nơi lưu file `.sql`, có thể chọn USB.
 
 Ứng dụng xuất ra file tạm trong cùng thư mục đích. Chỉ khi `mysqldump` kết thúc thành công và file có dữ liệu, ứng dụng mới chuyển file tạm thành file đã chọn. Nếu quá trình xuất bị lỗi, bản sao lưu cũ tại đường dẫn đó vẫn được giữ và thông báo hiển thị nguyên nhân từ `mysqldump`. Đây là sao lưu do người dùng thực hiện; chưa có lịch sao lưu tự động.
+
+## Mô hình một cửa hàng
+
+Ứng dụng không còn quản lý, lựa chọn hoặc phân công chi nhánh. Dashboard, chấm công và màn hình bất thường chấm công sử dụng phạm vi toàn cửa hàng. STAFF (bao gồm vai trò EMPLOYEE cũ) chỉ xem và chấm công cho hồ sơ nhân viên liên kết với tài khoản; OWNER/MANAGER quản lý chấm công của cửa hàng. Hồ sơ phải đang hoạt động để Check in/Check out.
+
+Quy tắc ca làm được áp dụng chung cho cửa hàng: ưu tiên quy tắc đang hoạt động có ID mới nhất, hoặc ca mặc định 09:00–18:00 nếu chưa có quy tắc. Gói xuất dữ liệu và audit mới không có thông tin chi nhánh.
+
+Database mới không tạo bảng/cột chi nhánh. Khi mở database cũ, ứng dụng giữ nguyên lịch sử và các bảng/cột cũ nhưng không sử dụng chúng trong nghiệp vụ; chỉ cho phép cột chi nhánh cũ của quy tắc ca nhận NULL để lưu quy tắc dùng chung. Không tự xóa dữ liệu lịch sử hay viết lại nội dung audit cũ. Có thể Check out các phiên cũ còn mở mà không chọn chi nhánh.
 
 ## Phạm vi hiện tại
 

@@ -170,14 +170,7 @@ public class ProductService {
     private void validateProductViewAccess() {
 
         if (!PermissionGuard.canViewProduct()) {
-            auditService.recordPermissionDenied(
-                    "PRODUCT_VIEW",
-                    "PRODUCT",
-                    null,
-                    "Product access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF/VIEWER"
-            );
+            auditService.recordPermissionDenied("PRODUCT_VIEW", "PRODUCT", null, "Product access denied", "OWNER/MANAGER/STAFF/VIEWER");
             throw new RuntimeException("Product access denied");
         }
     }
@@ -187,14 +180,7 @@ public class ProductService {
     ) {
 
         if (!PermissionGuard.canModifyProduct()) {
-            auditService.recordPermissionDenied(
-                    action,
-                    "PRODUCT",
-                    null,
-                    "Product modification denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied(action, "PRODUCT", null, "Product modification denied", "OWNER/MANAGER");
             throw new RuntimeException("Current user cannot modify products");
         }
     }

@@ -504,14 +504,7 @@ public class SaleService {
     private void validateSaleAccess() {
 
         if (!PermissionGuard.canViewOrder()) {
-            auditService.recordPermissionDenied(
-                    "SALE_VIEW",
-                    "SALE",
-                    null,
-                    "Order access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF"
-            );
+            auditService.recordPermissionDenied("SALE_VIEW", "SALE", null, "Order access denied", "OWNER/MANAGER/STAFF");
             throw new RuntimeException(
                     "Order access denied"
             );
@@ -521,14 +514,7 @@ public class SaleService {
     private void validateSaleCreateAccess() {
 
         if (!PermissionGuard.canCreateSale()) {
-            auditService.recordPermissionDenied(
-                    "SALE_CREATE",
-                    "SALE",
-                    null,
-                    "Order creation denied",
-                    null,
-                    "OWNER/MANAGER/STAFF"
-            );
+            auditService.recordPermissionDenied("SALE_CREATE", "SALE", null, "Order creation denied", "OWNER/MANAGER/STAFF");
             throw new RuntimeException(
                     "Current user cannot create orders"
             );

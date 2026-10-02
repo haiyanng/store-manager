@@ -26,9 +26,6 @@
         <Label text="Employee"/>
         <Label fx:id="employeeLabel" text="-"/>
 
-        <Label text="Branch"/>
-        <Label fx:id="branchLabel" text="-"/>
-
         <Label text="Type"/>
         <Label fx:id="typeLabel" text="-"/>
 

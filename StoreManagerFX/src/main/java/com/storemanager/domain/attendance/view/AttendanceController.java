@@ -4,13 +4,11 @@ import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.presenter.AttendancePresenter;
-import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -26,9 +24,6 @@ public class AttendanceController {
     private ComboBox<Employee> employeeComboBox;
 
     @FXML
-    private ComboBox<Branch> branchComboBox;
-
-    @FXML
     private TableView<AttendanceSession> sessionTable;
 
     @FXML
@@ -36,9 +31,6 @@ public class AttendanceController {
 
     @FXML
     private TableColumn<AttendanceSession, String> sessionEmployeeColumn;
-
-    @FXML
-    private TableColumn<AttendanceSession, String> sessionBranchColumn;
 
     @FXML
     private TableColumn<AttendanceSession, String> checkInColumn;
@@ -68,11 +60,11 @@ public class AttendanceController {
     private Label statusLabel;
 
     @FXML
-    private Label branchContextLabel;
-
-    @FXML
     private Label sessionStatusLabel;
 
+    @FXML private javafx.scene.control.Button checkInButton;
+    @FXML private javafx.scene.control.Button checkOutButton;
+    @FXML private javafx.scene.control.Button refreshButton;
     private AttendancePresenter presenter;
 
     @FXML
@@ -80,14 +72,13 @@ public class AttendanceController {
         UiFeedback.emptyTable(sessionTable, "No records found.");
         UiFeedback.emptyTable(monthlyTable, "No records found.");
 
-
         presenter =
                 new AttendancePresenter(
                         this
                 );
 
         configureEmployeeComboBox();
-        configureBranchComboBox();
+
         configureSessionTable();
         configureMonthlyTable();
         configureSelectionListeners();
@@ -99,8 +90,7 @@ public class AttendanceController {
     public void onCheckIn() {
 
         presenter.checkIn(
-                employeeComboBox.getValue(),
-                branchComboBox.getValue()
+                employeeComboBox.getValue()
         );
     }
 
@@ -108,8 +98,7 @@ public class AttendanceController {
     public void onCheckOut() {
 
         presenter.checkOut(
-                employeeComboBox.getValue(),
-                branchComboBox.getValue()
+                employeeComboBox.getValue()
         );
     }
 
@@ -145,40 +134,6 @@ public class AttendanceController {
         refreshSessionStatusLabel();
     }
 
-    public void setBranches(
-            List<Branch> branches
-    ) {
-
-        branchComboBox.setItems(
-                FXCollections.observableArrayList(
-                        branches
-                )
-        );
-
-        Branch activeBranch =
-                presenter.getActiveBranch();
-
-        if (activeBranch != null
-                && branches.stream().anyMatch(branch ->
-                branch.getId() != null
-                        && branch.getId().equals(
-                        activeBranch.getId()
-                ))) {
-            branchComboBox.setValue(activeBranch);
-        } else if (!branches.isEmpty()) {
-            branchComboBox.setValue(branches.get(0));
-        }
-
-        if (presenter.isSelfServiceMode()) {
-            branchComboBox.setDisable(true);
-        } else {
-            branchComboBox.setDisable(false);
-        }
-
-        refreshBranchContextLabel();
-        refreshSessionStatusLabel();
-    }
-
     public void setSessions(
             List<AttendanceSession> sessions
     ) {
@@ -202,22 +157,20 @@ public class AttendanceController {
     }
 
     public void clearSelection() {
-
-        employeeComboBox.setValue(null);
-        branchComboBox.setValue(null);
+        employeeComboBox.setValue(presenter.isSelfServiceMode() ? presenter.getCurrentEmployee() : null);
         sessionTable.getSelectionModel().clearSelection();
         monthlyTable.getSelectionModel().clearSelection();
         refreshSessionStatusLabel();
     }
 
-    public void setBusy(
-            boolean busy
-    ) {
-
-        employeeComboBox.setDisable(busy);
-        branchComboBox.setDisable(busy);
+    public void setBusy(boolean busy) {
+        employeeComboBox.setDisable(busy || presenter.isSelfServiceMode());
         sessionTable.setDisable(busy);
         monthlyTable.setDisable(busy);
+        boolean missingEmployee = presenter.isSelfServiceMode() && presenter.getCurrentEmployee() == null;
+        checkInButton.setDisable(busy || missingEmployee);
+        checkOutButton.setDisable(busy || missingEmployee);
+        refreshButton.setDisable(busy);
     }
 
     public void setStatus(
@@ -227,35 +180,8 @@ public class AttendanceController {
         UiFeedback.status(statusLabel, status, sessionTable, monthlyTable);
     }
 
-    public void refreshBranchContextLabel() {
-
-        String branchName =
-                presenter.getActiveBranchName();
-
-        if (branchName == null || branchName.isBlank()) {
-            branchContextLabel.setText("Current branch: -");
-            return;
-        }
-
-        branchContextLabel.setText(
-                "Current branch: " + branchName
-        );
-    }
-
     public void refreshSessionStatusLabel() {
-
-        Employee employee =
-                employeeComboBox.getValue();
-
-        Branch branch =
-                branchComboBox.getValue();
-
-        sessionStatusLabel.setText(
-                presenter.describeSessionStatus(
-                        employee,
-                        branch
-                )
-        );
+        sessionStatusLabel.setText(presenter.describeSessionStatus(employeeComboBox.getValue()));
     }
 
     public void showError(
@@ -291,50 +217,8 @@ public class AttendanceController {
         );
     }
 
-    private void configureBranchComboBox() {
-
-        branchComboBox.setConverter(
-                new StringConverter<>() {
-                    @Override
-                    public String toString(
-                            Branch branch
-                    ) {
-
-                        if (branch == null) {
-                            return "";
-                        }
-
-                        return branch.toString();
-                    }
-
-                    @Override
-                    public Branch fromString(
-                            String value
-                    ) {
-
-                        return null;
-                    }
-                }
-        );
-    }
-
     private void configureSelectionListeners() {
-
-        employeeComboBox
-                .valueProperty()
-                .addListener(
-                        (observable, oldValue, newValue) ->
-                                refreshSessionStatusLabel()
-                );
-
-        branchComboBox
-                .valueProperty()
-                .addListener(
-                        (observable, oldValue, newValue) -> {
-                            refreshSessionStatusLabel();
-                            refreshBranchContextLabel();
-                        }
-                );
+        employeeComboBox.valueProperty().addListener((obs, old, value) -> refreshSessionStatusLabel());
     }
 
     private void configureSessionTable() {
@@ -348,15 +232,6 @@ public class AttendanceController {
                         new SimpleStringProperty(
                                 presenter.getEmployeeName(
                                         cellData.getValue().getEmployeeId()
-                                )
-                        )
-        );
-
-        sessionBranchColumn.setCellValueFactory(
-                cellData ->
-                        new SimpleStringProperty(
-                                presenter.getBranchName(
-                                        cellData.getValue().getBranchId()
                                 )
                         )
         );

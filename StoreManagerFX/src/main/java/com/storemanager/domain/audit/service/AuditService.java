@@ -33,7 +33,6 @@ public class AuditService {
     public static final String ACTION_LOGIN_FAILED = "LOGIN_FAILED";
     public static final String ACTION_LOGOUT = "LOGOUT";
     public static final String ACTION_PERMISSION_DENIED = "PERMISSION_DENIED";
-    public static final String ACTION_EMPLOYEE_BRANCH_ASSIGNMENT = "EMPLOYEE_BRANCH_ASSIGNMENT";
     public static final String ACTION_ATTENDANCE_SELF_CHECK_IN = "ATTENDANCE_SELF_CHECK_IN";
     public static final String ACTION_ATTENDANCE_SELF_CHECK_OUT = "ATTENDANCE_SELF_CHECK_OUT";
     public static final String ACTION_INVENTORY_ADJUSTMENT = "INVENTORY_ADJUSTMENT";
@@ -49,58 +48,12 @@ public class AuditService {
     private final AuditLogFileRepository auditLogFileRepository =
             new AuditLogFileRepository();
 
-    public boolean record(
-            String action,
-            String entityType,
-            Long entityId,
-            String details,
-            Long branchId
-    ) {
+    public boolean record(String action, String entityType, Long entityId, String details) {
 
-        return recordEvent(
-                moduleFromEntity(entityType),
-                action,
-                entityType,
-                entityId,
-                true,
-                null,
-                details,
-                branchId
-        );
+        return recordEvent(moduleFromEntity(entityType), action, entityType, entityId, true, null, details);
     }
 
-    public boolean recordEvent(
-            String module,
-            String action,
-            String targetType,
-            Long targetId,
-            boolean success,
-            String reason,
-            String detailsJson
-    ) {
-
-        return recordEvent(
-                module,
-                action,
-                targetType,
-                targetId,
-                success,
-                reason,
-                detailsJson,
-                null
-        );
-    }
-
-    public boolean recordEvent(
-            String module,
-            String action,
-            String targetType,
-            Long targetId,
-            boolean success,
-            String reason,
-            String detailsJson,
-            Long branchId
-    ) {
+    public boolean recordEvent(String module, String action, String targetType, Long targetId, boolean success, String reason, String detailsJson) {
 
         if (action == null || action.trim().isEmpty()) {
             throw new RuntimeException("Audit action is required");
@@ -124,7 +77,6 @@ public class AuditService {
         log.setReason(clean(reason));
         log.setDetailsJson(clean(detailsJson));
         log.setDetails(clean(detailsJson));
-        log.setBranchId(branchId);
         log.setCreatedAt(LocalDateTime.now());
 
         // Persist to text independently, even if the database write subsequently fails.
@@ -133,50 +85,21 @@ public class AuditService {
         return auditLogRepository.save(log);
     }
 
-    public void recordPermissionDenied(
-            String action,
-            String entityType,
-            Long entityId,
-            String details,
-            Long branchId
-    ) {
+    public void recordPermissionDenied(String action, String entityType, Long entityId, String details) {
 
-        recordPermissionDenied(
-                action,
-                entityType,
-                entityId,
-                details,
-                branchId,
-                null
-        );
+        recordPermissionDenied(action, entityType, entityId, details, null);
     }
 
-    public void recordPermissionDenied(
-            String action,
-            String entityType,
-            Long entityId,
-            String details,
-            Long branchId,
-            String requiredRole
-    ) {
+    public void recordPermissionDenied(String action, String entityType, Long entityId, String details, String requiredRole) {
 
         String attemptedAction =
                 action == null || action.isBlank()
                         ? ACTION_PERMISSION_DENIED
                         : action.trim();
 
-        recordEvent(
-                "SECURITY",
-                ACTION_PERMISSION_DENIED,
-                entityType == null ? "SECURITY" : entityType,
-                entityId,
-                false,
-                details,
-                "{\"attempted_action\":\"" + escape(attemptedAction)
+        recordEvent("SECURITY", ACTION_PERMISSION_DENIED, entityType == null ? "SECURITY" : entityType, entityId, false, details, "{\"attempted_action\":\"" + escape(attemptedAction)
                         + "\",\"required_role\":\"" + escape(requiredRole)
-                        + "\"}",
-                branchId
-        );
+                        + "\"}");
     }
 
     public void recordLogin(
@@ -247,25 +170,13 @@ public class AuditService {
             String details
     ) {
 
-        record(
-                ACTION_DATABASE_RESET,
-                "DATABASE",
-                null,
-                details,
-                null
-        );
+        record(ACTION_DATABASE_RESET, "DATABASE", null, details);
     }
 
     private void validateAccess() {
 
         if (!PermissionGuard.canViewAuditLogs()) {
-            recordPermissionDenied(
-                    ACTION_PERMISSION_DENIED,
-                    "AUDIT_LOG",
-                    null,
-                    "Audit log access denied",
-                    null
-            );
+            recordPermissionDenied(ACTION_PERMISSION_DENIED, "AUDIT_LOG", null, "Audit log access denied");
             throw new RuntimeException("Audit log access denied");
         }
     }

@@ -9,7 +9,7 @@ public record AuditLogSnapshot(
         String entityType,
         Long sourceEntityId,
         String details,
-        Long sourceBranchId,
+
         LocalDateTime createdAt
 ) {
 }

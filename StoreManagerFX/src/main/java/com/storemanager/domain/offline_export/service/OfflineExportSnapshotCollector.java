@@ -5,8 +5,6 @@ import com.storemanager.domain.audit.model.AuditLogViewDto;
 import com.storemanager.domain.audit.repository.AuditLogRepository;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
-import com.storemanager.domain.branch.model.Branch;
-import com.storemanager.domain.branch.repository.BranchRepository;
 import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.category.repository.CategoryRepository;
 import com.storemanager.domain.employee.model.Employee;
@@ -16,7 +14,6 @@ import com.storemanager.domain.inventory.repository.InventoryRepository;
 import com.storemanager.domain.offline_export.OfflineExportSpecV1;
 import com.storemanager.domain.offline_export.dto.AttendanceSnapshot;
 import com.storemanager.domain.offline_export.dto.AuditLogSnapshot;
-import com.storemanager.domain.offline_export.dto.BranchSnapshot;
 import com.storemanager.domain.offline_export.dto.CategorySnapshot;
 import com.storemanager.domain.offline_export.dto.EmployeeSnapshot;
 import com.storemanager.domain.offline_export.dto.ExportImageAsset;
@@ -40,9 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OfflineExportSnapshotCollector {
-
-    private final BranchRepository branchRepository =
-            new BranchRepository();
 
     private final UserRepository userRepository =
             new UserRepository();
@@ -84,12 +78,6 @@ public class OfflineExportSnapshotCollector {
 
         List<ExportImageAsset> imageAssets =
                 new ArrayList<>();
-
-        List<BranchSnapshot> branches =
-                branchRepository.findAllBranches()
-                        .stream()
-                        .map(this::toBranchSnapshot)
-                        .toList();
 
         List<UserSnapshot> users =
                 userRepository.findAll()
@@ -184,7 +172,6 @@ public class OfflineExportSnapshotCollector {
         }
 
         return new OfflineExportBundle(
-                branches,
                 users,
                 employees,
                 categories,
@@ -195,18 +182,6 @@ public class OfflineExportSnapshotCollector {
                 saleItems,
                 auditLogs,
                 imageAssets
-        );
-    }
-
-    private BranchSnapshot toBranchSnapshot(
-            Branch branch
-    ) {
-
-        return new BranchSnapshot(
-                branch.getId(),
-                branch.getName(),
-                branch.getAddress(),
-                branch.isActive()
         );
     }
 
@@ -323,7 +298,6 @@ public class OfflineExportSnapshotCollector {
         return new AttendanceSnapshot(
                 session.getId(),
                 session.getEmployeeId(),
-                session.getBranchId(),
                 session.getCheckInTime(),
                 session.getCheckOutTime(),
                 session.getWorkedHours(),
@@ -369,7 +343,6 @@ public class OfflineExportSnapshotCollector {
                 log.getEntityType(),
                 log.getEntityId(),
                 log.getDetails(),
-                log.getBranchId(),
                 log.getCreatedAt()
         );
     }

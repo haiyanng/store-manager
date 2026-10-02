@@ -41,7 +41,6 @@ public class AuditLogFileRepository {
                 + " | target=" + singleLine(log.getEntityType())
                 + " | target_id=" + singleLine(log.getEntityId())
                 + " | result=" + (Boolean.TRUE.equals(log.getSuccess()) ? "SUCCESS" : "FAILED")
-                + " | branch_id=" + singleLine(log.getBranchId())
                 + " | reason=" + singleLine(log.getReason())
                 + " | details=" + singleLine(log.getDetailsJson() == null
                         ? log.getDetails() : log.getDetailsJson())

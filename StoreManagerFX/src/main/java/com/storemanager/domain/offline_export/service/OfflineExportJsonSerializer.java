@@ -44,10 +44,6 @@ public class OfflineExportJsonSerializer {
     ) {
 
         writeJson(
-                exportRoot.resolve(OfflineExportSpecV1.BRANCHES_FILE),
-                bundle.branches()
-        );
-        writeJson(
                 exportRoot.resolve(OfflineExportSpecV1.USERS_FILE),
                 bundle.users()
         );

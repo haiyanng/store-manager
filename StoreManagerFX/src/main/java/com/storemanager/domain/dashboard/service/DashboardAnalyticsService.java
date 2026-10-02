@@ -4,14 +4,9 @@ import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.service.AttendanceService;
-import com.storemanager.domain.branch.model.Branch;
-import com.storemanager.domain.branch.model.EmployeeBranchAssignment;
-import com.storemanager.domain.branch.service.BranchService;
 import com.storemanager.domain.dashboard.model.DashboardAnalyticsSnapshot;
 import com.storemanager.domain.dashboard.model.DashboardAttendanceHistoryRow;
-import com.storemanager.domain.dashboard.model.DashboardBranchSummary;
 import com.storemanager.domain.dashboard.model.DashboardCashFlowSummary;
-import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
 import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
 import com.storemanager.domain.dashboard.model.DashboardMetricCard;
 import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
@@ -45,9 +40,6 @@ public class DashboardAnalyticsService {
 
     private final AttendanceService attendanceService =
             new AttendanceService();
-
-    private final BranchService branchService =
-            new BranchService();
 
     private final SaleService saleService =
             new SaleService();
@@ -193,7 +185,7 @@ public class DashboardAnalyticsService {
                 new EmployeeDashboardDto();
 
         dto.setTitle("My Work");
-        dto.setSubtitle("Your attendance and assigned branches");
+        dto.setSubtitle("Your attendance at this store");
         dto.setMetrics(buildEmployeeMetrics(employee));
         dto.setTodayWorkedHours(
                 formatHours(sumAttendanceHoursForEmployeeToday(employee))
@@ -201,7 +193,7 @@ public class DashboardAnalyticsService {
         dto.setCurrentMonthWorkedHours(
                 formatHours(sumAttendanceHoursForEmployeeCurrentMonth(employee))
         );
-        dto.setAssignedBranches(buildOwnBranchesSummary(employee));
+
         dto.setRecentAttendanceHistory(
                 buildRecentAttendanceHistory(employee, 5)
         );
@@ -216,16 +208,14 @@ public class DashboardAnalyticsService {
 
         dto.setTitle("Operational Overview");
         dto.setSubtitle(
-                "Branch attendance, employee locations, inventory, and sales activity"
+                "Store attendance, inventory, and sales activity"
         );
         dto.setMetrics(buildManagerMetrics());
-        dto.setBranchEmployeeCount(countUniqueEmployeesAssignedToBranches());
+
         dto.setEmployeesCurrentlyCheckedIn(countEmployeesCurrentlyCheckedIn());
         dto.setAttendanceOverview(buildAttendanceOverviewSummary());
         dto.setInventoryOverview(buildInventoryOverviewSummary());
         dto.setSalesOverview(buildSalesOverviewSummary());
-        dto.setBranchOperationalSummaries(buildBranchSummaries());
-        dto.setEmployeeLocations(buildEmployeeLocationRows());
 
         return dto;
     }
@@ -244,93 +234,28 @@ public class DashboardAnalyticsService {
         dto.setActiveEmployees(countActiveEmployees());
         dto.setEmployeesCurrentlyWorking(countEmployeesCurrentlyCheckedIn());
         dto.setRevenueTotals(buildRevenueTotalsSummary());
+        dto.setAttendanceOverview(formatDurationHours(sumAttendanceHoursForCurrentMonth()) + " worked this month");
         dto.setInventoryAlertsSummary(buildInventoryAlertsSummary());
-        dto.setBranchOperationalSummaries(buildBranchSummaries());
-        dto.setEmployeeLocations(buildEmployeeLocationRows());
+
         dto.setCashFlowSummaries(buildCashFlowSummaries());
         dto.setInventoryAlerts(buildInventoryAlertRows());
 
         return dto;
     }
 
-    private List<DashboardMetricCard> buildEmployeeMetrics(
-            Employee employee
-    ) {
-
-        BigDecimal attendanceHours =
-                sumAttendanceHoursForEmployeeCurrentMonth(employee);
-
-        long branchCount =
-                countAssignedBranchesForEmployee(employee);
-
+    private List<DashboardMetricCard> buildEmployeeMetrics(Employee employee) {
         return List.of(
-                new DashboardMetricCard(
-                        "Today's hours",
-                        formatDurationHours(
-                                sumAttendanceHoursForEmployeeToday(employee)
-                        ),
-                        "Worked today in assigned branches"
-                ),
-                new DashboardMetricCard(
-                        "Month hours",
-                        formatDurationHours(attendanceHours),
-                        "Current month worked hours"
-                ),
-                new DashboardMetricCard(
-                        "Assigned branches",
-                        String.valueOf(branchCount),
-                        "Active branch assignments"
-                )
-        );
+                new DashboardMetricCard("Today's hours", formatDurationHours(sumAttendanceHoursForEmployeeToday(employee)), "Worked today"),
+                new DashboardMetricCard("Month hours", formatDurationHours(sumAttendanceHoursForEmployeeCurrentMonth(employee)), "Current month worked hours"));
     }
 
     private List<DashboardMetricCard> buildManagerMetrics() {
-
-        BigDecimal attendanceHours =
-                sumAttendanceHoursForCurrentMonthByBranch();
-
-        BigDecimal inventoryValue =
-                inventoryService.findInventoryValue();
-
-        long orderCount =
-                saleService.countOrdersForCurrentMonth();
-
-        long branchCount =
-                branchService.findBranches()
-                        .stream()
-                        .filter(Branch::isActive)
-                        .count();
-
-        long checkedIn =
-                countEmployeesCurrentlyCheckedIn();
-
         return List.of(
-                new DashboardMetricCard(
-                        "Checked in",
-                        String.valueOf(checkedIn),
-                        "Employees currently on shift"
-                ),
-                new DashboardMetricCard(
-                        "Branch attendance",
-                        formatDurationHours(attendanceHours),
-                        "Current month across all branches"
-                ),
-                new DashboardMetricCard(
-                        "Inventory value",
-                        formatMoney(inventoryValue),
-                        "Business inventory snapshot"
-                ),
-                new DashboardMetricCard(
-                        "Sales orders",
-                        String.valueOf(orderCount),
-                        "Current month order count"
-                ),
-                new DashboardMetricCard(
-                        "Active branches",
-                        String.valueOf(branchCount),
-                        "Branch structure in operation"
-                )
-        );
+                new DashboardMetricCard("Checked in", String.valueOf(countEmployeesCurrentlyCheckedIn()), "Employees currently on shift"),
+                new DashboardMetricCard("Attendance", formatDurationHours(sumAttendanceHoursForCurrentMonth()), "Current month at this store"),
+                new DashboardMetricCard("Inventory value", formatMoney(inventoryService.findInventoryValue()), "Current stock value"),
+                new DashboardMetricCard("Orders", String.valueOf(saleService.countOrdersForCurrentMonth()), "Current month order count"),
+                new DashboardMetricCard("Employees", String.valueOf(employeeService.findAll().size()), "Employee records"));
     }
 
     private List<DashboardMetricCard> buildOwnerMetrics() {
@@ -385,163 +310,6 @@ public class DashboardAnalyticsService {
         );
     }
 
-    private String buildOwnBranchesSummary(
-            Employee employee
-    ) {
-
-        if (employee == null) {
-            return "No assigned branches";
-        }
-
-        List<Branch> assignedBranches =
-                branchService.findActiveBranchesForEmployeeId(
-                        employee.getId()
-                );
-
-        String branchNames =
-                assignedBranches
-                        .stream()
-                        .filter(branch -> branch != null)
-                        .filter(Branch::isActive)
-                        .map(Branch::getName)
-                        .distinct()
-                        .collect(Collectors.joining(", "));
-
-        if (branchNames.isEmpty()) {
-            return "No active branch assignments";
-        }
-
-        return branchNames;
-    }
-
-    private List<DashboardBranchSummary> buildBranchSummaries() {
-
-        Map<Long, Branch> branchesById =
-                branchService.findBranchesById();
-
-        Map<Long, Long> activeAssignmentCounts =
-                branchService.findAssignments()
-                        .stream()
-                        .filter(EmployeeBranchAssignment::isActive)
-                        .collect(
-                                Collectors.groupingBy(
-                                        EmployeeBranchAssignment::getBranchId,
-                                        Collectors.counting()
-                                )
-                        );
-
-        Map<Long, List<AttendanceSession>> sessionsByBranch =
-                attendanceService.findAllSessions()
-                        .stream()
-                        .filter(session -> session.getBranchId() != null)
-                        .filter(this::isCurrentMonthSession)
-                .collect(
-                        Collectors.groupingBy(
-                                AttendanceSession::getBranchId
-                        )
-                );
-
-        return branchesById.values()
-                .stream()
-                .filter(Branch::isActive)
-                .map(branch -> {
-                    List<AttendanceSession> sessions =
-                            sessionsByBranch.getOrDefault(
-                                    branch.getId(),
-                                    List.of()
-                            );
-
-                    DashboardBranchSummary summary =
-                            new DashboardBranchSummary();
-
-                    summary.setBranchName(branch.getName());
-                    summary.setAttendanceSessions(
-                            sessions.size()
-                    );
-                    summary.setAttendanceHours(
-                            sessions
-                                    .stream()
-                                    .filter(session -> session.getWorkedHours() != null)
-                                    .map(AttendanceSession::getWorkedHours)
-                                    .reduce(
-                                            BigDecimal.ZERO,
-                                            BigDecimal::add
-                                    )
-                    );
-                    summary.setAssignedEmployees(
-                            activeAssignmentCounts.getOrDefault(
-                                    branch.getId(),
-                                    0L
-                            )
-                    );
-
-                    return summary;
-                })
-                .sorted(
-                        Comparator.comparing(
-                                DashboardBranchSummary::getBranchName,
-                                Comparator.nullsLast(String::compareToIgnoreCase)
-                        )
-                )
-                .toList();
-    }
-
-    private List<DashboardEmployeeLocationRow> buildEmployeeLocationRows() {
-
-        Map<Long, Employee> employeesById =
-                branchService.findEmployeesById();
-
-        Map<Long, Branch> branchesById =
-                branchService.findBranchesById();
-
-        return branchService.findAssignments()
-                .stream()
-                .filter(EmployeeBranchAssignment::isActive)
-                .collect(
-                        Collectors.groupingBy(
-                                EmployeeBranchAssignment::getEmployeeId
-                        )
-                )
-                .entrySet()
-                .stream()
-                .map(entry -> {
-                    Employee employee =
-                            employeesById.get(entry.getKey());
-
-                    String branches =
-                            entry.getValue()
-                                    .stream()
-                                    .map(EmployeeBranchAssignment::getBranchId)
-                                    .map(branchesById::get)
-                                    .filter(branch -> branch != null)
-                                    .map(Branch::getName)
-                                    .distinct()
-                                    .collect(Collectors.joining(", "));
-
-                    DashboardEmployeeLocationRow row =
-                            new DashboardEmployeeLocationRow();
-
-                    row.setEmployeeName(
-                            employee == null
-                                    ? "Unknown employee"
-                                    : employee.getFullName()
-                    );
-                    row.setBranches(branches);
-                    row.setActiveAssignments(
-                            entry.getValue().size()
-                    );
-
-                    return row;
-                })
-                .sorted(
-                        Comparator.comparing(
-                                DashboardEmployeeLocationRow::getEmployeeName,
-                                Comparator.nullsLast(String::compareToIgnoreCase)
-                        )
-                )
-                .toList();
-    }
-
     private List<DashboardCashFlowSummary> buildCashFlowSummaries() {
 
         BigDecimal revenueMonth =
@@ -575,23 +343,6 @@ public class DashboardAnalyticsService {
         );
 
         return List.of(monthSummary, totalSummary);
-    }
-
-    private long countAssignedBranchesForEmployee(
-            Employee employee
-    ) {
-
-        if (employee == null) {
-            return 0L;
-        }
-
-        return branchService.findActiveBranchesForEmployeeId(
-                        employee.getId()
-                )
-                .stream()
-                .map(Branch::getId)
-                .distinct()
-                .count();
     }
 
     private BigDecimal sumAttendanceHoursForEmployeeToday(
@@ -653,23 +404,12 @@ public class DashboardAnalyticsService {
                 .count();
     }
 
-    private long countUniqueEmployeesAssignedToBranches() {
-
-        return branchService.findAssignments()
-                .stream()
-                .filter(EmployeeBranchAssignment::isActive)
-                .map(EmployeeBranchAssignment::getEmployeeId)
-                .distinct()
-                .count();
-    }
-
     private long countEmployeesCurrentlyCheckedIn() {
 
         return attendanceService.findAllSessions()
                 .stream()
                 .filter(session -> session.getCheckInTime() != null)
                 .filter(session -> session.getCheckOutTime() == null)
-                .filter(session -> session.getBranchId() != null)
                 .map(AttendanceSession::getEmployeeId)
                 .distinct()
                 .count();
@@ -681,11 +421,10 @@ public class DashboardAnalyticsService {
                 attendanceService.findAllSessions()
                         .stream()
                         .filter(this::isCurrentMonthSession)
-                        .filter(session -> session.getBranchId() != null)
                         .count();
 
         BigDecimal hours =
-                sumAttendanceHoursForCurrentMonthByBranch();
+                sumAttendanceHoursForCurrentMonth();
 
         return sessions
                 + " sessions | "
@@ -785,9 +524,6 @@ public class DashboardAnalyticsService {
             return List.of();
         }
 
-        Map<Long, String> branchesById =
-                resolveEmployeeBranchNamesById(employee);
-
         return attendanceService.findSessionsByEmployeeId(employee.getId())
                 .stream()
                 .sorted(
@@ -805,12 +541,6 @@ public class DashboardAnalyticsService {
                             session.getCheckInTime() == null
                                     ? "-"
                                     : session.getCheckInTime().toLocalDate().toString()
-                    );
-                    row.setBranchName(
-                            branchesById.getOrDefault(
-                                    session.getBranchId(),
-                                    "Unknown branch"
-                            )
                     );
                     row.setCheckInTime(
                             session.getCheckInTime() == null
@@ -837,32 +567,7 @@ public class DashboardAnalyticsService {
                 .toList();
     }
 
-    private Map<Long, String> resolveEmployeeBranchNamesById(
-            Employee employee
-    ) {
-
-        if (employee == null || employee.getId() == null) {
-            return Map.of();
-        }
-
-        return branchService.findActiveBranchesForEmployeeId(
-                        employee.getId()
-                )
-                .stream()
-                .filter(branch -> branch.getId() != null)
-                .collect(
-                        Collectors.toMap(
-                                Branch::getId,
-                                branch -> {
-                                    String name = branch.getName();
-                                    return name == null ? "Unknown branch" : name;
-                                },
-                                (left, right) -> left
-                        )
-                );
-    }
-
-    private BigDecimal sumAttendanceHoursForCurrentMonthByBranch() {
+    private BigDecimal sumAttendanceHoursForCurrentMonth() {
 
         LocalDate now = LocalDate.now();
         LocalDate startDate = now.withDayOfMonth(1);
@@ -870,7 +575,6 @@ public class DashboardAnalyticsService {
 
         return attendanceService.findAllSessions()
                 .stream()
-                .filter(session -> session.getBranchId() != null)
                 .filter(session -> session.getCheckInTime() != null)
                 .filter(session ->
                         !session.getCheckInTime().isBefore(

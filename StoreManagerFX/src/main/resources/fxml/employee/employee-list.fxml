@@ -69,11 +69,6 @@
                          minWidth="95"
                          prefWidth="160"/>
 
-            <TableColumn fx:id="branchColumn"
-                         text="Branch"
-                         minWidth="120"
-                         prefWidth="240"/>
-
             <TableColumn fx:id="linkedUsernameColumn"
                          text="Linked username"
                          minWidth="115"

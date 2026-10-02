@@ -9,8 +9,6 @@ import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.domain.user.repository.UserRepository;
 
-
-
 public class DatabaseInitializer {
 
     public static void initialize() {
@@ -193,37 +191,9 @@ public class DatabaseInitializer {
 
         statement.execute(
                 """
-                CREATE TABLE IF NOT EXISTS branches (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    name VARCHAR(160) NOT NULL,
-                    code VARCHAR(80),
-                    address VARCHAR(255),
-                    phone VARCHAR(40),
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS employee_branch_assignments (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    employee_id BIGINT NOT NULL,
-                    branch_id BIGINT NOT NULL,
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    assigned_by_user_id BIGINT
-                )
-                """
-        );
-
-        statement.execute(
-                """
                 CREATE TABLE IF NOT EXISTS attendance_sessions (
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     employee_id BIGINT NOT NULL,
-                    branch_id BIGINT NULL,
                     check_in_time TIMESTAMP NOT NULL,
                     check_out_time TIMESTAMP NULL,
                     worked_hours DECIMAL(10, 2) NULL,
@@ -274,7 +244,6 @@ public class DatabaseInitializer {
                     reason VARCHAR(500),
                     details_json TEXT,
                     details TEXT,
-                    branch_id BIGINT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -286,8 +255,6 @@ public class DatabaseInitializer {
         addColumnIfMissing(connection, "products", "image_path", "ALTER TABLE products ADD COLUMN image_path VARCHAR(255) NULL");
         addColumnIfMissing(connection, "products", "short_description", "ALTER TABLE products ADD COLUMN short_description VARCHAR(255) NULL");
         addColumnIfMissing(connection, "products", "full_description", "ALTER TABLE products ADD COLUMN full_description TEXT NULL");
-        addColumnIfMissing(connection, "employee_branch_assignments", "assigned_by_user_id", "ALTER TABLE employee_branch_assignments ADD COLUMN assigned_by_user_id BIGINT");
-        addColumnIfMissing(connection, "attendance_sessions", "branch_id", "ALTER TABLE attendance_sessions ADD COLUMN branch_id BIGINT NULL");
         addColumnIfMissing(connection, "audit_logs", "actor_username", "ALTER TABLE audit_logs ADD COLUMN actor_username VARCHAR(100)");
         addColumnIfMissing(connection, "audit_logs", "module", "ALTER TABLE audit_logs ADD COLUMN module VARCHAR(80)");
         addColumnIfMissing(connection, "audit_logs", "success", "ALTER TABLE audit_logs ADD COLUMN success BOOLEAN NOT NULL DEFAULT TRUE");

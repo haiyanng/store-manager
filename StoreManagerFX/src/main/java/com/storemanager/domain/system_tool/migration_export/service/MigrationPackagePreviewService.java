@@ -139,7 +139,6 @@ public class MigrationPackagePreviewService {
             MigrationPreviewResult result
     ) {
 
-        checkEntry(zipFile, OfflineExportSpecV1.BRANCHES_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.USERS_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.EMPLOYEES_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.CATEGORIES_FILE, result, false);

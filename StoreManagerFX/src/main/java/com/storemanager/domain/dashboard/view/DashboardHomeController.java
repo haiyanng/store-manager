@@ -6,9 +6,7 @@ import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.dashboard.model.DashboardAnalyticsSnapshot;
 import com.storemanager.domain.dashboard.model.DashboardAttendanceHistoryRow;
-import com.storemanager.domain.dashboard.model.DashboardBranchSummary;
 import com.storemanager.domain.dashboard.model.DashboardCashFlowSummary;
-import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
 import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
 import com.storemanager.domain.dashboard.model.DashboardMetricCard;
 import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
@@ -24,7 +22,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -50,9 +47,6 @@ public class DashboardHomeController {
 
     @FXML
     private Label quickAttendanceStateLabel;
-
-    @FXML
-    private Label quickAttendanceBranchLabel;
 
     @FXML
     private Label quickAttendanceSessionLabel;
@@ -82,16 +76,10 @@ public class DashboardHomeController {
     private Label monthHoursLabel;
 
     @FXML
-    private Label assignedBranchesLabel;
-
-    @FXML
     private TableView<DashboardAttendanceHistoryRow> attendanceHistoryTable;
 
     @FXML
     private TableColumn<DashboardAttendanceHistoryRow, String> historyDateColumn;
-
-    @FXML
-    private TableColumn<DashboardAttendanceHistoryRow, String> historyBranchColumn;
 
     @FXML
     private TableColumn<DashboardAttendanceHistoryRow, String> historyCheckInColumn;
@@ -105,10 +93,6 @@ public class DashboardHomeController {
     @FXML
     private VBox managerSection;
 
-
-    @FXML
-    private Label branchEmployeeCountLabel;
-
     @FXML
     private Label checkedInLabel;
 
@@ -120,40 +104,6 @@ public class DashboardHomeController {
 
     @FXML
     private Label salesOverviewLabel;
-
-    @FXML
-    private TableView<DashboardBranchSummary> branchSummaryTable;
-
-    @FXML
-    private TableColumn<DashboardBranchSummary, String> branchNameColumn;
-
-    @FXML
-    private TableColumn<DashboardBranchSummary, Long> branchSessionsColumn;
-
-    @FXML
-    private TableColumn<DashboardBranchSummary, BigDecimal> branchHoursColumn;
-
-    @FXML
-    private TableColumn<DashboardBranchSummary, Long> branchEmployeesColumn;
-
-    @FXML
-    private TableView<DashboardEmployeeLocationRow> locationTable;
-
-    @FXML
-    private TableColumn<DashboardEmployeeLocationRow, String> locationEmployeeColumn;
-
-    @FXML
-    private TableColumn<DashboardEmployeeLocationRow, String> locationBranchesColumn;
-
-    @FXML
-    private TableColumn<DashboardEmployeeLocationRow, Long> locationAssignmentsColumn;
-
-
-
-
-
-
-
 
     @FXML
     private VBox ownerSection;
@@ -279,14 +229,11 @@ public class DashboardHomeController {
     @FXML
     public void initialize() {
         UiFeedback.emptyTable(attendanceHistoryTable, "No records found.");
-        UiFeedback.emptyTable(branchSummaryTable, "No records found.");
-        UiFeedback.emptyTable(locationTable, "No records found.");
         UiFeedback.emptyTable(cashFlowTable, "No records found.");
         UiFeedback.emptyTable(inventoryAlertTable, "No records found.");
         UiFeedback.moneyColumn(cashFlowRevenueColumn);
         UiFeedback.moneyColumn(cashFlowImportColumn);
         UiFeedback.moneyColumn(cashFlowProductColumn);
-
 
         User currentUser = AppSession.getCurrentUser();
         if (currentUser == null) {
@@ -356,8 +303,6 @@ public class DashboardHomeController {
 
         setLabel(todayHoursLabel);
         setLabel(monthHoursLabel);
-        setLabel(assignedBranchesLabel);
-        setLabel(branchEmployeeCountLabel);
         setLabel(checkedInLabel);
         setLabel(attendanceOverviewLabel);
         setLabel(inventoryOverviewLabel);
@@ -369,8 +314,7 @@ public class DashboardHomeController {
         setLabel(inventoryAlertsLabel);
 
         attendanceHistoryTable.setItems(FXCollections.observableArrayList());
-        branchSummaryTable.setItems(FXCollections.observableArrayList());
-        locationTable.setItems(FXCollections.observableArrayList());
+
         cashFlowTable.setItems(FXCollections.observableArrayList());
         inventoryAlertTable.setItems(FXCollections.observableArrayList());
 
@@ -412,7 +356,7 @@ public class DashboardHomeController {
             String status
     ) {
 
-        UiFeedback.status(statusLabel, status, attendanceHistoryTable, branchSummaryTable, locationTable, cashFlowTable, inventoryAlertTable);
+        UiFeedback.status(statusLabel, status, attendanceHistoryTable, cashFlowTable, inventoryAlertTable);
     }
 
     public void showError(
@@ -439,7 +383,7 @@ public class DashboardHomeController {
 
         if (status == null) {
             quickAttendanceStateLabel.setText("🟠 Not working");
-            quickAttendanceBranchLabel.setText("Branch: -");
+
             quickAttendanceSessionLabel.setText("Session: no active session");
             quickAttendanceTodayHoursLabel.setText("Today's worked hours: -");
             quickAttendanceLatestCheckInLabel.setText("Check-in: -");
@@ -453,9 +397,6 @@ public class DashboardHomeController {
 
         quickAttendanceStateLabel.setText(
                 working ? "🟢 Currently Working" : "🟠 Not working"
-        );
-        quickAttendanceBranchLabel.setText(
-                "Branch: " + valueOrDefault(status.getActiveBranchName())
         );
 
         if (status.getActiveSession() == null) {
@@ -488,8 +429,9 @@ public class DashboardHomeController {
                         ))
         );
 
-        quickCheckInButton.setDisable(working);
-        quickCheckOutButton.setDisable(!working);
+        if (!status.isEmployeeLinked()) quickAttendanceStateLabel.setText(status.getStatusLabel());
+        quickCheckInButton.setDisable(working || !status.isEmployeeLinked());
+        quickCheckOutButton.setDisable(!working || !status.isEmployeeLinked());
     }
 
     public void setQuickAttendanceStatus(
@@ -518,7 +460,6 @@ public class DashboardHomeController {
 
         todayHoursLabel.setText("Today's worked hours: " + valueOrDefault(dto.getTodayWorkedHours()));
         monthHoursLabel.setText("Current month worked hours: " + valueOrDefault(dto.getCurrentMonthWorkedHours()));
-        assignedBranchesLabel.setText("Assigned branches: " + valueOrDefault(dto.getAssignedBranches()));
 
         attendanceHistoryTable.setItems(
                 FXCollections.observableArrayList(
@@ -538,22 +479,10 @@ public class DashboardHomeController {
 
         renderMetrics(dto.getMetrics());
 
-        branchEmployeeCountLabel.setText("Branch employee count: " + dto.getBranchEmployeeCount());
         checkedInLabel.setText("Employees currently checked-in: " + dto.getEmployeesCurrentlyCheckedIn());
         attendanceOverviewLabel.setText("Attendance overview: " + valueOrDefault(dto.getAttendanceOverview()));
-        inventoryOverviewLabel.setText("Branch inventory overview: " + valueOrDefault(dto.getInventoryOverview()));
-        salesOverviewLabel.setText("Branch sales overview: " + valueOrDefault(dto.getSalesOverview()));
-
-        branchSummaryTable.setItems(
-                FXCollections.observableArrayList(
-                        dto.getBranchOperationalSummaries()
-                )
-        );
-        locationTable.setItems(
-                FXCollections.observableArrayList(
-                        dto.getEmployeeLocations()
-                )
-        );
+        inventoryOverviewLabel.setText("Inventory overview: " + valueOrDefault(dto.getInventoryOverview()));
+        salesOverviewLabel.setText("Sales overview: " + valueOrDefault(dto.getSalesOverview()));
 
     }
 
@@ -568,22 +497,10 @@ public class DashboardHomeController {
 
         renderMetrics(dto.getMetrics());
 
-        branchEmployeeCountLabel.setText("Branch employee count: " + dto.getBranchOperationalSummaries().stream().mapToLong(DashboardBranchSummary::getAssignedEmployees).sum());
         checkedInLabel.setText("Employees currently checked-in: " + dto.getEmployeesCurrentlyWorking());
         attendanceOverviewLabel.setText("Attendance overview: " + valueOrDefault(buildOwnerAttendanceOverview(dto)));
-        inventoryOverviewLabel.setText("Branch inventory overview: " + valueOrDefault(buildOwnerInventoryOverview(dto)));
-        salesOverviewLabel.setText("Branch sales overview: " + valueOrDefault(buildOwnerSalesOverview(dto)));
-
-        branchSummaryTable.setItems(
-                FXCollections.observableArrayList(
-                        dto.getBranchOperationalSummaries()
-                )
-        );
-        locationTable.setItems(
-                FXCollections.observableArrayList(
-                        dto.getEmployeeLocations()
-                )
-        );
+        inventoryOverviewLabel.setText("Inventory overview: " + valueOrDefault(buildOwnerInventoryOverview(dto)));
+        salesOverviewLabel.setText("Sales overview: " + valueOrDefault(buildOwnerSalesOverview(dto)));
 
         totalEmployeesLabel.setText("Total employees: " + dto.getTotalEmployees());
         activeEmployeesLabel.setText("Active employees: " + dto.getActiveEmployees());
@@ -604,14 +521,8 @@ public class DashboardHomeController {
 
     }
 
-    private String buildOwnerAttendanceOverview(
-            OwnerDashboardDto dto
-    ) {
-
-        return dto.getBranchOperationalSummaries().stream()
-                .mapToLong(DashboardBranchSummary::getAttendanceSessions)
-                .sum()
-                + " sessions";
+    private String buildOwnerAttendanceOverview(OwnerDashboardDto dto) {
+        return dto.getAttendanceOverview();
     }
 
     private String buildOwnerInventoryOverview(
@@ -662,12 +573,7 @@ public class DashboardHomeController {
         attendanceHistoryTable.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
         );
-        branchSummaryTable.setColumnResizePolicy(
-                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
-        );
-        locationTable.setColumnResizePolicy(
-                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
-        );
+
         cashFlowTable.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
         );
@@ -680,11 +586,7 @@ public class DashboardHomeController {
                         cellData.getValue().getDateLabel()
                 )
         );
-        historyBranchColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getBranchName()
-                )
-        );
+
         historyCheckInColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
                         cellData.getValue().getCheckInTime()
@@ -700,44 +602,6 @@ public class DashboardHomeController {
                         cellData.getValue().getWorkedHours()
                 )
         );
-
-        branchNameColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getBranchName()
-                )
-        );
-        branchSessionsColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getAttendanceSessions()
-                )
-        );
-        branchHoursColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getAttendanceHours()
-                )
-        );
-        branchEmployeesColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getAssignedEmployees()
-                )
-        );
-
-        locationEmployeeColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getEmployeeName()
-                )
-        );
-        locationBranchesColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getBranches()
-                )
-        );
-        locationAssignmentsColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getActiveAssignments()
-                )
-        );
-
 
         cashFlowLabelColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(

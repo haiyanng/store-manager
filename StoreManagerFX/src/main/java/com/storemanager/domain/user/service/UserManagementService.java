@@ -185,8 +185,7 @@ public class UserManagementService {
 
     private void validateAccess(String action, User target) {
         if (!PermissionGuard.canManageUsers()) {
-            auditService.recordPermissionDenied(action, "USER", target == null ? null : target.getId(),
-                    "Account management access denied", null, "OWNER");
+            auditService.recordPermissionDenied(action, "USER", target == null ? null : target.getId(), "Account management access denied", "OWNER");
             throw new IllegalStateException("You do not have permission to manage accounts");
         }
     }

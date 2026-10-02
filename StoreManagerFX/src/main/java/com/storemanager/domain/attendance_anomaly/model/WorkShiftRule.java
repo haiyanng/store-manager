@@ -8,8 +8,6 @@ public class WorkShiftRule {
 
     private Long id;
 
-    private Long branchId;
-
     private String shiftName;
 
     private LocalTime startTime;
@@ -37,14 +35,6 @@ public class WorkShiftRule {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Long getBranchId() {
-        return branchId;
-    }
-
-    public void setBranchId(Long branchId) {
-        this.branchId = branchId;
     }
 
     public String getShiftName() {
