@@ -14,6 +14,13 @@ Tài liệu chi tiết về đồ án, hướng dẫn sử dụng và các nghi�
 
 Chỉ OWNER được tạo tài khoản nội bộ trong User Management.
 
+### Thanh toán và hạn sử dụng
+
+- OWNER/MANAGER/STAFF dùng Order: chọn sản phẩm, Add item; chọn dòng, sửa Qty và Update quantity. Nhập Amount received rồi Complete order. Change tự tính bằng tiền nhận trừ tổng tiền; thiếu tiền hoặc nhập sai sẽ không chốt đơn. Sau khi lưu, thông báo hiển thị mã đơn, tổng tiền, tiền nhận và tiền thừa; giỏ và ô tiền nhận được xóa.
+- Import có Expiry date tùy chọn cho từng dòng (`yyyy-MM-dd`), không nhận ngày trước hôm nay. Cùng sản phẩm nhưng khác giá nhập hoặc hạn sử dụng sẽ giữ dòng riêng.
+- View Inventory hiển thị ngày hết hạn gần nhất và trạng thái EXPIRED / EXPIRING SOON (trong 7 ngày kể cả hôm nay) / NORMAL / N/A. Nhấn Refresh để cập nhật. Ngày lấy từ toàn bộ lịch sử nhập, chưa theo dõi tồn theo lô hoặc tự động xuất theo hạn dùng.
+- Khi khởi động, database tự thêm cột còn thiếu: `sale_orders.amount_received`, `sale_orders.change_amount` (`DECIMAL(18,2) NULL`) và `import_items.expiry_date` (`DATE NULL`). Bản ghi cũ giữ nguyên; không suy đoán tiền khách đã đưa cho đơn cũ.
+
 ## Chạy ứng dụng
 
 1. Cài JDK 21 trở lên và Maven.

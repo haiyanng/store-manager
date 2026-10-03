@@ -249,6 +249,8 @@ public class DatabaseInitializer {
                 """
         );
 
+        initializeSalePaymentColumns(connection);
+        initializeImportExpiryColumn(connection);
         addColumnIfMissing(connection, "employees", "user_id", "ALTER TABLE employees ADD COLUMN user_id BIGINT NULL");
         addColumnIfMissing(connection, "employees", "image_path", "ALTER TABLE employees ADD COLUMN image_path VARCHAR(255) NULL");
         addColumnIfMissing(connection, "categories", "image_path", "ALTER TABLE categories ADD COLUMN image_path VARCHAR(255) NULL");
@@ -260,6 +262,19 @@ public class DatabaseInitializer {
         addColumnIfMissing(connection, "audit_logs", "success", "ALTER TABLE audit_logs ADD COLUMN success BOOLEAN NOT NULL DEFAULT TRUE");
         addColumnIfMissing(connection, "audit_logs", "reason", "ALTER TABLE audit_logs ADD COLUMN reason VARCHAR(500)");
         addColumnIfMissing(connection, "audit_logs", "details_json", "ALTER TABLE audit_logs ADD COLUMN details_json TEXT");
+    }
+
+    public static void initializeSalePaymentColumns(Connection connection) throws Exception {
+        // NULL means payment information was not recorded for a legacy order.
+        addColumnIfMissing(connection, "sale_orders", "amount_received",
+                "ALTER TABLE sale_orders ADD COLUMN amount_received DECIMAL(18,2) NULL");
+        addColumnIfMissing(connection, "sale_orders", "change_amount",
+                "ALTER TABLE sale_orders ADD COLUMN change_amount DECIMAL(18,2) NULL");
+    }
+
+    public static void initializeImportExpiryColumn(Connection connection) throws Exception {
+        addColumnIfMissing(connection, "import_items", "expiry_date",
+                "ALTER TABLE import_items ADD COLUMN expiry_date DATE NULL");
     }
 
     private static void addColumnIfMissing(

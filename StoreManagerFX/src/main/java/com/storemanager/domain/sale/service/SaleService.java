@@ -181,13 +181,15 @@ public class SaleService {
         return saleRepository.countOrdersForPeriod(startDate, endDate);
     }
 
-    public Long finalizeSale(
-            List<SaleCartItem> cartItems
+    public SaleOrder finalizeSale(
+            List<SaleCartItem> cartItems,
+            BigDecimal amountReceived
     ) {
 
         try {
             validateSaleCreateAccess();
             validateCart(cartItems);
+            validatePayment(calculateTotal(cartItems), amountReceived);
             validateStockAvailability(cartItems);
         } catch (RuntimeException e) {
             auditService.recordEvent(
@@ -204,6 +206,8 @@ public class SaleService {
 
         SaleOrder order =
                 buildOrder(cartItems);
+        order.setAmountReceived(amountReceived);
+        order.setChangeAmount(amountReceived.subtract(order.getTotalAmount()));
 
         List<SaleOrderItem> orderItems =
                 buildOrderItems(cartItems);
@@ -247,7 +251,34 @@ public class SaleService {
                 NotificationType.INVENTORY
         );
 
-        return orderId;
+        order.setId(orderId);
+        return order;
+    }
+
+    public static BigDecimal parseAmountReceived(String text) {
+        String value = text == null ? "" : text.trim();
+        if (!value.matches("(?:[0-9]{1,16}|[0-9]{1,3}(?:,[0-9]{3}){1,5})(?:\\.[0-9]{1,2})?")) {
+            throw new IllegalArgumentException("Enter a valid amount received, for example 1000.00 or 1,000.00");
+        }
+        BigDecimal amount = new BigDecimal(value.replace(",", ""));
+        validateMoney(amount, "Amount received");
+        return amount;
+    }
+
+    public static void validatePayment(BigDecimal total, BigDecimal amountReceived) {
+        validateMoney(total, "Order total");
+        validateMoney(amountReceived, "Amount received");
+        if (amountReceived.compareTo(total) < 0) {
+            throw new IllegalArgumentException("Amount received must be at least the order total");
+        }
+    }
+
+    private static void validateMoney(BigDecimal amount, String field) {
+        if (amount == null || amount.signum() < 0
+                || amount.compareTo(new BigDecimal("9999999999999999.99")) > 0
+                || amount.stripTrailingZeros().scale() > 2) {
+            throw new IllegalArgumentException(field + " must be a non-negative amount with at most 2 decimal places, up to 9,999,999,999,999,999.99");
+        }
     }
 
     private Long persistSaleAndInventoryAtomically(

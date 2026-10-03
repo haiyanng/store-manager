@@ -1,6 +1,7 @@
 package com.storemanager.domain.importing.repository;
 
 import com.storemanager.core.database.ConnectionFactory;
+import com.storemanager.core.database.DatabaseInitializer;
 import com.storemanager.domain.importing.model.ImportItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
 
@@ -323,6 +324,8 @@ public class ImportRepository {
                     """
             );
 
+            DatabaseInitializer.initializeImportExpiryColumn(connection);
+
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -404,9 +407,10 @@ public class ImportRepository {
                                     product_id,
                                     quantity,
                                     unit_cost,
-                                    subtotal
+                                    subtotal,
+                                    expiry_date
                                 )
-                                VALUES (?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?)
                                 """
                         )
         ) {
@@ -416,6 +420,7 @@ public class ImportRepository {
             statement.setInt(3, item.getQuantity());
             statement.setBigDecimal(4, item.getUnitCost());
             statement.setBigDecimal(5, item.getSubtotal());
+            statement.setDate(6, item.getExpiryDate() == null ? null : java.sql.Date.valueOf(item.getExpiryDate()));
             statement.executeUpdate();
         }
     }

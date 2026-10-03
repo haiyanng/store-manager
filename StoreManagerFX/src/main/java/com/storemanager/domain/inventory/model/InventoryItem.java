@@ -1,6 +1,7 @@
 package com.storemanager.domain.inventory.model;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class InventoryItem {
 
@@ -11,6 +12,17 @@ public class InventoryItem {
     private int quantity;
 
     private LocalDateTime updatedAt;
+
+    private LocalDate nearestExpiryDate;
+    private String expiryStatus = "N/A";
+
+    public LocalDate getNearestExpiryDate() { return nearestExpiryDate; }
+
+    public void setNearestExpiryDate(LocalDate value) { nearestExpiryDate = value; }
+
+    public String getExpiryStatus() { return expiryStatus; }
+
+    public void setExpiryStatus(String value) { expiryStatus = value; }
 
     public InventoryItem() {
     }

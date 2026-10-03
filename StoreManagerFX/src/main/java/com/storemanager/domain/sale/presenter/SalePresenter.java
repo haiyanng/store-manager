@@ -9,6 +9,7 @@ import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.service.SaleService;
 import com.storemanager.domain.sale.view.SaleController;
+import com.storemanager.core.util.MoneyFormatUtil;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -47,6 +48,8 @@ public class SalePresenter extends BaseModulePresenter {
     }
 
     public void loadSaleData() {
+
+        if (loadingState == LoadingState.LOADING) return;
 
         loadingState =
                 LoadingState.LOADING;
@@ -120,6 +123,8 @@ public class SalePresenter extends BaseModulePresenter {
             int quantity
     ) {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         try {
 
             if (product == null) {
@@ -163,6 +168,8 @@ public class SalePresenter extends BaseModulePresenter {
             SaleCartItem item
     ) {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         if (item == null) {
             view.showError("Select a cart item to remove");
             return;
@@ -174,15 +181,57 @@ public class SalePresenter extends BaseModulePresenter {
 
     public void clearCart() {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         cartItems.clear();
+        view.resetPayment();
         view.clearEntryForm();
         updateCartView();
     }
 
-    public void finalizeSale() {
+    public void updateQuantity(SaleCartItem item, int quantity) {
+        if (loadingState == LoadingState.LOADING) return;
+        if (item == null || !cartItems.contains(item)) {
+            view.showError("Select a cart item to update");
+            return;
+        }
+        if (quantity <= 0) {
+            view.showError("Quantity must be positive");
+            return;
+        }
+        item.setQuantity(quantity);
+        updateCartView();
+    }
+
+    public void updatePayment(String text) {
+        if (text == null || text.isBlank()) {
+            view.setChangeText("-");
+            return;
+        }
+        try {
+            BigDecimal change = SaleService.parseAmountReceived(text).subtract(saleService.calculateTotal(cartItems));
+            view.setChangeText(change.signum() < 0
+                    ? "Short by " + MoneyFormatUtil.format(change.abs()) : MoneyFormatUtil.format(change));
+        } catch (IllegalArgumentException e) {
+            view.setChangeText("Enter a valid amount");
+        }
+    }
+
+    public void finalizeSale(String receivedText) {
+
+        if (loadingState == LoadingState.LOADING) return;
 
         if (cartItems.isEmpty()) {
             view.showError("Cart is empty");
+            return;
+        }
+
+        final BigDecimal amountReceived;
+        try {
+            amountReceived = SaleService.parseAmountReceived(receivedText);
+            SaleService.validatePayment(saleService.calculateTotal(cartItems), amountReceived);
+        } catch (IllegalArgumentException e) {
+            view.showError(e.getMessage());
             return;
         }
 
@@ -195,12 +244,14 @@ public class SalePresenter extends BaseModulePresenter {
                 new ArrayList<>(cartItems);
 
         AsyncTaskRunner.run(
-                () -> saleService.finalizeSale(saleItems),
-                orderId -> {
+                () -> saleService.finalizeSale(saleItems, amountReceived),
+                order -> {
                     cartItems.clear();
                     view.clearEntryForm();
+                    view.resetPayment();
                     updateCartView();
-                    view.setStatus("Order #" + orderId + " created");
+                    view.showOrderCompleted(order);
+                    loadingState = LoadingState.SUCCESS;
                     loadSaleData();
                 },
                 throwable -> {
@@ -262,6 +313,7 @@ public class SalePresenter extends BaseModulePresenter {
                 saleService.calculateTotal(cartItems);
 
         view.setTotalAmount(total);
+        updatePayment(view.getAmountReceivedText());
     }
 
     private record SaleData(

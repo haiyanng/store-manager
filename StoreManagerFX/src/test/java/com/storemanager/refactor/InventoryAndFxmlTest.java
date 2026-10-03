@@ -75,6 +75,48 @@ public class InventoryAndFxmlTest {
     }
 
     @Test
+    public void orderAndImportFxmlLoadWithPaymentAndExpiry() throws Exception {
+        AppSession.setCurrentUser(RoleAndNavigationTest.user(1, RoleType.OWNER));
+        for (String resource : List.of("/fxml/sale/sale.fxml", "/fxml/importing/import.fxml")) {
+            FXMLLoader loader = onFx(() -> {
+                FXMLLoader fxml = new FXMLLoader(getClass().getResource(resource));
+                fxml.setControllerFactory(type -> {
+                    if (type == com.storemanager.domain.sale.view.SaleController.class) {
+                        return new com.storemanager.domain.sale.view.SaleController() {
+                            @Override public void showError(String message) { errors.add(message); }
+                        };
+                    }
+                    if (type == com.storemanager.domain.importing.view.ImportController.class) {
+                        return new com.storemanager.domain.importing.view.ImportController() {
+                            @Override public void showError(String message) { errors.add(message); }
+                        };
+                    }
+                    try { return type.getDeclaredConstructor().newInstance(); }
+                    catch (Exception e) { throw new IllegalStateException(e); }
+                });
+                fxml.load();
+                return fxml;
+            });
+            waitForReady(loader);
+            onFx(() -> {
+                if (resource.contains("sale")) {
+                    var amount = (javafx.scene.control.TextField) loader.getNamespace().get("amountReceivedField");
+                    amount.setText("invalid");
+                    assertEquals("Enter a valid amount", ((Label) loader.getNamespace().get("changeLabel")).getText());
+                    amount.setText("1,000.00");
+                    assertEquals("1,000.00", ((Label) loader.getNamespace().get("changeLabel")).getText());
+                } else {
+                    var picker = (javafx.scene.control.DatePicker) loader.getNamespace().get("expiryDatePicker");
+                    picker.getEditor().setText("2026-02-30");
+                    assertThrows(IllegalArgumentException.class, () -> com.storemanager.core.util.UiFeedback.readDate(picker));
+                }
+                return null;
+            });
+        }
+        assertTrue(errors.toString(), errors.isEmpty());
+    }
+
+    @Test
     public void inventoryLoadsAndRefreshesWithOnlyReadControls() throws Exception {
         FXMLLoader loader = onFx(() -> {
             FXMLLoader fxml = new FXMLLoader(getClass().getResource("/fxml/inventory/inventory-list.fxml"));

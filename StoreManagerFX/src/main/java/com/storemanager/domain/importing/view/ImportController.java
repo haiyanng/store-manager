@@ -34,6 +34,11 @@ public class ImportController {
     @FXML
     private javafx.scene.control.TextField unitCostField;
 
+    @FXML private javafx.scene.control.DatePicker expiryDatePicker;
+    @FXML private TableColumn<ImportCartItem, String> itemExpiryColumn;
+    @FXML private javafx.scene.layout.HBox itemActions;
+    @FXML private javafx.scene.layout.HBox receiptActions;
+
     @FXML
     private TableView<ImportCartItem> importItemTable;
 
@@ -80,6 +85,8 @@ public class ImportController {
 
     @FXML
     public void initialize() {
+        UiFeedback.datePicker(expiryDatePicker);
+        expiryDatePicker.setPromptText("Expiry date (optional)");
         UiFeedback.emptyTable(importItemTable, "No items added. Select a product and choose Add item.");
         UiFeedback.emptyTable(receiptTable, "No import receipts found.");
         UiFeedback.moneyColumn(itemUnitCostColumn);
@@ -109,12 +116,15 @@ public class ImportController {
             presenter.addItem(
                     selectedProduct,
                     parseQuantity(),
-                    parseUnitCost()
+                    parseUnitCost(),
+                    UiFeedback.readDate(expiryDatePicker)
             );
 
         } catch (NumberFormatException e) {
 
             showError("Quantity and unit cost must be valid numbers");
+        } catch (IllegalArgumentException e) {
+            showError(e.getMessage());
         }
     }
 
@@ -198,6 +208,8 @@ public class ImportController {
         productSelectionWorkflowController.clearSelection();
         quantityField.clear();
         unitCostField.clear();
+        expiryDatePicker.setValue(null);
+        expiryDatePicker.getEditor().clear();
         importItemTable.getSelectionModel().clearSelection();
     }
 
@@ -214,6 +226,9 @@ public class ImportController {
         productSelectionWorkflowController.setBusy(busy);
         quantityField.setDisable(busy);
         unitCostField.setDisable(busy);
+        expiryDatePicker.setDisable(busy);
+        itemActions.setDisable(busy);
+        receiptActions.setDisable(busy);
         importItemTable.setDisable(busy);
         receiptTable.setDisable(busy);
     }
@@ -232,6 +247,8 @@ public class ImportController {
     }
 
     private void configureImportItemTable() {
+        itemExpiryColumn.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getExpiryDate() == null ? "N/A" : cell.getValue().getExpiryDate().toString()));
 
         itemProductColumn.setCellValueFactory(
                 cellData ->

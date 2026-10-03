@@ -10,6 +10,8 @@ import com.storemanager.domain.importing.view.ImportController;
 import com.storemanager.domain.product.model.Product;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Objects;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +43,8 @@ public class ImportPresenter extends BaseModulePresenter {
     }
 
     public void loadImportData() {
+
+        if (loadingState == LoadingState.LOADING) return;
 
         loadingState =
                 LoadingState.LOADING;
@@ -74,10 +78,15 @@ public class ImportPresenter extends BaseModulePresenter {
     public void addItem(
             Product product,
             int quantity,
-            BigDecimal unitCost
+            BigDecimal unitCost,
+            LocalDate expiryDate
     ) {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         try {
+
+            ImportService.validateExpiryDate(expiryDate);
 
             if (product == null) {
                 throw new RuntimeException(
@@ -103,16 +112,12 @@ public class ImportPresenter extends BaseModulePresenter {
             }
 
             ImportCartItem existingItem =
-                    findImportItem(product, unitCost);
+                    findImportItem(product, unitCost, expiryDate);
 
             if (existingItem == null) {
-                importItems.add(
-                        new ImportCartItem(
-                                product,
-                                quantity,
-                                unitCost
-                        )
-                );
+                ImportCartItem item = new ImportCartItem(product, quantity, unitCost);
+                item.setExpiryDate(expiryDate);
+                importItems.add(item);
             } else {
                 existingItem.setQuantity(
                         Math.addExact(existingItem.getQuantity(), quantity)
@@ -132,6 +137,8 @@ public class ImportPresenter extends BaseModulePresenter {
             ImportCartItem item
     ) {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         if (item == null) {
             view.showError("Select an import item to remove");
             return;
@@ -143,6 +150,8 @@ public class ImportPresenter extends BaseModulePresenter {
 
     public void clearItems() {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         importItems.clear();
         view.clearEntryForm();
         updateItemView();
@@ -151,6 +160,8 @@ public class ImportPresenter extends BaseModulePresenter {
     public void finalizeImport(
             String supplierName
     ) {
+
+        if (loadingState == LoadingState.LOADING) return;
 
         if (importItems.isEmpty()) {
             view.showError("Import item list is empty");
@@ -176,6 +187,7 @@ public class ImportPresenter extends BaseModulePresenter {
                     view.clearSupplier();
                     updateItemView();
                     view.setStatus("Import receipt #" + receiptId + " created");
+                    loadingState = LoadingState.SUCCESS;
                     loadImportData();
                 },
                 throwable -> {
@@ -195,7 +207,8 @@ public class ImportPresenter extends BaseModulePresenter {
 
     private ImportCartItem findImportItem(
             Product product,
-            BigDecimal unitCost
+            BigDecimal unitCost,
+            LocalDate expiryDate
     ) {
 
         return importItems
@@ -206,6 +219,7 @@ public class ImportPresenter extends BaseModulePresenter {
                                 item.getProduct().getId()
                         )
                                 && item.getUnitCost().compareTo(unitCost) == 0
+                                && Objects.equals(item.getExpiryDate(), expiryDate)
                 )
                 .findFirst()
                 .orElse(null);

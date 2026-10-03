@@ -36,6 +36,9 @@ public class InventoryListController {
     @FXML
     private TableColumn<InventoryItem, String> itemUpdatedAtColumn;
 
+    @FXML private TableColumn<InventoryItem, String> itemExpiryColumn;
+    @FXML private TableColumn<InventoryItem, String> itemExpiryStatusColumn;
+
     @FXML
     private TableView<InventoryTransaction> transactionTable;
 
@@ -132,6 +135,10 @@ public class InventoryListController {
     }
 
     private void configureInventoryTable() {
+        itemExpiryColumn.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getNearestExpiryDate() == null ? "N/A"
+                        : cell.getValue().getNearestExpiryDate().toString()));
+        itemExpiryStatusColumn.setCellValueFactory(new PropertyValueFactory<>("expiryStatus"));
 
         itemIdColumn.setCellValueFactory(
                 new PropertyValueFactory<>("id")

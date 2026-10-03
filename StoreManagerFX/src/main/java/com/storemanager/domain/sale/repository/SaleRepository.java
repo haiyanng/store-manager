@@ -1,6 +1,7 @@
 package com.storemanager.domain.sale.repository;
 
 import com.storemanager.core.database.ConnectionFactory;
+import com.storemanager.core.database.DatabaseInitializer;
 import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.model.SaleOrderItem;
 
@@ -430,6 +431,8 @@ public class SaleRepository {
                     """
             );
 
+            DatabaseInitializer.initializeSalePaymentColumns(connection);
+
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -452,9 +455,11 @@ public class SaleRepository {
                                 """
                                 INSERT INTO sale_orders (
                                     created_by_user_id,
-                                    total_amount
+                                    total_amount,
+                                    amount_received,
+                                    change_amount
                                 )
-                                VALUES (?, ?)
+                                VALUES (?, ?, ?, ?)
                                 """,
                                 Statement.RETURN_GENERATED_KEYS
                         )
@@ -476,6 +481,8 @@ public class SaleRepository {
                     2,
                     order.getTotalAmount()
             );
+            statement.setBigDecimal(3, order.getAmountReceived());
+            statement.setBigDecimal(4, order.getChangeAmount());
 
             statement.executeUpdate();
 
@@ -543,6 +550,8 @@ public class SaleRepository {
         order.setTotalAmount(
                 resultSet.getBigDecimal("total_amount")
         );
+        order.setAmountReceived(resultSet.getBigDecimal("amount_received"));
+        order.setChangeAmount(resultSet.getBigDecimal("change_amount"));
 
         Timestamp createdAt =
                 resultSet.getTimestamp("created_at");

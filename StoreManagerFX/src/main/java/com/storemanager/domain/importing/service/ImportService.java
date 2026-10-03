@@ -320,6 +320,7 @@ public class ImportService {
             item.setSubtotal(
                     cartItem.getSubtotal()
             );
+            item.setExpiryDate(cartItem.getExpiryDate());
 
             importItems.add(item);
         }
@@ -391,6 +392,7 @@ public class ImportService {
         }
 
         for (ImportCartItem cartItem : cartItems) {
+            validateExpiryDate(cartItem.getExpiryDate());
             if (cartItem.getProduct() == null
                     || cartItem.getProduct().getId() == null) {
                 throw new RuntimeException(
@@ -419,6 +421,12 @@ public class ImportService {
             if (cartItem.getUnitCost().stripTrailingZeros().scale() > 2) {
                 throw new IllegalArgumentException("Unit cost must have at most 2 decimal places");
             }
+        }
+    }
+
+    public static void validateExpiryDate(LocalDate expiryDate) {
+        if (expiryDate != null && expiryDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Expiry date cannot be before today");
         }
     }
 

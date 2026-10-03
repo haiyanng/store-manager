@@ -50,8 +50,12 @@
                 <TableColumn fx:id="itemUpdatedAtColumn"
                              text="Updated at"
                              prefWidth="180"/>
+                <TableColumn fx:id="itemExpiryColumn" text="Nearest expiry date" prefWidth="150"/>
+                <TableColumn fx:id="itemExpiryStatusColumn" text="Expiry status" prefWidth="155"/>
             </columns>
         </TableView>
+        <Label text="Expiry dates use all import history; remaining stock is not tracked by batch."
+               wrapText="true" styleClass="content-description"/>
     </VBox>
 
     <VBox spacing="8">

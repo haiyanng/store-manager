@@ -3,6 +3,7 @@ package com.storemanager.domain.importing.model;
 import com.storemanager.domain.product.model.Product;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class ImportCartItem {
 
@@ -11,6 +12,12 @@ public class ImportCartItem {
     private int quantity;
 
     private BigDecimal unitCost;
+
+    private LocalDate expiryDate;
+
+    public LocalDate getExpiryDate() { return expiryDate; }
+
+    public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
 
     public ImportCartItem(
             Product product,

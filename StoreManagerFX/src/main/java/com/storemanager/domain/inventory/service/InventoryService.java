@@ -14,6 +14,7 @@ import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.User;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.Map;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -38,6 +39,25 @@ public class InventoryService {
         validateInventoryAccess();
 
         return inventoryRepository.findAllItems();
+    }
+
+    public List<InventoryItem> findItemsWithExpiry() {
+        List<InventoryItem> items = findAllItems();
+        Map<Long, LocalDate> dates = inventoryRepository.findNearestExpiryDates();
+        LocalDate today = LocalDate.now();
+        for (InventoryItem item : items) {
+            LocalDate expiry = dates.get(item.getProductId());
+            item.setNearestExpiryDate(expiry);
+            item.setExpiryStatus(expiryStatus(expiry, today));
+        }
+        return items;
+    }
+
+    public static String expiryStatus(LocalDate expiry, LocalDate today) {
+        if (expiry == null) return "N/A";
+        if (expiry.isBefore(today)) return "EXPIRED";
+        if (!expiry.isAfter(today.plusDays(7))) return "EXPIRING SOON";
+        return "NORMAL";
     }
 
     public List<InventoryTransaction> findAllTransactions() {

@@ -199,7 +199,9 @@ Import trong thanh điều hướng là nghiệp vụ nhập hàng từ nhà cun
 
 Số lượng phải là số nguyên dương, giá nhập không âm và tối đa hai chữ số thập phân. Tổng chi phí được tính bằng tổng của từng dòng: `số lượng × giá nhập`.
 
-Nếu thêm lại cùng một sản phẩm với cùng giá nhập, hệ thống cộng dồn số lượng trên dòng đó. Nếu cùng sản phẩm nhưng khác giá nhập, hệ thống giữ các dòng riêng để không ghi đè giá cũ. Phiếu chỉ làm thay đổi tồn kho khi Complete import thành công.
+Expiry date là ngày hết hạn tùy chọn cho từng dòng, nhập theo `yyyy-MM-dd` hoặc chọn trên lịch. Nếu nhập thì ngày phải từ hôm nay trở đi; hệ thống kiểm tra lại khi hoàn tất phiếu.
+
+Nếu thêm lại cùng một sản phẩm với cùng giá nhập và cùng hạn sử dụng, hệ thống cộng dồn số lượng trên dòng đó. Nếu khác giá nhập hoặc hạn sử dụng, hệ thống giữ các dòng riêng. Phiếu chỉ làm thay đổi tồn kho khi Complete import thành công.
 
 ### 5.7. Order — Bán hàng tại quầy
 
@@ -209,16 +211,19 @@ OWNER, MANAGER hoặc STAFF mở Order để ghi nhận đơn bán trực tiếp
 2. Nhập Qty và nhấn Add item.
 3. Thêm các sản phẩm khác vào Cart.
 4. Kiểm tra Quantity, Unit price, Subtotal và Total.
-5. Nhấn Complete order.
-6. Xem đơn vừa tạo trong Recent orders; chọn đơn để xem Order details.
+5. Muốn sửa số lượng, chọn dòng trong Cart, nhập Qty mới và nhấn Update quantity. Nhập tiền khách đưa vào Amount received; Change tự cập nhật. Tiền nhập phải hợp lệ và không nhỏ hơn Total.
+6. Nhấn Complete order; xem mã đơn, tổng tiền, tiền nhận và tiền thừa trong thông báo thành công. Giỏ và ô tiền nhận được xóa để lập đơn tiếp theo.
+7. Xem đơn vừa tạo trong Recent orders; chọn đơn để xem Order details.
 
 Giỏ không được rỗng, sản phẩm phải phù hợp với điều kiện bán và số lượng bán phải đáp ứng tồn kho. Khi hoàn tất thành công, hệ thống lưu đơn, các dòng sản phẩm, tài khoản lập đơn, tổng tiền và thời gian; đồng thời giảm tồn kho tương ứng.
 
-Complete order là ghi nhận đơn bán trong ứng dụng. Phiên bản hiện tại không có luồng thu tiền qua ngân hàng/cổng thanh toán, tính tiền thừa hay phát hành hóa đơn điện tử. Người bán thực hiện việc nhận tiền theo quy trình cửa hàng, rồi ghi nhận giao dịch trong hệ thống. Không có thao tác hủy/hoàn trả đơn đã hoàn tất trên màn hình Order hiện tại.
+Total bằng tổng các Subtotal, chưa có giảm giá. Change = Amount received − Total; khách đưa đúng tiền thì Change bằng 0. Ví dụ Total là `24,000.00`, nhận `30,000.00` thì trả lại `6,000.00`. Thông tin thanh toán được lưu cùng đơn trong transaction trừ kho. Các đơn cũ chưa ghi tiền nhận/tiền thừa được giữ nguyên với hai trường này để trống. Phiên bản hiện tại chưa có cổng thanh toán, hóa đơn điện tử hoặc thao tác hủy/hoàn trả đơn đã hoàn tất.
 
 ### 5.8. View Inventory — Xem tồn kho
 
 Màn hình này dùng để xem hàng tồn và lịch sử biến động, không phải nơi nhập trực tiếp số lượng để sửa kho.
+
+Nearest expiry date lấy ngày nhỏ nhất từ tất cả dòng nhập của sản phẩm có hạn sử dụng. Expiry status hiển thị `EXPIRED` nếu trước hôm nay, `EXPIRING SOON` nếu từ hôm nay đến 7 ngày tới (kể cả hai đầu), `NORMAL` nếu xa hơn và `N/A` nếu chưa có ngày. Nhấn Refresh để cập nhật. Đây là thông tin từ lịch sử nhập, có thể gồm hàng đã bán hết; chưa theo dõi số lượng từng lô hay tự động xuất theo hạn dùng.
 
 Tồn kho thay đổi theo các giao dịch được hỗ trợ, trong đó hai luồng thường dùng là nhập hàng và bán hàng. Khi thấy số lượng không như dự kiến, người dùng nên tải lại dữ liệu, đối chiếu phiếu nhập/đơn bán và lịch sử kho trước khi kết luận có sai lệch.
 
@@ -355,7 +360,7 @@ Các số tiền dưới đây chỉ là giá trị minh họa, chưa gắn đơ
 
 **Tình huống:** tiếp tục từ phiếu 20 chai ở ví dụ 6.2. Giá bán cơ sở của Nước suối A là 8,000.00; khách mua 3 chai.
 
-**Thực hiện:** nhân viên vào Order, chọn sản phẩm, nhập Qty 3, Add item và kiểm tra tổng tiền `3 × 8,000 = 24,000.00`. Sau khi xác nhận giao dịch tại quầy, nhấn Complete order.
+**Thực hiện:** nhân viên vào Order, chọn sản phẩm, nhập Qty 3, Add item và kiểm tra tổng tiền `3 × 8,000 = 24,000.00`. Nhập Amount received là `30,000.00`, kiểm tra Change là `6,000.00`, nhận tiền rồi nhấn Complete order.
 
 **Kết quả:** đơn mới có 3 chai và tổng tiền 24,000.00. Tồn kho giảm từ 20 xuống 17. Người sử dụng có thể đối chiếu đơn ở Recent orders, chi tiết mặt hàng ở Order details, số lượng ở View Inventory và sự kiện ở Audit Logs bằng tài khoản OWNER.
 
@@ -430,7 +435,7 @@ Các dòng nhập/bán lưu đơn giá riêng của giao dịch. Vì vậy, thay
 Để đánh giá đúng đồ án, cần phân biệt chức năng đã có với phần chưa triển khai hoặc cần hoàn thiện:
 
 - Không có bán hàng online, đăng ký tài khoản công khai hoặc quy trình giao hàng.
-- Chưa có quản lý hạn sử dụng, lô hàng hoặc xuất kho theo hạn dùng.
+- Hạn sử dụng mới ở mức tối giản theo lịch sử nhập; chưa theo dõi tồn theo lô hoặc tự động xuất kho theo hạn dùng.
 - Chưa có luồng đổi trả/hủy đơn hoàn tất trên màn hình Order, cổng thanh toán hoặc hóa đơn điện tử.
 - Chấm công chưa phải hệ thống tính lương hoặc lập lịch nhiều ca; quy tắc ca hiện áp dụng chung cho cửa hàng.
 - Audit đã được tích hợp ở nhiều nghiệp vụ nhưng không bảo đảm ghi mọi thao tác hoặc lưu đồng thời thành công ở cả file và database; chưa có cơ chế tự dọn file theo thời gian.

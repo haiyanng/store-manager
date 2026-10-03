@@ -13,6 +13,9 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.HashMap;
 
 public class InventoryRepository {
 
@@ -53,6 +56,25 @@ public class InventoryRepository {
 
         } catch (Exception e) {
             throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
+        }
+    }
+
+    public Map<Long, LocalDate> findNearestExpiryDates() {
+        Map<Long, LocalDate> dates = new HashMap<>();
+        try (Connection connection = ConnectionFactory.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery("""
+                     SELECT product_id, MIN(expiry_date) AS nearest_expiry
+                     FROM import_items
+                     WHERE expiry_date IS NOT NULL
+                     GROUP BY product_id
+                     """)) {
+            while (rows.next()) {
+                dates.put(rows.getLong("product_id"), rows.getDate("nearest_expiry").toLocalDate());
+            }
+            return dates;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load expiry dates. Check the database connection and try again.", e);
         }
     }
 

@@ -91,6 +91,11 @@ public class SaleController {
     @FXML
     private Label totalLabel;
 
+    @FXML private javafx.scene.control.TextField amountReceivedField;
+    @FXML private Label changeLabel;
+    @FXML private javafx.scene.layout.HBox cartActions;
+    @FXML private javafx.scene.layout.HBox orderActions;
+
     @FXML
     private Label statusLabel;
 
@@ -143,6 +148,10 @@ public class SaleController {
         );
 
         configureCartTable();
+        cartTable.getSelectionModel().selectedItemProperty().addListener((obs, previous, item) -> {
+            if (item != null) quantityField.setText(Integer.toString(item.getQuantity()));
+        });
+        amountReceivedField.textProperty().addListener((obs, previous, value) -> presenter.updatePayment(value));
         configureOrderTable();
         configureOrderDetailTable();
         clearSelectedProductPreview();
@@ -188,7 +197,32 @@ public class SaleController {
     @FXML
     public void onFinalizeSale() {
 
-        presenter.finalizeSale();
+        presenter.finalizeSale(amountReceivedField.getText());
+    }
+
+    @FXML
+    public void onUpdateQuantity() {
+        try {
+            presenter.updateQuantity(cartTable.getSelectionModel().getSelectedItem(), parseQuantity());
+        } catch (NumberFormatException e) {
+            showError("Quantity must be a valid whole number");
+        }
+    }
+
+    public String getAmountReceivedText() { return amountReceivedField.getText(); }
+
+    public void setChangeText(String text) { changeLabel.setText(text); }
+
+    public void resetPayment() { amountReceivedField.clear(); }
+
+    public void showOrderCompleted(SaleOrder order) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Store Manager");
+        alert.setHeaderText("Order #" + order.getId() + " completed");
+        alert.setContentText("Total: " + UiFeedback.money(order.getTotalAmount())
+                + "\nAmount received: " + UiFeedback.money(order.getAmountReceived())
+                + "\nChange: " + UiFeedback.money(order.getChangeAmount()));
+        alert.showAndWait();
     }
 
     @FXML
@@ -314,6 +348,9 @@ public class SaleController {
 
         productSelectionWorkflowController.setBusy(busy);
         quantityField.setDisable(busy);
+        amountReceivedField.setDisable(busy);
+        cartActions.setDisable(busy);
+        orderActions.setDisable(busy);
         cartTable.setDisable(busy);
         orderTable.setDisable(busy);
         orderDetailTable.setDisable(busy);

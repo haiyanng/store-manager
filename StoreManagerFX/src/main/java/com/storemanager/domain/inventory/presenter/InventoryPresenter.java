@@ -52,7 +52,7 @@ public class InventoryPresenter extends BaseModulePresenter {
 
         AsyncTaskRunner.run(
                 () -> new InventoryData(
-                        inventoryService.findAllItems(),
+                        inventoryService.findItemsWithExpiry(),
                         inventoryService.findAllTransactions(),
                         inventoryService.findProductsById()
                 ),
