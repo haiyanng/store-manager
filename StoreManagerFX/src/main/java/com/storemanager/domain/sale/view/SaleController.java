@@ -95,6 +95,8 @@ public class SaleController {
     @FXML private Label changeLabel;
     @FXML private javafx.scene.layout.HBox cartActions;
     @FXML private javafx.scene.layout.HBox orderActions;
+    @FXML private javafx.scene.control.ToggleButton orderTabButton;
+    @FXML private javafx.scene.control.ToggleButton detailsTabButton;
 
     @FXML
     private Label statusLabel;
@@ -157,6 +159,16 @@ public class SaleController {
         clearSelectedProductPreview();
 
         presenter.initialize();
+    }
+
+    @FXML
+    public void onShowOrder() {
+        orderTabButton.setSelected(true);
+    }
+
+    @FXML
+    public void onShowOrderDetails() {
+        detailsTabButton.setSelected(true);
     }
 
     @FXML
