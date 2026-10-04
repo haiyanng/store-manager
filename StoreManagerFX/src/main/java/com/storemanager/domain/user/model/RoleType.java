@@ -2,7 +2,7 @@ package com.storemanager.domain.user.model;
 
 public enum RoleType {
 
-    DEVELOPER,
+    CUSTOMER,
 
     OWNER,
 
@@ -25,10 +25,10 @@ public enum RoleType {
         }
 
         String normalizedValue =
-                value.trim().toUpperCase();
+                value.trim().toUpperCase(java.util.Locale.ROOT);
 
-        if ("ADMIN".equals(normalizedValue)) {
-            return DEVELOPER;
+        if ("USER".equals(normalizedValue)) {
+            return CUSTOMER;
         }
 
         if ("EMPLOYEE".equals(normalizedValue)) {

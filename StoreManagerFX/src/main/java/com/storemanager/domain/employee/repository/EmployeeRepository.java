@@ -13,11 +13,6 @@ import java.util.List;
 
 public class EmployeeRepository {
 
-    public EmployeeRepository() {
-
-        initializeTable();
-    }
-
     public List<Employee> findAll() {
 
         List<Employee> employees =
@@ -52,9 +47,7 @@ public class EmployeeRepository {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
-
-            return employees;
+            throw new IllegalStateException("Unable to load employees. Check the database connection and try again.", e);
         }
     }
 
@@ -80,7 +73,7 @@ public class EmployeeRepository {
                                     active
                                 )
                                 VALUES (?, ?, ?, ?, ?, ?, ?)
-                                """
+                                """, Statement.RETURN_GENERATED_KEYS
                         )
 
         ) {
@@ -90,7 +83,13 @@ public class EmployeeRepository {
                     employee
             );
 
-            return statement.executeUpdate() > 0;
+            boolean saved = statement.executeUpdate() > 0;
+            if (saved) {
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) employee.setId(keys.getLong(1));
+                }
+            }
+            return saved;
 
         } catch (Exception e) {
 
@@ -183,64 +182,28 @@ public class EmployeeRepository {
         }
     }
 
-    public boolean linkUserToEmployee(
-            Long userId,
-            Long employeeId
-    ) {
-
-        try (
-
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
-                PreparedStatement clearStatement =
-                        connection.prepareStatement(
-                                """
-                                UPDATE employees
-                                SET user_id = NULL
-                                WHERE user_id = ?
-                                """
-                        );
-
-                PreparedStatement linkStatement =
-                        connection.prepareStatement(
-                                """
-                                UPDATE employees
-                                SET user_id = ?
-                                WHERE id = ?
-                                  AND (user_id IS NULL OR user_id = ?)
-                                """
-                        )
-
-        ) {
-
-            clearStatement.setLong(
-                    1,
-                    userId
-            );
-            clearStatement.executeUpdate();
-
-            linkStatement.setLong(
-                    1,
-                    userId
-            );
-
-            linkStatement.setLong(
-                    2,
-                    employeeId
-            );
-
-            linkStatement.setLong(
-                    3,
-                    userId
-            );
-
-            return linkStatement.executeUpdate() > 0;
-
+    public boolean linkUserToEmployee(Long userId, Long employeeId) {
+        try (Connection connection = ConnectionFactory.getConnection()) {
+            connection.setAutoCommit(false);
+            try (PreparedStatement clear = connection.prepareStatement("UPDATE employees SET user_id = NULL WHERE user_id = ?");
+                 PreparedStatement link = connection.prepareStatement("UPDATE employees SET user_id = ? WHERE id = ? AND (user_id IS NULL OR user_id = ?)")) {
+                clear.setLong(1, userId);
+                clear.executeUpdate();
+                link.setLong(1, userId);
+                link.setLong(2, employeeId);
+                link.setLong(3, userId);
+                if (link.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
+                connection.commit();
+                return true;
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            }
         } catch (Exception e) {
-
             e.printStackTrace();
-
             return false;
         }
     }
@@ -280,10 +243,7 @@ public class EmployeeRepository {
             return null;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return null;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -323,53 +283,19 @@ public class EmployeeRepository {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
-
-            return null;
+            throw new IllegalStateException("Unable to load employee. Check the database connection and try again.", e);
         }
     }
 
     public boolean delete(
             Employee employee
     ) {
-
-        try (
-
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(
-                                """
-                                DELETE FROM employees
-                                WHERE id = ?
-                                """
-                        )
-
-        ) {
-
-            statement.setLong(
-                    1,
-                    employee.getId()
-            );
-
-            return statement.executeUpdate() > 0;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return false;
-        }
+        throw new IllegalStateException("Employee records cannot be deleted. Deactivate the employee instead to preserve attendance history.");
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
 
@@ -406,7 +332,7 @@ public class EmployeeRepository {
         }
     }
 
-    private void addImagePathColumnIfMissing(
+    private static void addImagePathColumnIfMissing(
             Connection connection
     ) throws Exception {
 
@@ -442,7 +368,7 @@ public class EmployeeRepository {
         }
     }
 
-    private void addUserIdColumnIfMissing(
+    private static void addUserIdColumnIfMissing(
             Connection connection
     ) throws Exception {
 
@@ -482,7 +408,7 @@ public class EmployeeRepository {
         }
     }
 
-    private void addUserIdUniqueIndexIfMissing(
+    private static void addUserIdUniqueIndexIfMissing(
             Connection connection
     ) throws Exception {
 

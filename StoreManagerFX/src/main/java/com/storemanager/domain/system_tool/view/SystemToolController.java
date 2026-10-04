@@ -1,5 +1,6 @@
 package com.storemanager.domain.system_tool.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.system_tool.presenter.SystemToolPresenter;
 import com.storemanager.domain.system_tool.backup.model.BackupSummary;
 import com.storemanager.core.util.TimeFormatUtil;
@@ -64,7 +65,7 @@ public class SystemToolController {
                 new FileChooser();
 
         fileChooser.setTitle(
-                "Choose backup SQL file"
+                "Save complete backup (database and images)"
         );
 
         fileChooser.setInitialFileName(
@@ -75,8 +76,8 @@ public class SystemToolController {
                 .getExtensionFilters()
                 .add(
                         new FileChooser.ExtensionFilter(
-                                "SQL files",
-                                "*.sql"
+                                "Complete backup ZIP files",
+                                "*.zip"
                         )
                 );
 
@@ -102,15 +103,15 @@ public class SystemToolController {
                 new FileChooser();
 
         fileChooser.setTitle(
-                "Choose backup SQL file"
+                "Choose complete backup or legacy SQL backup"
         );
 
         fileChooser
                 .getExtensionFilters()
                 .add(
                         new FileChooser.ExtensionFilter(
-                                "SQL files",
-                                "*.sql"
+                                "Backup files",
+                                "*.zip", "*.sql"
                         )
                 );
 
@@ -130,7 +131,9 @@ public class SystemToolController {
 
         confirm.setHeaderText("Restore database?");
         confirm.setContentText(
-                "Restore replaces current local database."
+                inputFile.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".zip")
+                        ? "Restore replaces the current database and product, category and employee images."
+                        : "This legacy SQL backup restores the database only. Images are not included."
         );
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL)
@@ -205,15 +208,7 @@ public class SystemToolController {
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private String formatBytes(

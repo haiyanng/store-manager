@@ -94,22 +94,6 @@
                        text="Role"
                        styleClass="meta-value"/>
             </VBox>
-
-            <VBox alignment="CENTER_RIGHT"
-                  spacing="3">
-                <Label text="Branch"
-                       styleClass="meta-label"/>
-
-                <Label fx:id="activeBranchLabel"
-                       text="🏢 Branch: Unassigned"
-                       styleClass="meta-value"/>
-            </VBox>
-
-            <ComboBox fx:id="activeBranchComboBox"
-                      prefWidth="220"
-                      maxWidth="220"
-                      styleClass="branch-selector"
-                      onAction="#onBranchSelected"/>
         </HBox>
     </top>
 
@@ -150,10 +134,17 @@
 
                     <Region VBox.vgrow="ALWAYS"/>
 
-                    <Button text="Logout"
-                            styleClass="logout-button"
-                            maxWidth="Infinity"
-                            onAction="#onLogout"/>
+                    <VBox spacing="4"
+                          styleClass="sidebar-account-actions">
+                        <Button text="Change password"
+                                styleClass="nav-button"
+                                maxWidth="Infinity"
+                                onAction="#onChangePassword"/>
+                        <Button text="Logout"
+                                styleClass="logout-button"
+                                maxWidth="Infinity"
+                                onAction="#onLogout"/>
+                    </VBox>
                 </VBox>
             </content>
         </ScrollPane>

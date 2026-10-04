@@ -11,9 +11,6 @@ public final class OfflineExportSpecV1 {
     public static final String MANIFEST_FILE =
             "manifest.json";
 
-    public static final String BRANCHES_FILE =
-            "branches.json";
-
     public static final String USERS_FILE =
             "users.json";
 
@@ -29,11 +26,12 @@ public final class OfflineExportSpecV1 {
     public static final String INVENTORY_FILE =
             "inventory.json";
 
+    public static final String INVENTORY_TRANSACTIONS_FILE = "inventory_transactions.json";
+    public static final String IMPORT_RECEIPTS_FILE = "import_receipts.json";
+    public static final String IMPORT_ITEMS_FILE = "import_items.json";
+
     public static final String ATTENDANCE_FILE =
             "attendance.json";
-
-    public static final String PAYROLL_FILE =
-            "payroll.json";
 
     public static final String SALES_FILE =
             "sales.json";

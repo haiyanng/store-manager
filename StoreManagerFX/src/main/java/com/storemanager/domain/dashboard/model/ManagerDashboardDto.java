@@ -12,8 +12,6 @@ public class ManagerDashboardDto {
     private List<DashboardMetricCard> metrics =
             new ArrayList<>();
 
-    private long branchEmployeeCount;
-
     private long employeesCurrentlyCheckedIn;
 
     private String attendanceOverview;
@@ -21,14 +19,6 @@ public class ManagerDashboardDto {
     private String inventoryOverview;
 
     private String salesOverview;
-
-    private DashboardOnlineOrderSnapshot onlineOrderDashboard;
-
-    private List<DashboardBranchSummary> branchOperationalSummaries =
-            new ArrayList<>();
-
-    private List<DashboardEmployeeLocationRow> employeeLocations =
-            new ArrayList<>();
 
     public ManagerDashboardDto() {
     }
@@ -55,14 +45,6 @@ public class ManagerDashboardDto {
 
     public void setMetrics(List<DashboardMetricCard> metrics) {
         this.metrics = metrics;
-    }
-
-    public long getBranchEmployeeCount() {
-        return branchEmployeeCount;
-    }
-
-    public void setBranchEmployeeCount(long branchEmployeeCount) {
-        this.branchEmployeeCount = branchEmployeeCount;
     }
 
     public long getEmployeesCurrentlyCheckedIn() {
@@ -97,27 +79,4 @@ public class ManagerDashboardDto {
         this.salesOverview = salesOverview;
     }
 
-    public DashboardOnlineOrderSnapshot getOnlineOrderDashboard() {
-        return onlineOrderDashboard;
-    }
-
-    public void setOnlineOrderDashboard(DashboardOnlineOrderSnapshot onlineOrderDashboard) {
-        this.onlineOrderDashboard = onlineOrderDashboard;
-    }
-
-    public List<DashboardBranchSummary> getBranchOperationalSummaries() {
-        return branchOperationalSummaries;
-    }
-
-    public void setBranchOperationalSummaries(List<DashboardBranchSummary> branchOperationalSummaries) {
-        this.branchOperationalSummaries = branchOperationalSummaries;
-    }
-
-    public List<DashboardEmployeeLocationRow> getEmployeeLocations() {
-        return employeeLocations;
-    }
-
-    public void setEmployeeLocations(List<DashboardEmployeeLocationRow> employeeLocations) {
-        this.employeeLocations = employeeLocations;
-    }
 }

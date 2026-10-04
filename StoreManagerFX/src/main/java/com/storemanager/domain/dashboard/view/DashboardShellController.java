@@ -4,8 +4,6 @@ import com.storemanager.core.navigation.ContentManager;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
-import com.storemanager.domain.auth.service.AuthService;
-import com.storemanager.domain.branch.model.Branch;
 import com.storemanager.domain.dashboard.model.DashboardMenuItem;
 import com.storemanager.domain.dashboard.model.DashboardMenuRegistry;
 import com.storemanager.domain.dashboard.presenter.DashboardShellPresenter;
@@ -13,19 +11,16 @@ import com.storemanager.domain.message.service.MessageService;
 import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
-import javafx.collections.FXCollections;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 
 public class DashboardShellController {
 
@@ -34,12 +29,6 @@ public class DashboardShellController {
 
     @FXML
     private Label roleLabel;
-
-    @FXML
-    private Label activeBranchLabel;
-
-    @FXML
-    private ComboBox<Branch> activeBranchComboBox;
 
     @FXML
     private Button notificationButton;
@@ -69,8 +58,7 @@ public class DashboardShellController {
             new MessageService();
 
     private Timeline badgeTimeline;
-
-    private boolean initializingBranchSelector;
+    private boolean logoutInProgress;
 
     @FXML
     public void initialize() {
@@ -98,7 +86,6 @@ public class DashboardShellController {
                 currentRole.name()
         );
 
-        initializeBranchContext();
         renderSidebarMenu();
         applyTopbarWorkflowVisibility();
 
@@ -113,81 +100,9 @@ public class DashboardShellController {
     }
 
     @FXML
-    public void onDashboard() {
-
-        navigateTo(DashboardMenuRegistry.DASHBOARD);
-    }
-
-    @FXML
-    public void onEmployee() {
-
-        navigateTo(DashboardMenuRegistry.EMPLOYEE);
-    }
-
-    @FXML
-    public void onAttendance() {
-
-        navigateTo(DashboardMenuRegistry.ATTENDANCE);
-    }
-
-    @FXML
-    public void onPayroll() {
-
-        navigateTo(DashboardMenuRegistry.PAYROLL);
-    }
-
-    @FXML
-    public void onBranch() {
-
-        navigateTo(DashboardMenuRegistry.BRANCH);
-    }
-
-    @FXML
-    public void onUserManagement() {
-
-        navigateTo(DashboardMenuRegistry.USER_MANAGEMENT);
-    }
-
-    @FXML
-    public void onProduct() {
-
-        navigateTo(DashboardMenuRegistry.PRODUCT);
-    }
-
-    @FXML
-    public void onCategory() {
-
-        navigateTo(DashboardMenuRegistry.CATEGORY);
-    }
-
-    @FXML
-    public void onInventory() {
-
-        navigateTo(DashboardMenuRegistry.INVENTORY);
-    }
-
-    @FXML
     public void onImport() {
 
         navigateTo(DashboardMenuRegistry.IMPORT);
-    }
-
-    @FXML
-    public void onOrder() {
-
-        navigateTo(DashboardMenuRegistry.ORDER);
-    }
-
-    @FXML
-    public void onSystemTools() {
-
-        navigateTo(DashboardMenuRegistry.SYSTEM_TOOLS);
-    }
-
-    @FXML
-    public void onAuditLogs() {
-
-        navigateTo(DashboardMenuRegistry.AUDIT_LOGS);
     }
 
     @FXML
@@ -204,116 +119,45 @@ public class DashboardShellController {
 
     @FXML
     public void onLogout() {
-
+        if (logoutInProgress) return;
+        logoutInProgress = true;
         stopBadgePolling();
-        new AuthService().logout();
-
-        SceneManager.switchScene(
-                "/fxml/auth/login.fxml"
-        );
+        var shell = contentArea.getScene().getRoot();
+        shell.setDisable(true);
+        presenter.logout(() -> SceneManager.switchScene("/fxml/auth/login.fxml"), error -> {
+            logoutInProgress = false;
+            shell.setDisable(false);
+            startBadgePolling();
+            com.storemanager.core.util.UiFeedback.showError(error.getMessage());
+        });
     }
 
-    @FXML
-    public void onBranchSelected() {
-
-        if (initializingBranchSelector) {
-            return;
-        }
-
-        Branch selectedBranch =
-                activeBranchComboBox.getValue();
-
-        if (selectedBranch == null) {
-            return;
-        }
-
-        if (!presenter.canSwitchBranch(selectedBranch)) {
-            showAccessDenied();
-            return;
-        }
-
-        presenter.setActiveBranch(selectedBranch);
-        refreshActiveBranchLabel();
-    }
-
-    private void initializeBranchContext() {
-
-        configureBranchComboBox();
-
-        DashboardShellPresenter.BranchSelectorState branchState =
-                presenter.resolveBranchSelectorState();
-
-        initializingBranchSelector = true;
-
-        try {
-            activeBranchComboBox.setItems(
-                    FXCollections.observableArrayList(
-                            branchState.branches()
-                    )
-            );
-            activeBranchComboBox.setVisible(
-                    branchState.visible()
-            );
-            activeBranchComboBox.setManaged(
-                    branchState.visible()
-            );
-            activeBranchComboBox.setDisable(
-                    !branchState.visible()
-                            || !branchState.enabled()
-            );
-
-            if (branchState.selectedBranch() != null) {
-                activeBranchComboBox.setValue(
-                        branchState.selectedBranch()
-                );
-                presenter.setActiveBranch(
-                        branchState.selectedBranch()
-                );
-            } else {
-                activeBranchComboBox.setValue(null);
-                presenter.setActiveBranch(null);
-            }
-        } finally {
-            initializingBranchSelector = false;
-        }
-
-        refreshActiveBranchLabel();
-    }
-
-    private void configureBranchComboBox() {
-
-        activeBranchComboBox.setConverter(
-                new StringConverter<>() {
-                    @Override
-                    public String toString(Branch branch) {
-                        return branch == null ? "" : branch.getName();
-                    }
-
-                    @Override
-                    public Branch fromString(String value) {
-                        return null;
-                    }
-                }
-        );
-
-        activeBranchComboBox.setPromptText(
-                "Select branch"
-        );
-    }
-
-    private void refreshActiveBranchLabel() {
-
-        String branchName =
-                AppSession.getActiveBranchName();
-
-        if (branchName == null || branchName.isBlank()) {
-            activeBranchLabel.setText("🏢 Branch: Unassigned");
-            return;
-        }
-
-        activeBranchLabel.setText(
-                "🏢 Branch: " + branchName
-        );
+    @FXML public void onChangePassword() {
+        javafx.scene.control.Dialog<Void> dialog = new javafx.scene.control.Dialog<>();
+        dialog.setTitle("Change password");
+        dialog.initOwner(contentArea.getScene().getWindow());
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/typography.css").toExternalForm());
+        var current = new javafx.scene.control.PasswordField();
+        var replacement = new javafx.scene.control.PasswordField();
+        var confirmation = new javafx.scene.control.PasswordField();
+        current.setPromptText("Current password"); replacement.setPromptText("New password");
+        confirmation.setPromptText("Confirm new password");
+        Label status = new Label(); status.setWrapText(true);
+        var form = new VBox(12, new Label("Current password"), current,
+                new Label("New password"), replacement, new Label("Confirm new password"), confirmation, status);
+        form.setPrefWidth(360); dialog.getDialogPane().setContent(form);
+        var save = new javafx.scene.control.ButtonType("Save password", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(save, javafx.scene.control.ButtonType.CANCEL);
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
+        saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            event.consume(); saveButton.setDisable(true); status.setText("Saving password...");
+            presenter.changePassword(current.getText(), replacement.getText(), confirmation.getText(), () -> {
+                dialog.close();
+                Alert done = new Alert(Alert.AlertType.INFORMATION, "Your password has been changed.");
+                done.setHeaderText(null); done.showAndWait();
+            }, error -> { saveButton.setDisable(false); status.setText(error.getMessage()); });
+        });
+        dialog.showAndWait();
     }
 
     private void startBadgePolling() {
@@ -434,15 +278,12 @@ public class DashboardShellController {
             case DashboardMenuRegistry.EMPLOYEE -> "👥";
             case DashboardMenuRegistry.ATTENDANCE -> "◷";
             case DashboardMenuRegistry.ATTENDANCE_ANOMALIES -> "!";
-            case DashboardMenuRegistry.PAYROLL -> "$";
-            case DashboardMenuRegistry.BRANCH -> "⌂";
             case DashboardMenuRegistry.USER_MANAGEMENT -> "⚙";
             case DashboardMenuRegistry.PRODUCT -> "▣";
             case DashboardMenuRegistry.CATEGORY -> "⌗";
             case DashboardMenuRegistry.INVENTORY -> "▤";
             case DashboardMenuRegistry.IMPORT -> "↧";
             case DashboardMenuRegistry.ORDER -> "◉";
-            case DashboardMenuRegistry.ONLINE_ORDER -> "◎";
             case DashboardMenuRegistry.SYSTEM_TOOLS -> "⚒";
             case DashboardMenuRegistry.AUDIT_LOGS -> "☑";
             case DashboardMenuRegistry.NOTIFICATIONS -> "●";

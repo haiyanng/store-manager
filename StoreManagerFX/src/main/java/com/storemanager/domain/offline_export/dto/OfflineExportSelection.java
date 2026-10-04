@@ -5,7 +5,6 @@ public record OfflineExportSelection(
         boolean employees,
         boolean sales,
         boolean attendance,
-        boolean payroll,
         boolean images,
         boolean auditLogs
 ) {
@@ -13,7 +12,6 @@ public record OfflineExportSelection(
     public static OfflineExportSelection all() {
 
         return new OfflineExportSelection(
-                true,
                 true,
                 true,
                 true,

@@ -4,12 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class AttendanceRuntimeStatus {
+    private boolean employeeLinked;
+    public boolean isEmployeeLinked() { return employeeLinked; }
+    public void setEmployeeLinked(boolean value) { employeeLinked = value; }
 
     private AttendanceState state;
 
     private AttendanceSession activeSession;
-
-    private String activeBranchName;
 
     private BigDecimal todayWorkedHours;
 
@@ -31,14 +32,6 @@ public class AttendanceRuntimeStatus {
 
     public void setActiveSession(AttendanceSession activeSession) {
         this.activeSession = activeSession;
-    }
-
-    public String getActiveBranchName() {
-        return activeBranchName;
-    }
-
-    public void setActiveBranchName(String activeBranchName) {
-        this.activeBranchName = activeBranchName;
     }
 
     public BigDecimal getTodayWorkedHours() {

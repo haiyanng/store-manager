@@ -1,10 +1,9 @@
 package com.storemanager.domain.employee.service;
 
-import com.storemanager.core.session.AppSession;
-import com.storemanager.domain.attendance.model.AttendanceSession;
+import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.audit.service.AuditSnapshots;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
-import com.storemanager.domain.branch.model.Branch;
-import com.storemanager.domain.branch.repository.BranchRepository;
 import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
@@ -19,11 +18,10 @@ import java.util.stream.Collectors;
 
 public class EmployeeService {
 
+    private final AuditService auditService = new AuditService();
+
     private final EmployeeRepository employeeRepository =
             new EmployeeRepository();
-
-    private final BranchRepository branchRepository =
-            new BranchRepository();
 
     private final AttendanceRepository attendanceRepository =
             new AttendanceRepository();
@@ -58,41 +56,63 @@ public class EmployeeService {
                 .toList();
     }
 
-    public boolean create(
-            Employee employee
-    ) {
-
-        validate(employee);
-
-        return employeeRepository.save(employee);
+    public boolean create(Employee employee) {
+        return change(employee, "EMPLOYEE_CREATE");
     }
 
-    public boolean update(
-            Employee employee
-    ) {
-
-        if (employee.getId() == null) {
-            throw new RuntimeException(
-                    "Employee is required"
-            );
-        }
-
-        validate(employee);
-
-        return employeeRepository.update(employee);
+    public boolean update(Employee employee) {
+        return change(employee, "EMPLOYEE_UPDATE");
     }
 
-    public boolean delete(
-            Employee employee
-    ) {
+    public boolean delete(Employee employee) {
+        validateWriteAccess("EMPLOYEE_DELETE");
+        throw new IllegalStateException("Employee records cannot be deleted. Deactivate the employee instead to preserve attendance history.");
+    }
 
-        if (employee == null || employee.getId() == null) {
-            throw new RuntimeException(
-                    "Employee is required"
-            );
+    private boolean change(Employee employee, String action) {
+        validateWriteAccess(action);
+        Map<String, Object> before = null;
+        Map<String, Object> attempted = AuditSnapshots.employee(employee);
+        Map<String, Object> after;
+        boolean success;
+        try {
+            if (employee == null) throw new IllegalArgumentException("Employee is required");
+            boolean creating = action.endsWith("_CREATE");
+            Employee stored = null;
+            if (!creating) {
+                if (employee.getId() == null) throw new IllegalArgumentException("Select an employee first");
+                stored = employeeRepository.findById(employee.getId());
+                if (stored == null) throw new IllegalArgumentException("Employee no longer exists. Refresh the list and try again.");
+                before = AuditSnapshots.employee(stored);
+            }
+            Employee candidate = employee;
+            validate(candidate);
+            if (!creating && !candidate.isActive()
+                    && attendanceRepository.findOpenSessionByEmployeeId(candidate.getId()) != null) {
+                throw new IllegalStateException("Cannot deactivate " + candidate.getFullName()
+                        + " while they are checked in. Check out the employee first, then deactivate them.");
+            }
+            attempted = AuditSnapshots.employee(candidate);
+            success = creating ? employeeRepository.save(candidate)
+                    : employeeRepository.update(candidate);
+            after = success ? AuditSnapshots.employee(candidate) : before;
+            if (success) employee.setActive(candidate.isActive());
+        } catch (RuntimeException e) {
+            auditService.recordChange("EMPLOYEE", action, "EMPLOYEE", employee == null ? null : employee.getId(),
+                    false, e.getMessage(), before, before, attempted);
+            throw e;
         }
+        auditService.recordChange("EMPLOYEE", action, "EMPLOYEE", employee.getId(), success,
+                success ? null : "Unable to save employee changes. Check the data and database connection.",
+                before, after, success ? null : attempted);
+        return success;
+    }
 
-        return employeeRepository.delete(employee);
+    private void validateWriteAccess(String action) {
+        if (!PermissionGuard.canViewEmployee()) {
+            auditService.recordPermissionDenied(action, "EMPLOYEE", null, "Employee management denied", "OWNER/MANAGER");
+            throw new IllegalStateException("Current user cannot manage employees");
+        }
     }
 
     public Map<Long, User> findUsersById() {
@@ -139,7 +159,7 @@ public class EmployeeService {
                 new EmployeeListViewDto();
 
         if (employee == null) {
-            dto.setBranchDisplayName("Unassigned");
+
             return dto;
         }
 
@@ -164,90 +184,8 @@ public class EmployeeService {
                         ? ""
                         : linkedUser.getRole().name()
         );
-        dto.setBranchDisplayName(
-                resolveBranchDisplayName(employee)
-        );
 
         return dto;
-    }
-
-    private String resolveBranchDisplayName(
-            Employee employee
-    ) {
-
-        if (employee == null || employee.getId() == null) {
-            return "Unassigned";
-        }
-
-        AttendanceSession activeSession =
-                attendanceRepository.findOpenSessionByEmployeeId(
-                        employee.getId()
-                );
-
-        if (activeSession != null
-                && activeSession.getBranchId() != null) {
-            String branchName =
-                    resolveBranchName(activeSession.getBranchId());
-            return branchName + " (Working)";
-        }
-
-        Branch currentBranch =
-                resolveCurrentAssignedBranch(employee.getId());
-
-        if (currentBranch != null) {
-            return currentBranch.getName();
-        }
-
-        return "Unassigned";
-    }
-
-    private Branch resolveCurrentAssignedBranch(
-            Long employeeId
-    ) {
-
-        if (employeeId == null) {
-            return null;
-        }
-
-        var activeAssignment =
-                branchRepository.findActiveAssignmentByEmployeeId(
-                        employeeId
-                );
-
-        if (activeAssignment == null
-                || activeAssignment.getBranchId() == null) {
-            return null;
-        }
-
-        Branch branch =
-                branchRepository.findBranchById(
-                        activeAssignment.getBranchId()
-                );
-
-        if (branch == null || !branch.isActive()) {
-            return null;
-        }
-
-        return branch;
-    }
-
-    private String resolveBranchName(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return "Unassigned";
-        }
-
-        Branch branch =
-                branchRepository.findBranchById(branchId);
-
-        if (branch == null || branch.getName() == null
-                || branch.getName().isBlank()) {
-            return "Branch #" + branchId;
-        }
-
-        return branch.getName();
     }
 
     private void validate(

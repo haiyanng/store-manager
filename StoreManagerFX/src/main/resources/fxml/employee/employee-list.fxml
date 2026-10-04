@@ -6,91 +6,85 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.employee.view.EmployeeListController"
-      spacing="18">
+      spacing="18" minWidth="0"
+      styleClass="record-screen" stylesheets="@../../css/record-management.css">
 
-    <VBox spacing="6">
-        <Label text="Employee"
-               styleClass="content-title"/>
+    <HBox spacing="16" alignment="CENTER_LEFT">
+        <VBox spacing="6" HBox.hgrow="ALWAYS">
+            <Label text="Employee"
+                   styleClass="content-title"/>
 
-        <Label text="Create, update, and manage employees"
-               styleClass="content-description"/>
+            <Label text="Create, update, and manage employees"
+                   styleClass="content-description"/>
+        </VBox>
+        <Button fx:id="refreshButton" text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
+    </HBox>
+
+    <VBox spacing="18" styleClass="record-editor" maxWidth="Infinity">
+        <Label text="Employee details" styleClass="record-section-title"/>
+        <fx:include fx:id="employeeForm" source="employee-form.fxml"/>
+        <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="record-actions">
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
+            <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
+            <Button fx:id="createButton" text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
+        </HBox>
     </VBox>
 
-    <HBox spacing="16">
-        <fx:include fx:id="employeeForm"
-                    source="employee-form.fxml"/>
-
-        <VBox spacing="10">
-            <Button text="Create"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onCreate"/>
-
-            <Button fx:id="updateButton"
-                    text="Update"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onUpdate"/>
-
-            <Button fx:id="deleteButton"
-                    text="Delete"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onDelete"/>
-
-            <Button text="Clear"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onClear"/>
-
-            <Button text="Refresh"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onRefresh"/>
-        </VBox>
+    <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="Employee list" styleClass="record-section-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Select a row to edit its details." styleClass="content-description"/>
     </HBox>
 
     <TableView fx:id="employeeTable"
-               VBox.vgrow="ALWAYS">
+               VBox.vgrow="ALWAYS" minWidth="0" minHeight="220" prefHeight="300"
+               styleClass="record-table">
         <columns>
             <TableColumn fx:id="idColumn"
                          text="ID"
+                         minWidth="44"
                          prefWidth="70"/>
 
             <TableColumn fx:id="fullNameColumn"
                          text="Full name"
+                         minWidth="130"
                          prefWidth="220"/>
 
             <TableColumn fx:id="phoneColumn"
                          text="Phone"
+                         minWidth="105"
                          prefWidth="140"/>
 
             <TableColumn fx:id="positionColumn"
                          text="Position"
+                         minWidth="95"
                          prefWidth="160"/>
-
-            <TableColumn fx:id="branchColumn"
-                         text="Branch"
-                         prefWidth="240"/>
 
             <TableColumn fx:id="linkedUsernameColumn"
                          text="Linked username"
+                         minWidth="115"
                          prefWidth="180"/>
 
             <TableColumn fx:id="linkedRoleColumn"
                          text="Linked role"
+                         minWidth="85"
                          prefWidth="130"/>
 
             <TableColumn fx:id="activeColumn"
-                         text="Active"
+                         text="Status"
+                         minWidth="65"
                          prefWidth="100"/>
         </columns>
     </TableView>
+
+    <Label fx:id="statusLabel" text="Ready" styleClass="content-description"/>
 
     <padding>
         <Insets top="0"

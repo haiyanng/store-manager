@@ -11,6 +11,18 @@ public class SaleOrder {
 
     private BigDecimal totalAmount;
 
+    private BigDecimal amountReceived;
+
+    private BigDecimal changeAmount;
+
+    public BigDecimal getAmountReceived() { return amountReceived; }
+
+    public void setAmountReceived(BigDecimal amountReceived) { this.amountReceived = amountReceived; }
+
+    public BigDecimal getChangeAmount() { return changeAmount; }
+
+    public void setChangeAmount(BigDecimal changeAmount) { this.changeAmount = changeAmount; }
+
     private LocalDateTime createdAt;
 
     public SaleOrder() {

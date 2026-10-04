@@ -14,6 +14,7 @@ import com.storemanager.domain.notification.service.NotificationService;
 import com.storemanager.domain.user.model.User;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.Map;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -38,6 +39,39 @@ public class InventoryService {
         validateInventoryAccess();
 
         return inventoryRepository.findAllItems();
+    }
+
+    public List<InventoryItem> findItemsWithExpiry() {
+        List<InventoryItem> items = findAllItems();
+        Map<Long, LocalDate> dates = inventoryRepository.findNearestExpiryDates();
+        LocalDate today = LocalDate.now();
+        for (InventoryItem item : items) {
+            LocalDate expiry = dates.get(item.getProductId());
+            item.setNearestExpiryDate(expiry);
+            item.setExpiryStatus(expiryStatus(expiry, today));
+        }
+        return items;
+    }
+
+    public static String expiryStatus(LocalDate expiry, LocalDate today) {
+        if (expiry == null) return "N/A";
+        if (expiry.isBefore(today)) return "EXPIRED";
+        if (!expiry.isAfter(today.plusDays(7))) return "EXPIRING SOON";
+        return "NORMAL";
+    }
+
+    public static boolean isLowStock(InventoryItem item) { return item.getQuantity() < 10; }
+
+    public static List<InventoryTransaction> filterImportHistory(List<InventoryTransaction> rows,
+            LocalDate from, LocalDate to, Long productId) {
+        if (from != null && to != null && from.isAfter(to))
+            throw new IllegalArgumentException("Start date must be on or before end date.");
+        return rows.stream().filter(row -> row.getType() == InventoryTransactionType.IMPORT)
+                .filter(row -> productId == null || productId.equals(row.getProductId()))
+                .filter(row -> from == null || row.getCreatedAt() != null
+                        && !row.getCreatedAt().toLocalDate().isBefore(from))
+                .filter(row -> to == null || row.getCreatedAt() != null
+                        && !row.getCreatedAt().toLocalDate().isAfter(to)).toList();
     }
 
     public List<InventoryTransaction> findAllTransactions() {
@@ -70,7 +104,7 @@ public class InventoryService {
         validateInventoryAccess();
 
         return productService
-                .findAll()
+                .findAllIncludingInactive()
                 .stream()
                 .collect(
                         Collectors.toMap(
@@ -177,14 +211,7 @@ public class InventoryService {
     private void validateInventoryAccess() {
 
         if (!PermissionGuard.canViewInventory()) {
-            auditService.recordPermissionDenied(
-                    "INVENTORY_VIEW",
-                    "INVENTORY",
-                    null,
-                    "Inventory access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF"
-            );
+            auditService.recordPermissionDenied("INVENTORY_VIEW", "INVENTORY", null, "Inventory access denied", "OWNER/MANAGER/STAFF");
             throw new RuntimeException(
                     "Inventory access denied"
             );
@@ -196,14 +223,7 @@ public class InventoryService {
     ) {
 
         if (!PermissionGuard.canAdjustInventory()) {
-            auditService.recordPermissionDenied(
-                    action,
-                    "INVENTORY",
-                    null,
-                    "Inventory adjustment denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied(action, "INVENTORY", null, "Inventory adjustment denied", "OWNER/MANAGER");
             throw new RuntimeException(
                     "Current user cannot adjust inventory"
             );
@@ -221,27 +241,14 @@ public class InventoryService {
 
         if (type == InventoryTransactionType.SALE) {
             allowed =
-                    PermissionGuard.canCreateSale()
-                            || PermissionGuard.canModifyOnlineOrders();
-        } else if (type == InventoryTransactionType.IMPORT
-                || type == InventoryTransactionType.ADJUSTMENT) {
-            allowed =
-                    PermissionGuard.canAdjustInventory()
-                            || PermissionGuard.canModifyOnlineOrders();
+                    PermissionGuard.canCreateSale();
         } else {
             allowed =
                     PermissionGuard.canAdjustInventory();
         }
 
         if (!allowed) {
-            auditService.recordPermissionDenied(
-                    "INVENTORY_TRANSACTION",
-                    "INVENTORY",
-                    null,
-                    "Inventory transaction denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied("INVENTORY_TRANSACTION", "INVENTORY", null, "Inventory transaction denied", "OWNER/MANAGER");
             throw new RuntimeException(
                     "Current user cannot update inventory"
             );

@@ -6,7 +6,6 @@ import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.system_tool.service.DatabaseBackupService;
 import com.storemanager.domain.system_tool.service.DatabaseRestoreService;
 import com.storemanager.domain.system_tool.view.SystemToolController;
-import com.storemanager.domain.system_tool.backup.model.BackupSummary;
 
 import java.io.File;
 
@@ -37,7 +36,7 @@ public class SystemToolPresenter {
                     LoadingState.ERROR;
             view.setBusy(false);
             view.setStatus("Permission denied");
-            view.showError("Bạn không có quyền truy cập System Tools");
+            view.showError("You do not have permission to access System Tools");
             return;
         }
 

@@ -13,13 +13,11 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.HashMap;
 
 public class InventoryRepository {
-
-    public InventoryRepository() {
-
-        initializeTables();
-    }
 
     public List<InventoryItem> findAllItems() {
 
@@ -52,10 +50,26 @@ public class InventoryRepository {
             return items;
 
         } catch (Exception e) {
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
+        }
+    }
 
-            e.printStackTrace();
-
-            return items;
+    public Map<Long, LocalDate> findNearestExpiryDates() {
+        Map<Long, LocalDate> dates = new HashMap<>();
+        try (Connection connection = ConnectionFactory.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery("""
+                     SELECT product_id, MIN(expiry_date) AS nearest_expiry
+                     FROM import_items
+                     WHERE expiry_date IS NOT NULL
+                     GROUP BY product_id
+                     """)) {
+            while (rows.next()) {
+                dates.put(rows.getLong("product_id"), rows.getDate("nearest_expiry").toLocalDate());
+            }
+            return dates;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load expiry dates. Check the database connection and try again.", e);
         }
     }
 
@@ -90,10 +104,7 @@ public class InventoryRepository {
             return transactions;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return transactions;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -140,6 +151,17 @@ public class InventoryRepository {
         }
     }
 
+    private String insufficientStockMessage(Connection connection, InventoryTransaction transaction, int available)
+            throws java.sql.SQLException {
+        String name = "Product #" + transaction.getProductId();
+        try (PreparedStatement statement = connection.prepareStatement("SELECT name FROM products WHERE id = ?")) {
+            statement.setLong(1, transaction.getProductId());
+            try (ResultSet result = statement.executeQuery()) { if (result.next()) name = result.getString("name"); }
+        }
+        return "Insufficient stock for " + name + ": available " + available + ", requested "
+                + transaction.getQuantity() + ", short by " + ((long) transaction.getQuantity() - available) + ".";
+    }
+
     public boolean applyTransaction(
             InventoryTransaction transaction,
             int quantityDelta
@@ -161,11 +183,13 @@ public class InventoryRepository {
                         );
 
                 int newQuantity =
-                        currentQuantity + quantityDelta;
+                        Math.addExact(currentQuantity, quantityDelta);
 
                 if (newQuantity < 0) {
                     throw new RuntimeException(
-                            "Stock cannot be negative"
+                            transaction.getType() == InventoryTransactionType.SALE
+                                ? insufficientStockMessage(connection, transaction, currentQuantity)
+                                : "Stock cannot be negative"
                     );
                 }
 
@@ -213,11 +237,13 @@ public class InventoryRepository {
                     );
 
             int newQuantity =
-                    currentQuantity + quantityDelta;
+                    Math.addExact(currentQuantity, quantityDelta);
 
             if (newQuantity < 0) {
                 throw new RuntimeException(
-                        "Stock cannot be negative"
+                        transaction.getType() == InventoryTransactionType.SALE
+                                ? insufficientStockMessage(connection, transaction, currentQuantity)
+                                : "Stock cannot be negative"
                 );
             }
 
@@ -241,12 +267,9 @@ public class InventoryRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -291,7 +314,7 @@ public class InventoryRepository {
         }
     }
 
-    private void collapseDuplicateInventoryItems(
+    private static void collapseDuplicateInventoryItems(
             Connection connection
     ) throws Exception {
 
@@ -334,7 +357,7 @@ public class InventoryRepository {
         }
     }
 
-    private void addUniqueProductIndexIfMissing(
+    private static void addUniqueProductIndexIfMissing(
             Connection connection
     ) throws Exception {
 
@@ -377,7 +400,7 @@ public class InventoryRepository {
         }
     }
 
-    private void updateInventoryItemQuantity(
+    private static void updateInventoryItemQuantity(
             Connection connection,
             long keeperId,
             int quantity
@@ -401,7 +424,7 @@ public class InventoryRepository {
         }
     }
 
-    private void deleteDuplicateInventoryItems(
+    private static void deleteDuplicateInventoryItems(
             Connection connection,
             long productId,
             long keeperId

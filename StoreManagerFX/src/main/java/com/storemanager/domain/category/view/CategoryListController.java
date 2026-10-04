@@ -1,5 +1,7 @@
 package com.storemanager.domain.category.view;
 
+import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.category.presenter.CategoryPresenter;
 import javafx.beans.property.SimpleStringProperty;
@@ -43,15 +45,28 @@ public class CategoryListController {
     @FXML
     private Label statusLabel;
 
+    private boolean busy;
+    @FXML private Button createButton;
+    @FXML private Button clearButton;
+    @FXML private Button refreshButton;
+    @FXML private javafx.scene.Node categoryForm;
+
     private CategoryPresenter presenter;
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(categoryTable, "No categories yet. Use Create to add a category.");
+        UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
+
 
         presenter =
                 new CategoryPresenter(
                         this
                 );
+
+        categoryTable.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+        );
 
         idColumn.setCellValueFactory(
                 new PropertyValueFactory<>("id")
@@ -87,22 +102,31 @@ public class CategoryListController {
 
     @FXML
     public void onCreate() {
+        try {
 
         presenter.saveCategory(
                 categoryFormController.readCategory()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onUpdate() {
+        try {
 
         presenter.saveCategory(
                 categoryFormController.readCategory()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onDeactivate() {
+        if (!UiFeedback.confirm("Deactivate category?", "The selected category will become inactive. Existing transaction history is retained.")) return;
 
         presenter.deactivateCategory();
     }
@@ -149,46 +173,38 @@ public class CategoryListController {
         categoryFormController.clear();
     }
 
-    public void setUpdateEnabled(
-            boolean enabled
-    ) {
-
-        updateButton.setDisable(!enabled);
+    public void setUpdateEnabled(boolean enabled) {
+        setBusy(busy);
     }
 
-    public void setDeactivateEnabled(
-            boolean enabled
-    ) {
-
-        deactivateButton.setDisable(!enabled);
+    public void setDeactivateEnabled(boolean enabled) {
+        setBusy(busy);
     }
 
-    public void setBusy(
-            boolean busy
-    ) {
-
+    public void setBusy(boolean busy) {
+        this.busy = busy;
+        boolean allowed = PermissionGuard.canModifyProduct();
+        boolean selected = categoryTable.getSelectionModel().getSelectedItem() != null;
         categoryTable.setDisable(busy);
+        categoryForm.setDisable(busy || !allowed);
+        refreshButton.setDisable(busy);
+        clearButton.setDisable(busy);
+        createButton.setDisable(busy || !allowed || selected);
+        updateButton.setDisable(busy || !allowed || !selected);
+        deactivateButton.setDisable(busy || !allowed || !selected);
     }
 
     public void setStatus(
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, categoryTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private String getImageStatus(

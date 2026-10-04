@@ -6,72 +6,67 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.category.view.CategoryListController"
-      spacing="18">
+      spacing="18" minWidth="0"
+      styleClass="record-screen" stylesheets="@../../css/record-management.css">
 
-    <VBox spacing="6">
-        <Label text="Category"
-               styleClass="content-title"/>
+    <HBox spacing="16" alignment="CENTER_LEFT">
+        <VBox spacing="6" HBox.hgrow="ALWAYS">
+            <Label text="Category"
+                   styleClass="content-title"/>
 
-        <Label text="Manage lightweight catalog reference data."
-               styleClass="content-description"/>
+            <Label text="Manage product categories and their status."
+                   styleClass="content-description"/>
+        </VBox>
+        <Button fx:id="refreshButton" text="Refresh" styleClass="module-secondary-button" onAction="#onRefresh"/>
+    </HBox>
+
+    <VBox spacing="18" styleClass="record-editor" maxWidth="Infinity">
+        <Label text="Category details" styleClass="record-section-title"/>
+        <fx:include fx:id="categoryForm" source="category-form.fxml"/>
+        <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="record-actions">
+            <Button fx:id="deactivateButton" text="Deactivate"
+                    styleClass="record-danger-button" onAction="#onDeactivate"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
+            <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
+            <Button fx:id="createButton" text="Create" styleClass="record-primary-button" onAction="#onCreate"/>
+        </HBox>
     </VBox>
 
-    <HBox spacing="16">
-        <fx:include fx:id="categoryForm"
-                    source="category-form.fxml"/>
-
-        <VBox spacing="10">
-            <Button text="Create"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onCreate"/>
-
-            <Button fx:id="updateButton"
-                    text="Update"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onUpdate"/>
-
-            <Button fx:id="deactivateButton"
-                    text="Deactivate"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onDeactivate"/>
-
-            <Button text="Clear"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onClear"/>
-
-            <Button text="Refresh"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onRefresh"/>
-        </VBox>
+    <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="Category list" styleClass="record-section-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Select a row to edit its details." styleClass="content-description"/>
     </HBox>
 
     <TableView fx:id="categoryTable"
-               VBox.vgrow="ALWAYS">
+               VBox.vgrow="ALWAYS" minWidth="0" minHeight="220" prefHeight="300"
+               styleClass="record-table">
         <columns>
-            <TableColumn fx:id="idColumn"
+            <TableColumn fx:id="idColumn" maxWidth="80"
                          text="ID"
+                         minWidth="60"
                          prefWidth="70"/>
 
             <TableColumn fx:id="nameColumn"
                          text="Name"
+                         minWidth="200"
                          prefWidth="220"/>
 
-            <TableColumn fx:id="imageColumn"
+            <TableColumn fx:id="imageColumn" maxWidth="160"
                          text="Image"
+                         minWidth="100"
                          prefWidth="120"/>
 
-            <TableColumn fx:id="activeColumn"
-                         text="Active"
+            <TableColumn fx:id="activeColumn" maxWidth="140"
+                         text="Status"
+                         minWidth="90"
                          prefWidth="90"/>
         </columns>
     </TableView>

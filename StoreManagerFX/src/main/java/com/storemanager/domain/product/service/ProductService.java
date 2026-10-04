@@ -3,6 +3,7 @@ package com.storemanager.domain.product.service;
 import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.category.service.CategoryService;
 import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.audit.service.AuditSnapshots;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.repository.ProductRepository;
@@ -57,115 +58,59 @@ public class ProductService {
                 );
     }
 
-    public boolean create(
-            Product product
-    ) {
-
-        validateProductWriteAccess("PRODUCT_CREATE");
-        validate(product);
-
-        boolean created =
-                productRepository.save(product);
-
-        auditService.recordEvent(
-                "PRODUCT",
-                "PRODUCT_CREATE",
-                "PRODUCT",
-                product.getId(),
-                created,
-                created ? null : "Product create failed",
-                "{\"sku\":\"" + escape(product.getSku()) + "\"}"
-        );
-
-        return created;
+    public boolean create(Product product) {
+        return change(product, "PRODUCT_CREATE");
     }
 
-    public boolean update(
-            Product product
-    ) {
-
-        validateProductWriteAccess("PRODUCT_UPDATE");
-
-        if (product.getId() == null) {
-            throw new RuntimeException(
-                    "Product is required"
-            );
-        }
-
-        validate(product);
-
-        boolean updated =
-                productRepository.update(product);
-
-        auditService.recordEvent(
-                "PRODUCT",
-                "PRODUCT_UPDATE",
-                "PRODUCT",
-                product.getId(),
-                updated,
-                updated ? null : "Product update failed",
-                "{\"sku\":\"" + escape(product.getSku()) + "\"}"
-        );
-
-        return updated;
+    public boolean update(Product product) {
+        return change(product, "PRODUCT_UPDATE");
     }
 
-    public boolean delete(
-            Product product
-    ) {
-
-        validateProductWriteAccess("PRODUCT_ARCHIVE");
-
-        if (product == null || product.getId() == null) {
-            throw new RuntimeException(
-                    "Product is required"
-            );
-        }
-
-        boolean archived =
-                productRepository.delete(product);
-
-        auditService.recordEvent(
-                "PRODUCT",
-                "PRODUCT_ARCHIVE",
-                "PRODUCT",
-                product.getId(),
-                archived,
-                archived ? null : "Product archive failed",
-                "{\"sku\":\"" + escape(product.getSku()) + "\"}"
-        );
-
-        return archived;
+    public boolean delete(Product product) {
+        return change(product, "PRODUCT_ARCHIVE");
     }
 
-    public boolean restore(
-            Product product
-    ) {
+    public boolean restore(Product product) {
+        return change(product, "PRODUCT_RESTORE");
+    }
 
-        validateProductWriteAccess("PRODUCT_RESTORE");
-
-        if (product == null || product.getId() == null) {
-            throw new RuntimeException(
-                    "Product is required"
-            );
+    private boolean change(Product product, String action) {
+        validateProductWriteAccess(action);
+        Map<String, Object> before = null;
+        Map<String, Object> attempted = AuditSnapshots.product(product);
+        Map<String, Object> after;
+        boolean success;
+        try {
+            if (product == null) throw new IllegalArgumentException("Product is required");
+            boolean creating = action.endsWith("_CREATE");
+            boolean deleting = action.endsWith("_DELETE");
+            Product stored = null;
+            if (!creating) {
+                if (product.getId() == null) throw new IllegalArgumentException("Select a product first");
+                stored = productRepository.findById(product.getId());
+                if (stored == null) throw new IllegalArgumentException("Product no longer exists. Refresh the list and try again.");
+                before = AuditSnapshots.product(stored);
+            }
+            Product candidate = product;
+            if (action.endsWith("_ARCHIVE") || action.endsWith("_RESTORE")) {
+                candidate = stored;
+                candidate.setActive(action.endsWith("_RESTORE"));
+            }
+            if (!deleting) validate(candidate);
+            attempted = deleting ? null : AuditSnapshots.product(candidate);
+            success = creating ? productRepository.save(candidate)
+                    : deleting ? productRepository.delete(candidate) : productRepository.update(candidate);
+            after = success ? (deleting ? null : AuditSnapshots.product(candidate)) : before;
+            if (success && !deleting) product.setActive(candidate.isActive());
+        } catch (RuntimeException e) {
+            auditService.recordChange("PRODUCT", action, "PRODUCT", product == null ? null : product.getId(),
+                    false, e.getMessage(), before, before, attempted);
+            throw e;
         }
-
-        product.setActive(true);
-
-        boolean restored =
-                productRepository.update(product);
-
-        auditService.recordEvent(
-                "PRODUCT",
-                "PRODUCT_RESTORE",
-                "PRODUCT",
-                product.getId(),
-                restored,
-                restored ? null : "Product restore failed",
-                "{\"sku\":\"" + escape(product.getSku()) + "\"}"
-        );
-
-        return restored;
+        auditService.recordChange("PRODUCT", action, "PRODUCT", product.getId(), success,
+                success ? null : "Unable to save product changes. Check the data and database connection.",
+                before, after, success ? null : attempted);
+        return success;
     }
 
     private void validate(
@@ -211,9 +156,19 @@ public class ProductService {
             );
         }
 
+        if (product.getBasePrice().stripTrailingZeros().scale() > 2) {
+            throw new IllegalArgumentException("Base price must have at most 2 decimal places");
+        }
+
         product.setName(product.getName().trim());
         product.setSku(product.getSku().trim());
-        product.setBarcode(cleanNullable(product.getBarcode()));
+        if (product.getSku().length() > 80) {
+            throw new IllegalArgumentException("SKU must contain at most 80 characters");
+        }
+        if (productRepository.existsSku(product.getSku(), product.getId())) {
+            throw new IllegalArgumentException("SKU '" + product.getSku()
+                    + "' is already assigned to another product. Use a different SKU.");
+        }
         product.setUnit(product.getUnit().trim());
         product.setImagePath(cleanNullable(product.getImagePath()));
     }
@@ -221,14 +176,7 @@ public class ProductService {
     private void validateProductViewAccess() {
 
         if (!PermissionGuard.canViewProduct()) {
-            auditService.recordPermissionDenied(
-                    "PRODUCT_VIEW",
-                    "PRODUCT",
-                    null,
-                    "Product access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF/VIEWER"
-            );
+            auditService.recordPermissionDenied("PRODUCT_VIEW", "PRODUCT", null, "Product access denied", "OWNER/MANAGER/STAFF/VIEWER");
             throw new RuntimeException("Product access denied");
         }
     }
@@ -238,14 +186,7 @@ public class ProductService {
     ) {
 
         if (!PermissionGuard.canModifyProduct()) {
-            auditService.recordPermissionDenied(
-                    action,
-                    "PRODUCT",
-                    null,
-                    "Product modification denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied(action, "PRODUCT", null, "Product modification denied", "OWNER/MANAGER");
             throw new RuntimeException("Current user cannot modify products");
         }
     }
@@ -261,15 +202,4 @@ public class ProductService {
         return value.trim();
     }
 
-    private String escape(
-            String value
-    ) {
-
-        if (value == null) {
-            return "";
-        }
-
-        return value.replace("\\", "\\\\")
-                .replace("\"", "\\\"");
-    }
 }

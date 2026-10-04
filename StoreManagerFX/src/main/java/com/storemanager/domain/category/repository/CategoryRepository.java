@@ -13,11 +13,6 @@ import java.util.List;
 
 public class CategoryRepository {
 
-    public CategoryRepository() {
-
-        initializeTable();
-    }
-
     public List<Category> findAll() {
 
         List<Category> categories =
@@ -50,9 +45,19 @@ public class CategoryRepository {
 
         } catch (Exception e) {
 
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to load categories. Check the database connection and try again.", e);
+        }
+    }
 
-            return categories;
+    public Category findById(Long id) {
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM categories WHERE id = ?")) {
+            statement.setLong(1, id);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? mapCategory(result) : null;
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load category. Check the database connection and try again.", e);
         }
     }
 
@@ -73,13 +78,19 @@ public class CategoryRepository {
                                     active
                                 )
                                 VALUES (?, ?, ?)
-                                """
+                                """, Statement.RETURN_GENERATED_KEYS
                         )
         ) {
 
             fillStatement(statement, category);
 
-            return statement.executeUpdate() > 0;
+            boolean saved = statement.executeUpdate() > 0;
+            if (saved) {
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) category.setId(keys.getLong(1));
+                }
+            }
+            return saved;
 
         } catch (Exception e) {
 
@@ -159,12 +170,9 @@ public class CategoryRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -194,7 +202,7 @@ public class CategoryRepository {
         }
     }
 
-    private void addImagePathColumnIfMissing(
+    private static void addImagePathColumnIfMissing(
             Connection connection
     ) throws Exception {
 

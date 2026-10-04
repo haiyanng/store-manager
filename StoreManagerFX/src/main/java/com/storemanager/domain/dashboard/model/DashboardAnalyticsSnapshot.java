@@ -30,19 +30,6 @@ public class DashboardAnalyticsSnapshot {
 
     private String ownAttendanceSummary;
 
-    private String ownPayrollSummary;
-
-    private String ownBranchesSummary;
-
-    private List<DashboardBranchSummary> branchSummaries =
-            new ArrayList<>();
-
-    private List<DashboardEmployeeLocationRow> employeeLocations =
-            new ArrayList<>();
-
-    private List<DashboardPayrollSummary> payrollSummaries =
-            new ArrayList<>();
-
     private List<DashboardCashFlowSummary> cashFlowSummaries =
             new ArrayList<>();
 
@@ -135,46 +122,6 @@ public class DashboardAnalyticsSnapshot {
 
     public void setOwnAttendanceSummary(String ownAttendanceSummary) {
         this.ownAttendanceSummary = ownAttendanceSummary;
-    }
-
-    public String getOwnPayrollSummary() {
-        return ownPayrollSummary;
-    }
-
-    public void setOwnPayrollSummary(String ownPayrollSummary) {
-        this.ownPayrollSummary = ownPayrollSummary;
-    }
-
-    public String getOwnBranchesSummary() {
-        return ownBranchesSummary;
-    }
-
-    public void setOwnBranchesSummary(String ownBranchesSummary) {
-        this.ownBranchesSummary = ownBranchesSummary;
-    }
-
-    public List<DashboardBranchSummary> getBranchSummaries() {
-        return branchSummaries;
-    }
-
-    public void setBranchSummaries(List<DashboardBranchSummary> branchSummaries) {
-        this.branchSummaries = branchSummaries;
-    }
-
-    public List<DashboardEmployeeLocationRow> getEmployeeLocations() {
-        return employeeLocations;
-    }
-
-    public void setEmployeeLocations(List<DashboardEmployeeLocationRow> employeeLocations) {
-        this.employeeLocations = employeeLocations;
-    }
-
-    public List<DashboardPayrollSummary> getPayrollSummaries() {
-        return payrollSummaries;
-    }
-
-    public void setPayrollSummaries(List<DashboardPayrollSummary> payrollSummaries) {
-        this.payrollSummaries = payrollSummaries;
     }
 
     public List<DashboardCashFlowSummary> getCashFlowSummaries() {

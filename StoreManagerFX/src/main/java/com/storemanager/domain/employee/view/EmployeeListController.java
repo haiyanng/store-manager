@@ -1,11 +1,12 @@
 package com.storemanager.domain.employee.view;
 
+import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.model.EmployeeListViewDto;
 import com.storemanager.domain.employee.presenter.EmployeePresenter;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -33,9 +34,6 @@ public class EmployeeListController {
     private TableColumn<EmployeeListViewDto, String> positionColumn;
 
     @FXML
-    private TableColumn<EmployeeListViewDto, String> branchColumn;
-
-    @FXML
     private TableColumn<EmployeeListViewDto, String> linkedUsernameColumn;
 
     @FXML
@@ -47,18 +45,28 @@ public class EmployeeListController {
     @FXML
     private Button updateButton;
 
-    @FXML
-    private Button deleteButton;
+    private boolean busy;
+    @FXML private Button createButton;
+    @FXML private Button clearButton;
+    @FXML private Button refreshButton;
+    @FXML private javafx.scene.Node employeeForm;
+    @FXML private javafx.scene.control.Label statusLabel;
 
     private EmployeePresenter presenter;
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(employeeTable, "No employees yet. Use Create to add an employee.");
+        UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
 
         presenter =
                 new EmployeePresenter(
                         this
                 );
+
+        employeeTable.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+        );
 
         idColumn.setCellValueFactory(
                 new javafx.scene.control.cell.PropertyValueFactory<>("employeeId")
@@ -74,10 +82,6 @@ public class EmployeeListController {
 
         positionColumn.setCellValueFactory(
                 new javafx.scene.control.cell.PropertyValueFactory<>("position")
-        );
-
-        branchColumn.setCellValueFactory(
-                new javafx.scene.control.cell.PropertyValueFactory<>("branchDisplayName")
         );
 
         linkedUsernameColumn.setCellValueFactory(
@@ -105,24 +109,26 @@ public class EmployeeListController {
 
     @FXML
     public void onCreate() {
+        try {
 
         presenter.saveEmployee(
                 employeeFormController.readEmployee()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onUpdate() {
+        try {
 
         presenter.saveEmployee(
                 employeeFormController.readEmployee()
         );
-    }
-
-    @FXML
-    public void onDelete() {
-
-        presenter.deleteEmployee();
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
@@ -167,35 +173,29 @@ public class EmployeeListController {
         employeeFormController.clear();
     }
 
-    public void setUpdateEnabled(
-            boolean enabled
-    ) {
-
-        updateButton.setDisable(
-                !enabled
-        );
+    public void setUpdateEnabled(boolean enabled) {
+        setBusy(busy);
     }
 
-    public void setDeleteEnabled(
-            boolean enabled
-    ) {
+    public void setBusy(boolean busy) {
+        this.busy = busy;
+        boolean allowed = PermissionGuard.canViewEmployee();
+        boolean selected = employeeTable.getSelectionModel().getSelectedItem() != null;
+        employeeTable.setDisable(busy);
+        employeeForm.setDisable(busy || !allowed);
+        refreshButton.setDisable(busy);
+        clearButton.setDisable(busy);
+        createButton.setDisable(busy || !allowed || selected);
+        updateButton.setDisable(busy || !allowed || !selected);
+    }
 
-        deleteButton.setDisable(
-                !enabled
-        );
+    public void setStatus(String status) {
+        UiFeedback.status(statusLabel, status, employeeTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 }

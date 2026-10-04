@@ -20,8 +20,7 @@ public record DashboardMenuItem(
             return false;
         }
 
-        if (role == RoleType.DEVELOPER
-                || role == RoleType.OWNER) {
+        if (role == RoleType.OWNER) {
             return true;
         }
 

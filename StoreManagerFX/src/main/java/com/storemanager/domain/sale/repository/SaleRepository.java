@@ -1,6 +1,7 @@
 package com.storemanager.domain.sale.repository;
 
 import com.storemanager.core.database.ConnectionFactory;
+import com.storemanager.core.database.DatabaseInitializer;
 import com.storemanager.domain.sale.model.SaleOrder;
 import com.storemanager.domain.sale.model.SaleOrderItem;
 
@@ -15,11 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SaleRepository {
-
-    public SaleRepository() {
-
-        initializeTables();
-    }
 
     public Long saveOrder(
             SaleOrder order,
@@ -91,9 +87,24 @@ public class SaleRepository {
             return orderId;
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Cannot save sale order",
+                    "Cannot save order",
                     e
             );
+        }
+    }
+
+    public SaleOrder findOrderById(Long id) {
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM sale_orders WHERE id = ?")) {
+            statement.setLong(1, id);
+            try (ResultSet row = statement.executeQuery()) {
+                if (!row.next()) throw new IllegalArgumentException("Order no longer exists. Refresh the list and try again.");
+                return mapOrder(row);
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load invoice. Check the database connection and try again.", e);
         }
     }
 
@@ -129,10 +140,7 @@ public class SaleRepository {
             return orders;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return orders;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -165,10 +173,7 @@ public class SaleRepository {
             return orders;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return orders;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -201,10 +206,7 @@ public class SaleRepository {
             return items;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return items;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -246,10 +248,7 @@ public class SaleRepository {
             return items;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return items;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -324,7 +323,7 @@ public class SaleRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(
-                    "Cannot load total sale revenue",
+                    "Cannot load total order revenue",
                     e
             );
         }
@@ -363,7 +362,7 @@ public class SaleRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(
-                    "Cannot load sale revenue for period",
+                    "Cannot load order revenue for period",
                     e
             );
         }
@@ -402,18 +401,15 @@ public class SaleRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(
-                    "Cannot load sale order count for period",
+                    "Cannot load order count for period",
                     e
             );
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -442,12 +438,14 @@ public class SaleRepository {
                     """
             );
 
+            DatabaseInitializer.initializeSalePaymentColumns(connection);
+
         } catch (Exception e) {
 
             e.printStackTrace();
 
             throw new RuntimeException(
-                    "Sale table initialization failed",
+                    "Order table initialization failed",
                     e
             );
         }
@@ -464,9 +462,11 @@ public class SaleRepository {
                                 """
                                 INSERT INTO sale_orders (
                                     created_by_user_id,
-                                    total_amount
+                                    total_amount,
+                                    amount_received,
+                                    change_amount
                                 )
-                                VALUES (?, ?)
+                                VALUES (?, ?, ?, ?)
                                 """,
                                 Statement.RETURN_GENERATED_KEYS
                         )
@@ -488,6 +488,8 @@ public class SaleRepository {
                     2,
                     order.getTotalAmount()
             );
+            statement.setBigDecimal(3, order.getAmountReceived());
+            statement.setBigDecimal(4, order.getChangeAmount());
 
             statement.executeUpdate();
 
@@ -496,7 +498,7 @@ public class SaleRepository {
 
             if (!keys.next()) {
                 throw new RuntimeException(
-                        "Cannot create sale order"
+                        "Cannot create order"
                 );
             }
 
@@ -555,6 +557,8 @@ public class SaleRepository {
         order.setTotalAmount(
                 resultSet.getBigDecimal("total_amount")
         );
+        order.setAmountReceived(resultSet.getBigDecimal("amount_received"));
+        order.setChangeAmount(resultSet.getBigDecimal("change_amount"));
 
         Timestamp createdAt =
                 resultSet.getTimestamp("created_at");

@@ -6,7 +6,6 @@ import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.offline_export.dto.OfflineExportResult;
 import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
-import com.storemanager.domain.system_tool.migration_export.model.MigrationHistoryEntry;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationImportResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationStatusLevel;
@@ -41,7 +40,7 @@ public class MigrationExportPresenter {
 
         loadingState =
                 LoadingState.IDLE;
-        view.setStatus("🟢 Success - Ready");
+        view.setStatus("Ready");
         view.setHistory(
                 migrationExportService.findHistory()
         );
@@ -70,7 +69,7 @@ public class MigrationExportPresenter {
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("🟡 Warning - Exporting package...");
+        view.setStatus("Exporting package...");
 
         String businessName =
                 resolveBusinessName();
@@ -88,7 +87,7 @@ public class MigrationExportPresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("🔴 Failed - Export failed");
+                    view.setStatus("Export failed");
                     view.showError(
                             throwable.getMessage()
                     );
@@ -104,7 +103,7 @@ public class MigrationExportPresenter {
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("🟡 Warning - Previewing package...");
+        view.setStatus("Previewing package...");
 
         AsyncTaskRunner.run(
                 () -> migrationExportService.previewPackage(
@@ -119,19 +118,19 @@ public class MigrationExportPresenter {
                                 LoadingState.SUCCESS;
                         view.setStatus(
                                 result.getWarnings().isEmpty()
-                                        ? "🟢 Success - Preview ready"
-                                        : "🟡 Warning - Preview has warnings"
+                                        ? "Preview ready"
+                                        : "Preview has warnings"
                         );
                     } else {
                         loadingState =
                                 LoadingState.ERROR;
-                        view.setStatus("🔴 Failed - Preview has errors");
+                        view.setStatus("Preview has errors");
                     }
                 },
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("🔴 Failed - Preview failed");
+                    view.setStatus("Preview failed");
                     view.showError(
                             throwable.getMessage()
                     );
@@ -154,8 +153,8 @@ public class MigrationExportPresenter {
                     LoadingState.SUCCESS;
             view.setStatus(
                     currentPreview.getWarnings().isEmpty()
-                            ? "🟢 Success - Package validated"
-                            : "🟡 Warning - Package validated with warnings"
+                            ? "Package validated"
+                            : "Package validated with warnings"
             );
             view.showInfo(
                     currentPreview.getWarnings().isEmpty()
@@ -167,7 +166,7 @@ public class MigrationExportPresenter {
 
         loadingState =
                 LoadingState.ERROR;
-        view.setStatus("🔴 Failed - Validation failed");
+        view.setStatus("Validation failed");
         view.showError("Package validation failed");
     }
 
@@ -190,7 +189,7 @@ public class MigrationExportPresenter {
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("🟡 Warning - Importing package...");
+        view.setStatus("Importing catalog snapshot...");
 
         AsyncTaskRunner.run(
                 () -> migrationExportService.importPackage(
@@ -200,7 +199,7 @@ public class MigrationExportPresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("🔴 Failed - Import failed");
+                    view.setStatus("Import failed");
                     view.showError(
                             throwable.getMessage()
                     );
@@ -228,7 +227,7 @@ public class MigrationExportPresenter {
         view.setHistory(
                 migrationExportService.findHistory()
         );
-        view.setStatus("🟢 Success - Export completed");
+        view.setStatus("Export completed");
         view.showInfo(
                 "Export package created: "
                         + outputFile.getAbsolutePath()
@@ -263,7 +262,7 @@ public class MigrationExportPresenter {
         view.setHistory(
                 migrationExportService.findHistory()
         );
-        view.setStatus("🟢 Success - Import completed");
+        view.setStatus("Catalog import completed");
         view.showInfo(
                 "Imported "
                         + result.productCount()
@@ -271,7 +270,8 @@ public class MigrationExportPresenter {
                         + result.categoryCount()
                         + " categories, "
                         + result.inventoryCount()
-                        + " inventory rows."
+                        + " inventory rows. Sales, import history, accounts, employees, attendance and audit logs "
+                        + "were not restored. Use a complete backup ZIP for full recovery."
         );
     }
 

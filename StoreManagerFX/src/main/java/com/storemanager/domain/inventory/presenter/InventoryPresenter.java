@@ -1,6 +1,6 @@
 package com.storemanager.domain.inventory.presenter;
 
-import com.storemanager.core.runtime.BaseCrudPresenter;
+import com.storemanager.core.runtime.BaseModulePresenter;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
 import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.inventory.model.InventoryItem;
@@ -12,7 +12,7 @@ import com.storemanager.domain.product.model.Product;
 import java.util.List;
 import java.util.Map;
 
-public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
+public class InventoryPresenter extends BaseModulePresenter {
 
     private final InventoryListController view;
 
@@ -21,6 +21,9 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
 
     private Map<Long, Product> productsById =
             Map.of();
+
+    private List<InventoryItem> items = List.of();
+    private List<InventoryTransaction> transactions = List.of();
 
     private LoadingState loadingState =
             LoadingState.IDLE;
@@ -35,7 +38,6 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
     @Override
     public void initialize() {
 
-        enterCreateMode();
         loadInventory();
     }
 
@@ -53,19 +55,18 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
 
         AsyncTaskRunner.run(
                 () -> new InventoryData(
-                        inventoryService.findAllItems(),
+                        inventoryService.findItemsWithExpiry(),
                         inventoryService.findAllTransactions(),
-                        inventoryService.findProducts(),
-                        inventoryService.findProductsById(),
-                        inventoryService.findQuickPickProducts(20)
+                        inventoryService.findProductsById()
                 ),
                 data -> {
                     productsById =
                             data.productsById();
-                    view.setProducts(data.products());
-                    view.setQuickPickProducts(data.quickPickProducts());
-                    view.setInventoryItems(data.items());
-                    view.setTransactions(data.transactions());
+                    items = data.items();
+                    transactions = data.transactions();
+                    view.setFilterProducts(productsById.values().stream()
+                            .sorted(java.util.Comparator.comparing(Product::getName)).toList());
+                    applyFilters();
                     loadingState =
                             LoadingState.SUCCESS;
                     view.setStatus("Ready");
@@ -73,50 +74,20 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load inventory");
+                    view.setStatus("Unable to load inventory");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
         );
     }
 
-    public void adjustStock(
-            InventoryTransaction transaction
-    ) {
-
-        loadingState =
-                LoadingState.LOADING;
-        view.setBusy(true);
-        view.setStatus("Applying stock transaction...");
-
-        AsyncTaskRunner.run(
-                () -> inventoryService.adjustStock(transaction),
-                success -> {
-                    if (!success) {
-                        view.showError("Cannot apply stock transaction");
-                        view.setStatus("Cannot apply stock transaction");
-                        view.setBusy(false);
-                        return;
-                    }
-
-                    view.clearAdjustmentForm();
-                    refresh();
-                },
-                throwable -> {
-                    loadingState =
-                            LoadingState.ERROR;
-                    view.setStatus("Cannot apply stock transaction");
-                    view.showError(throwable.getMessage());
-                    view.setBusy(false);
-                },
-                null
-        );
-    }
-
-    public void clearForm() {
-
-        enterCreateMode();
-        view.clearAdjustmentForm();
+    public void applyFilters() {
+        try {
+            view.setInventoryItems(items.stream()
+                    .filter(item -> !view.isLowStockOnly() || InventoryService.isLowStock(item)).toList());
+            view.setTransactions(InventoryService.filterImportHistory(transactions,
+                    view.getFromDate(), view.getToDate(), view.getFilterProductId()));
+        } catch (IllegalArgumentException e) { view.showError(e.getMessage()); }
     }
 
     public String getProductName(
@@ -162,9 +133,7 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
     private record InventoryData(
             List<InventoryItem> items,
             List<InventoryTransaction> transactions,
-            List<Product> products,
-            Map<Long, Product> productsById,
-            List<Product> quickPickProducts
+            Map<Long, Product> productsById
     ) {
     }
 }

@@ -1,5 +1,6 @@
 package com.storemanager.domain.audit.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.core.session.AppSession;
@@ -12,7 +13,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -21,7 +21,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class AuditLogController {
@@ -75,9 +74,6 @@ public class AuditLogController {
     private TableColumn<AuditLogViewDto, Long> entityIdColumn;
 
     @FXML
-    private TableColumn<AuditLogViewDto, Long> branchIdColumn;
-
-    @FXML
     private TableColumn<AuditLogViewDto, String> successColumn;
 
     @FXML
@@ -87,7 +83,7 @@ public class AuditLogController {
     private TableColumn<AuditLogViewDto, String> detailsJsonColumn;
 
     @FXML
-    private TableColumn<AuditLogViewDto, String> detailsColumn;
+    private javafx.scene.control.TextArea eventDetailsArea;
 
     @FXML
     private Label statusLabel;
@@ -96,6 +92,9 @@ public class AuditLogController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(auditLogTable, "No audit events match the current filters.");
+        UiFeedback.datePicker(fromDatePicker);
+        UiFeedback.datePicker(toDatePicker);
 
         User currentUser =
                 AppSession.getCurrentUser();
@@ -116,11 +115,20 @@ public class AuditLogController {
                 FXCollections.observableArrayList(
                         "Any",
                         "Success",
-                        "Failure"
+                        "Failed"
                 )
         );
         successComboBox.setValue("Any");
 
+        auditLogTable.getSelectionModel().selectedItemProperty().addListener((obs, old, event) -> {
+            eventDetailsArea.setText(event == null ? "" :
+                    "Actor: " + (event.getActorUsername() == null ? event.getUsername() : event.getActorUsername())
+                    + "\nAction: " + event.getAction()
+                    + "\nResult: " + (Boolean.FALSE.equals(event.getSuccess()) ? "Failed" : "Success")
+                    + "\nReason: " + (event.getReason() == null ? "-" : event.getReason())
+                    + "\n\n" + AuditChangeFormatter.summary(event.getDetailsJson())
+                    + "\n\n" + AuditChangeFormatter.pretty(event.getDetailsJson()));
+        });
         configureTable();
         presenter.initialize();
     }
@@ -128,7 +136,11 @@ public class AuditLogController {
     @FXML
     public void onSearch() {
 
-        presenter.loadAuditLogs(buildFilter());
+        try {
+            presenter.loadAuditLogs(buildFilter());
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
@@ -141,6 +153,8 @@ public class AuditLogController {
         userIdField.clear();
         fromDatePicker.setValue(null);
         toDatePicker.setValue(null);
+        fromDatePicker.getEditor().clear();
+        toDatePicker.getEditor().clear();
         presenter.refresh();
     }
 
@@ -154,8 +168,12 @@ public class AuditLogController {
         filter.setModule(clean(moduleField.getText()));
         filter.setSuccess(parseSuccess(successComboBox.getValue()));
         filter.setUserId(parseLong(userIdField.getText()));
-        filter.setFromDate(fromDatePicker.getValue());
-        filter.setToDate(toDatePicker.getValue());
+        filter.setFromDate(UiFeedback.readDate(fromDatePicker));
+        filter.setToDate(UiFeedback.readDate(toDatePicker));
+        if (filter.getFromDate() != null && filter.getToDate() != null
+                && filter.getFromDate().isAfter(filter.getToDate())) {
+            throw new IllegalArgumentException("From date must be on or before To date");
+        }
 
         return filter;
     }
@@ -182,17 +200,13 @@ public class AuditLogController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, auditLogTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureTable() {
@@ -233,15 +247,11 @@ public class AuditLogController {
                         cellData.getValue().getEntityId()
                 )
         );
-        branchIdColumn.setCellValueFactory(
-                cellData -> new SimpleObjectProperty<>(
-                        cellData.getValue().getBranchId()
-                )
-        );
+
         successColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
                         Boolean.FALSE.equals(cellData.getValue().getSuccess())
-                                ? "Failure"
+                                ? "Failed"
                                 : "Success"
                 )
         );
@@ -252,14 +262,10 @@ public class AuditLogController {
         );
         detailsJsonColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
-                        cellData.getValue().getDetailsJson()
+                        AuditChangeFormatter.summary(cellData.getValue().getDetailsJson())
                 )
         );
-        detailsColumn.setCellValueFactory(
-                cellData -> new SimpleStringProperty(
-                        cellData.getValue().getDetails()
-                )
-        );
+
     }
 
     private String clean(

@@ -22,7 +22,8 @@
         <Label text="Migration &amp; Export"
                styleClass="content-title"/>
 
-        <Label text="Portable business snapshots for offline and future cloud migration."
+        <Label text="Export business snapshots or import a catalog. Use Restore Backup above for full recovery."
+               wrapText="true"
                styleClass="content-description"/>
     </VBox>
 
@@ -34,11 +35,10 @@
             <Label text="Export Business Package"
                    styleClass="analytics-card-title"/>
 
-            <CheckBox fx:id="productsCheckBox" text="Products"/>
+            <CheckBox fx:id="productsCheckBox" text="Products, stock and import history"/>
             <CheckBox fx:id="employeesCheckBox" text="Employees"/>
             <CheckBox fx:id="salesCheckBox" text="Sales"/>
             <CheckBox fx:id="attendanceCheckBox" text="Attendance"/>
-            <CheckBox fx:id="payrollCheckBox" text="Payroll"/>
             <CheckBox fx:id="imagesCheckBox" text="Images"/>
             <CheckBox fx:id="auditLogsCheckBox" text="Audit Logs"/>
 
@@ -53,7 +53,7 @@
               styleClass="analytics-card"
               minWidth="360"
               prefWidth="420">
-            <Label text="Import Business Package"
+            <Label text="Import Catalog Only"
                    styleClass="analytics-card-title"/>
 
             <HBox spacing="8">
@@ -80,13 +80,15 @@
                         onAction="#onValidatePackage"/>
 
                 <Button fx:id="importButton"
-                        text="Import"
+                        text="Import Catalog"
                         styleClass="module-button"
                         onAction="#onImportPackage"/>
             </HBox>
 
-            <Label text="Preview first. Never import without validation."
-                   styleClass="logout-button"/>
+            <Label text="Imports categories, products, stock quantities and their images. Sales, import history, accounts, employees, attendance and audit logs are export only."
+                   wrapText="true" styleClass="content-description"/>
+            <Label text="Stock quantities are replaced with the package snapshot. Use a complete backup ZIP to restore the whole application."
+                   wrapText="true" styleClass="logout-button"/>
         </VBox>
     </HBox>
 

@@ -1,412 +1,139 @@
 package com.storemanager.domain.user.view;
 
 import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
-import com.storemanager.domain.user.service.UserManagementService;
+import com.storemanager.domain.user.presenter.UserManagementPresenter;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import java.util.List;
+import java.util.Objects;
+
 public class UserManagementController {
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private ComboBox<RoleType> roleComboBox;
+    @FXML private ComboBox<Employee> employeeComboBox;
+    @FXML private Button createButton;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
+    @FXML private Button clearLinkButton;
+    @FXML private Button clearButton;
+    @FXML private Button refreshButton;
+    @FXML private Label statusLabel;
+    @FXML private TableView<User> usersTable;
+    @FXML private TableColumn<User, Long> idColumn;
+    @FXML private TableColumn<User, String> usernameColumn;
+    @FXML private TableColumn<User, RoleType> roleColumn;
+    @FXML private TableColumn<User, String> employeeColumn;
+    @FXML private TableColumn<User, Boolean> activeColumn;
 
-    @FXML
-    private TextField usernameField;
-
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private ComboBox<RoleType> roleComboBox;
-
-    @FXML
-    private ComboBox<Employee> employeeComboBox;
-
-    @FXML
-    private Button createButton;
-
-    @FXML
-    private Button editButton;
-
-    @FXML
-    private Button deleteButton;
-
-    @FXML
-    private Button clearLinkButton;
-
-    @FXML
-    private TableView<User> usersTable;
-
-    @FXML
-    private TableColumn<User, Long> idColumn;
-
-    @FXML
-    private TableColumn<User, String> usernameColumn;
-
-    @FXML
-    private TableColumn<User, RoleType> roleColumn;
-
-    @FXML
-    private TableColumn<User, String> employeeColumn;
-
-    @FXML
-    private TableColumn<User, Boolean> activeColumn;
-
-    private final UserManagementService userManagementService =
-            new UserManagementService();
-
+    private UserManagementPresenter presenter;
     private User selectedUser;
+    private List<Employee> employees = List.of();
+    private boolean busy;
 
-    @FXML
-    public void initialize() {
-
+    @FXML public void initialize() {
+        UiFeedback.emptyTable(usersTable, "No accounts found.");
+        UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
+        usersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        roleComboBox.setItems(FXCollections.observableArrayList(
+                RoleType.OWNER, RoleType.MANAGER, RoleType.STAFF, RoleType.VIEWER));
+        roleComboBox.setValue(RoleType.STAFF);
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        roleColumn.setCellValueFactory(new PropertyValueFactory<>("role"));
+        activeColumn.setCellValueFactory(new PropertyValueFactory<>("active"));
+        employeeColumn.setCellValueFactory(cell -> {
+            Employee employee = linkedEmployee(cell.getValue());
+            return new SimpleStringProperty(employee == null ? "" : employee.toString());
+        });
+        usersTable.getSelectionModel().selectedItemProperty().addListener((obs, old, user) -> select(user));
+        setBusy(false);
         if (!PermissionGuard.canManageUsers()) {
-            setActionsDisabled(true);
-            usersTable.setDisable(true);
-            showError("Bạn không có quyền truy cập quản lý người dùng");
+            setStatus("You do not have permission to manage accounts");
             return;
         }
-
-        passwordField.setOnAction(
-                event -> event.consume()
-        );
-
-        roleComboBox.setItems(
-                FXCollections.observableArrayList(
-                        RoleType.OWNER,
-                        RoleType.MANAGER,
-                        RoleType.STAFF,
-                        RoleType.VIEWER
-                )
-        );
-
-        roleComboBox.setValue(
-                RoleType.STAFF
-        );
-
-        idColumn.setCellValueFactory(
-                new PropertyValueFactory<>("id")
-        );
-
-        usernameColumn.setCellValueFactory(
-                new PropertyValueFactory<>("username")
-        );
-
-        roleColumn.setCellValueFactory(
-                new PropertyValueFactory<>("role")
-        );
-
-        employeeColumn.setCellValueFactory(
-                cellData ->
-                        new SimpleStringProperty(
-                                getLinkedEmployeeText(
-                                        cellData.getValue()
-                                )
-                        )
-        );
-
-        activeColumn.setCellValueFactory(
-                new PropertyValueFactory<>("active")
-        );
-
-        usersTable
-                .getSelectionModel()
-                .selectedItemProperty()
-                .addListener(
-                        (observable, oldValue, newValue) ->
-                                onUserSelected(newValue)
-                );
-
-        updateActionState();
-        refreshEmployeeChoices();
-
-        refreshUsers();
+        presenter = new UserManagementPresenter(this);
+        presenter.refresh();
     }
 
-    @FXML
-    public void onCreateUser() {
+    @FXML public void onCreateUser() {
+        presenter.create(usernameField.getText(), passwordField.getText(), roleComboBox.getValue(), employeeComboBox.getValue());
+    }
 
-        try {
+    @FXML public void onEditUser() {
+        RoleType role = roleComboBox.isDisabled() && selectedUser != null ? selectedUser.getRole() : roleComboBox.getValue();
+        presenter.update(selectedUser, usernameField.getText(), passwordField.getText(), role, employeeComboBox.getValue());
+    }
 
-            userManagementService.createUser(
-                    usernameField.getText(),
-                    passwordField.getText(),
-                    roleComboBox.getValue(),
-                    employeeComboBox.getValue()
-            );
-
-            refreshUsers();
-            clearForm();
-
-        } catch (Exception e) {
-
-            showError(
-                    e.getMessage()
-            );
+    @FXML public void onDeleteUser() {
+        if (selectedUser == null) { showError("Select an account to delete"); return; }
+        if (UiFeedback.confirm("Delete account?", "Delete account '" + selectedUser.getUsername() + "' and remove its employee link?")) {
+            presenter.delete(selectedUser);
         }
     }
 
-    @FXML
-    public void onEditUser() {
+    @FXML public void onClearEmployeeLink() { employeeComboBox.setValue(null); }
+    @FXML public void onClear() { clearForm(); }
+    @FXML public void onRefresh() { presenter.refresh(); }
 
-        if (selectedUser == null) {
-            showError("Chọn người dùng cần sửa");
-            return;
-        }
-
-        try {
-
-            RoleType updatedRole =
-                    roleComboBox.isDisabled()
-                            ? selectedUser.getRole()
-                            : roleComboBox.getValue();
-
-            boolean success =
-                    userManagementService.updateUser(
-                            selectedUser,
-                            usernameField.getText(),
-                            passwordField.getText(),
-                            updatedRole,
-                            employeeComboBox.getValue()
-                    );
-
-            if (!success) {
-                showError("Không thể cập nhật người dùng");
-                return;
-            }
-
-            refreshUsers();
-            clearForm();
-
-        } catch (Exception e) {
-
-            showError(
-                    e.getMessage()
-            );
-        }
+    public void setData(List<User> users, List<Employee> employees) {
+        this.employees = List.copyOf(employees);
+        usersTable.setItems(FXCollections.observableArrayList(users));
+        clearForm();
     }
 
-    @FXML
-    public void onDeleteUser() {
-
-        if (selectedUser == null) {
-            showError("Chọn người dùng cần xoá");
-            return;
-        }
-
-        try {
-
-            boolean success =
-                    userManagementService.deleteUser(
-                            selectedUser
-                    );
-
-            if (!success) {
-                showError("Không thể xoá người dùng");
-                return;
-            }
-
-            refreshUsers();
-            clearForm();
-
-        } catch (Exception e) {
-
-            showError(
-                    e.getMessage()
-            );
-        }
-    }
-
-    @FXML
-    public void onClearEmployeeLink() {
-
-        employeeComboBox.setValue(null);
-    }
-
-    private void refreshUsers() {
-
-        usersTable.setItems(
-                FXCollections.observableArrayList(
-                        userManagementService.findAll()
-                )
-        );
-
-        refreshEmployeeChoices();
-        updateActionState();
-    }
-
-    private void onUserSelected(
-            User user
-    ) {
-
+    private void select(User user) {
         selectedUser = user;
-
-        if (selectedUser == null) {
-            resetFormFields();
-            updateActionState();
-            return;
-        }
-
-        usernameField.setText(
-                selectedUser.getUsername()
-        );
-
+        usernameField.setText(user == null ? "" : user.getUsername());
         passwordField.clear();
-
-        roleComboBox.setValue(
-                selectedUser.getRole()
-        );
-
-        roleComboBox.setDisable(
-                PermissionGuard.isRootDeveloper(selectedUser)
-                        || !PermissionGuard.canModifyRole(
-                        selectedUser,
-                        selectedUser.getRole()
-                )
-        );
-
+        passwordField.setPromptText(user == null ? "Password" : "Leave blank to keep current password");
+        roleComboBox.setValue(user == null ? RoleType.STAFF : user.getRole());
         refreshEmployeeChoices();
-
-        employeeComboBox.setValue(
-                userManagementService.findLinkedEmployee(
-                        selectedUser
-                )
-        );
-
-        employeeComboBox.setDisable(
-                PermissionGuard.isRootDeveloper(selectedUser)
-        );
-
-        clearLinkButton.setDisable(
-                PermissionGuard.isRootDeveloper(selectedUser)
-        );
-
-        updateActionState();
+        employeeComboBox.setValue(user == null ? null : linkedEmployee(user));
+        setBusy(busy);
     }
 
-    private void clearForm() {
-
-        selectedUser = null;
+    public void clearForm() {
         usersTable.getSelectionModel().clearSelection();
-
-        usernameField.clear();
-        passwordField.clear();
-        roleComboBox.setDisable(false);
-        roleComboBox.setValue(
-                RoleType.STAFF
-        );
-        employeeComboBox.setDisable(false);
-        employeeComboBox.setValue(null);
-        clearLinkButton.setDisable(false);
-        refreshEmployeeChoices();
-
-        updateActionState();
+        select(null);
     }
 
-    private void resetFormFields() {
-
-        usernameField.clear();
-        passwordField.clear();
-        roleComboBox.setDisable(false);
-        roleComboBox.setValue(
-                RoleType.STAFF
-        );
-        employeeComboBox.setDisable(false);
-        employeeComboBox.setValue(null);
-        clearLinkButton.setDisable(false);
-        refreshEmployeeChoices();
-    }
-
-    private void updateActionState() {
-
-        boolean canManage =
-                PermissionGuard.canManageUsers();
-
-        createButton.setDisable(!canManage);
-
-        editButton.setDisable(
-                !canManage
-                        || selectedUser == null
-                        || !PermissionGuard.canEditUser(selectedUser)
-        );
-
-        deleteButton.setDisable(
-                !canManage
-                        || selectedUser == null
-                        || !PermissionGuard.canDeleteUser(selectedUser)
-        );
-    }
-
-    private void setActionsDisabled(
-            boolean disabled
-    ) {
-
-        createButton.setDisable(disabled);
-        editButton.setDisable(disabled);
-        deleteButton.setDisable(disabled);
-        employeeComboBox.setDisable(disabled);
-        clearLinkButton.setDisable(disabled);
+    private Employee linkedEmployee(User user) {
+        if (user == null || user.getId() == null) return null;
+        return employees.stream().filter(e -> Objects.equals(e.getUserId(), user.getId())).findFirst().orElse(null);
     }
 
     private void refreshEmployeeChoices() {
-
-        Long selectedUserId =
-                selectedUser == null
-                        ? null
-                        : selectedUser.getId();
-
-        employeeComboBox.setItems(
-                FXCollections.observableArrayList(
-                        userManagementService
-                                .findEmployees()
-                                .stream()
-                                .filter(employee ->
-                                        employee.getUserId() == null
-                                                || employee
-                                                .getUserId()
-                                                .equals(selectedUserId)
-                                )
-                                .toList()
-                )
-        );
+        Long selectedId = selectedUser == null ? null : selectedUser.getId();
+        employeeComboBox.setItems(FXCollections.observableArrayList(employees.stream()
+                .filter(e -> e.getUserId() == null || Objects.equals(e.getUserId(), selectedId)).toList()));
     }
 
-    private String getLinkedEmployeeText(
-            User user
-    ) {
-
-        Employee employee =
-                userManagementService.findLinkedEmployee(
-                        user
-                );
-
-        if (employee == null) {
-            return "";
-        }
-
-        return employee.toString();
+    public void setBusy(boolean busy) {
+        this.busy = busy;
+        boolean blocked = busy || !PermissionGuard.canManageUsers();
+        boolean selected = selectedUser != null;
+        usersTable.setDisable(blocked);
+        usernameField.setDisable(blocked);
+        passwordField.setDisable(blocked);
+        roleComboBox.setDisable(blocked || selected && !PermissionGuard.canModifyRole(selectedUser, selectedUser.getRole()));
+        employeeComboBox.setDisable(blocked || selected && !PermissionGuard.canEditUser(selectedUser));
+        clearLinkButton.setDisable(employeeComboBox.isDisabled());
+        createButton.setDisable(blocked || selected);
+        editButton.setDisable(blocked || !selected || !PermissionGuard.canEditUser(selectedUser));
+        deleteButton.setDisable(blocked || !selected || !PermissionGuard.canDeleteUser(selectedUser));
+        clearButton.setDisable(blocked);
+        refreshButton.setDisable(blocked);
     }
 
-    private void showError(
-            String message
-    ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+    public void setStatus(String message) { UiFeedback.status(statusLabel, message, usersTable); }
+    public void showError(String message) { UiFeedback.showError(message); }
 }

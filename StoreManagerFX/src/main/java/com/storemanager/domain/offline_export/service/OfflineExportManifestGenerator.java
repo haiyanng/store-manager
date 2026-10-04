@@ -34,10 +34,6 @@ public class OfflineExportManifestGenerator {
                 new LinkedHashMap<>();
 
         recordCounts.put(
-                OfflineExportSpecV1.BRANCHES_FILE,
-                size(bundle.branches())
-        );
-        recordCounts.put(
                 OfflineExportSpecV1.USERS_FILE,
                 size(bundle.users())
         );
@@ -57,13 +53,12 @@ public class OfflineExportManifestGenerator {
                 OfflineExportSpecV1.INVENTORY_FILE,
                 size(bundle.inventory())
         );
+        recordCounts.put(OfflineExportSpecV1.IMPORT_RECEIPTS_FILE, size(bundle.importReceipts()));
+        recordCounts.put(OfflineExportSpecV1.IMPORT_ITEMS_FILE, size(bundle.importItems()));
+        recordCounts.put(OfflineExportSpecV1.INVENTORY_TRANSACTIONS_FILE, size(bundle.inventoryTransactions()));
         recordCounts.put(
                 OfflineExportSpecV1.ATTENDANCE_FILE,
                 size(bundle.attendance())
-        );
-        recordCounts.put(
-                OfflineExportSpecV1.PAYROLL_FILE,
-                size(bundle.payroll())
         );
         recordCounts.put(
                 OfflineExportSpecV1.SALES_FILE,

@@ -1,5 +1,6 @@
 package com.storemanager.domain.sale.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.storage.ImageStorageService;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
@@ -23,7 +24,6 @@ import javafx.scene.image.ImageView;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class SaleController {
@@ -91,6 +91,13 @@ public class SaleController {
     @FXML
     private Label totalLabel;
 
+    @FXML private javafx.scene.control.TextField amountReceivedField;
+    @FXML private Label changeLabel;
+    @FXML private javafx.scene.layout.HBox cartActions;
+    @FXML private javafx.scene.layout.HBox orderActions;
+    @FXML private javafx.scene.control.ToggleButton orderTabButton;
+    @FXML private javafx.scene.control.ToggleButton detailsTabButton;
+
     @FXML
     private Label statusLabel;
 
@@ -103,8 +110,6 @@ public class SaleController {
     @FXML
     private Label selectedProductPreviewSkuLabel;
 
-    @FXML
-    private Label selectedProductPreviewBarcodeLabel;
 
     @FXML
     private Label selectedProductPreviewPriceLabel;
@@ -119,9 +124,19 @@ public class SaleController {
     private ImageView selectedProductImageView;
 
     private SalePresenter presenter;
+    private SaleOrder lastCompletedOrder;
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(cartTable, "Your order is empty. Select a product and choose Add item.");
+        UiFeedback.emptyTable(orderTable, "No orders found.");
+        UiFeedback.emptyTable(orderDetailTable, "Select an order to view its items.");
+        UiFeedback.moneyColumn(cartUnitPriceColumn);
+        UiFeedback.moneyColumn(cartSubtotalColumn);
+        UiFeedback.moneyColumn(orderTotalColumn);
+        UiFeedback.moneyColumn(detailUnitPriceColumn);
+        UiFeedback.moneyColumn(detailSubtotalColumn);
+
 
         presenter =
                 new SalePresenter(
@@ -134,11 +149,25 @@ public class SaleController {
         );
 
         configureCartTable();
+        cartTable.getSelectionModel().selectedItemProperty().addListener((obs, previous, item) -> {
+            if (item != null) quantityField.setText(Integer.toString(item.getQuantity()));
+        });
+        amountReceivedField.textProperty().addListener((obs, previous, value) -> presenter.updatePayment(value));
         configureOrderTable();
         configureOrderDetailTable();
         clearSelectedProductPreview();
 
         presenter.initialize();
+    }
+
+    @FXML
+    public void onShowOrder() {
+        orderTabButton.setSelected(true);
+    }
+
+    @FXML
+    public void onShowOrderDetails() {
+        detailsTabButton.setSelected(true);
     }
 
     @FXML
@@ -179,13 +208,65 @@ public class SaleController {
     @FXML
     public void onFinalizeSale() {
 
-        presenter.finalizeSale();
+        presenter.finalizeSale(amountReceivedField.getText());
+    }
+
+    @FXML
+    public void onUpdateQuantity() {
+        try {
+            presenter.updateQuantity(cartTable.getSelectionModel().getSelectedItem(), parseQuantity());
+        } catch (NumberFormatException e) {
+            showError("Quantity must be a valid whole number");
+        }
+    }
+
+    public String getAmountReceivedText() { return amountReceivedField.getText(); }
+
+    public void setChangeText(String text) { changeLabel.setText(text); }
+
+    public void resetPayment() { amountReceivedField.clear(); }
+
+    public void showOrderCompleted(SaleOrder order) {
+        lastCompletedOrder = order;
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Store Manager");
+        alert.setHeaderText("Order #" + order.getId() + " completed");
+        alert.setContentText("Total: " + UiFeedback.money(order.getTotalAmount())
+                + "\nAmount received: " + UiFeedback.money(order.getAmountReceived())
+                + "\nChange: " + UiFeedback.money(order.getChangeAmount()));
+        alert.showAndWait();
+    }
+
+    @FXML public void onExportInvoice() {
+        SaleOrder order = orderTable.getSelectionModel().getSelectedItem();
+        if (order == null) { presenter.exportInvoice(null, null); return; }
+        exportInvoice(order);
+    }
+
+    @FXML public void onExportLastInvoice() {
+        if (lastCompletedOrder == null) {
+            showError("Complete a sale first, or select a completed order in Order details to export its invoice.");
+            return;
+        }
+        exportInvoice(lastCompletedOrder);
+    }
+
+    private void exportInvoice(SaleOrder order) {
+        javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+        chooser.setTitle("Export invoice"); chooser.setInitialFileName("invoice-" + order.getId() + ".html");
+        chooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("HTML invoice (*.html)", "*.html"));
+        File file = chooser.showSaveDialog(cartTable.getScene().getWindow());
+        if (file != null) presenter.exportInvoice(order, file.toPath());
     }
 
     @FXML
     public void onRefresh() {
 
         presenter.loadSaleData();
+    }
+
+    public void setStockByProductId(java.util.Map<Long, Integer> stock) {
+        productSelectionWorkflowController.setStockByProductId(stock);
     }
 
     public void setProducts(
@@ -240,9 +321,7 @@ public class SaleController {
     ) {
 
         totalLabel.setText(
-                totalAmount == null
-                        ? "0.00"
-                        : totalAmount.toPlainString()
+                UiFeedback.money(totalAmount)
         );
     }
 
@@ -269,9 +348,6 @@ public class SaleController {
         selectedProductPreviewSkuLabel.setText(
                 "SKU: " + safeText(preview.sku())
         );
-        selectedProductPreviewBarcodeLabel.setText(
-                "Barcode: " + safeText(preview.barcode())
-        );
         selectedProductPreviewPriceLabel.setText(
                 "Unit price: " + formatPrice(preview.unitPrice())
         );
@@ -292,7 +368,6 @@ public class SaleController {
         );
         selectedProductPreviewNameLabel.setText("Name: -");
         selectedProductPreviewSkuLabel.setText("SKU: -");
-        selectedProductPreviewBarcodeLabel.setText("Barcode: -");
         selectedProductPreviewPriceLabel.setText("Unit price: 0.00");
         selectedProductPreviewStockLabel.setText("Stock: N/A");
 
@@ -307,6 +382,9 @@ public class SaleController {
 
         productSelectionWorkflowController.setBusy(busy);
         quantityField.setDisable(busy);
+        amountReceivedField.setDisable(busy);
+        cartActions.setDisable(busy);
+        orderActions.setDisable(busy);
         cartTable.setDisable(busy);
         orderTable.setDisable(busy);
         orderDetailTable.setDisable(busy);
@@ -316,21 +394,17 @@ public class SaleController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        if (status.toLowerCase().contains("details")) {
+            UiFeedback.status(statusLabel, status, orderDetailTable);
+        } else {
+            UiFeedback.status(statusLabel, status, orderTable);
+        }
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureCartTable() {
@@ -458,7 +532,7 @@ public class SaleController {
 
             if (image.isError()) {
                 System.err.println(
-                        "[SALE_PREVIEW] Cannot load product image: "
+                        "[SALE_PREVIEW] Unable to load product image: "
                                 + imagePath
                 );
                 return;
@@ -471,7 +545,7 @@ public class SaleController {
         } catch (Exception e) {
 
             System.err.println(
-                    "[SALE_PREVIEW] Cannot load product image: "
+                    "[SALE_PREVIEW] Unable to load product image: "
                             + imagePath
             );
         }
@@ -506,12 +580,6 @@ public class SaleController {
             BigDecimal value
     ) {
 
-        if (value == null) {
-            return "0.00";
-        }
-
-        return value
-                .setScale(2, java.math.RoundingMode.HALF_UP)
-                .toPlainString();
+        return UiFeedback.money(value);
     }
 }

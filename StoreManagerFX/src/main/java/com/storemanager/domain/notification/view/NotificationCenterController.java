@@ -1,5 +1,6 @@
 package com.storemanager.domain.notification.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.domain.notification.model.Notification;
@@ -7,7 +8,6 @@ import com.storemanager.domain.notification.model.NotificationType;
 import com.storemanager.domain.notification.presenter.NotificationCenterPresenter;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.core.util.TimeFormatUtil;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -16,7 +16,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
@@ -78,6 +77,9 @@ public class NotificationCenterController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(recentTable, "No recent notifications found.");
+        UiFeedback.emptyTable(notificationTable, "No notifications found.");
+
 
         User currentUser = AppSession.getCurrentUser();
         if (currentUser == null) {
@@ -188,17 +190,13 @@ public class NotificationCenterController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, recentTable, notificationTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureTables() {

@@ -2,10 +2,13 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
@@ -14,36 +17,17 @@
       spacing="18">
 
     <VBox spacing="6">
-        <Label text="Inventory"
+        <Label text="View Inventory"
                styleClass="content-title"/>
 
         <Label text="Track current stock and auditable stock movements."
                styleClass="content-description"/>
     </VBox>
 
-    <HBox spacing="16">
-        <fx:include fx:id="adjustmentForm"
-                    source="inventory-adjustment-form.fxml"/>
-
-        <VBox spacing="10">
-            <Button fx:id="applyButton"
-                    text="Apply"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onApplyAdjustment"/>
-
-            <Button fx:id="clearButton"
-                    text="Clear"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onClear"/>
-
-            <Button text="Refresh"
-                    styleClass="module-button"
-                    maxWidth="Infinity"
-                    onAction="#onRefresh"/>
-        </VBox>
-    </HBox>
+    <CheckBox fx:id="lowStockOnly" text="Low stock only (quantity &lt; 10)" onAction="#onFilter"/>
+    <Button text="Refresh"
+            styleClass="module-button"
+            onAction="#onRefresh"/>
 
     <VBox spacing="8">
         <Label text="Current stock"
@@ -71,14 +55,27 @@
                 <TableColumn fx:id="itemUpdatedAtColumn"
                              text="Updated at"
                              prefWidth="180"/>
+                <TableColumn fx:id="itemExpiryColumn" text="Nearest expiry date" prefWidth="150"/>
+                <TableColumn fx:id="itemExpiryStatusColumn" text="Expiry status" prefWidth="155"/>
             </columns>
         </TableView>
+        <Label text="Expiry dates use all import history; remaining stock is not tracked by batch."
+               wrapText="true" styleClass="content-description"/>
     </VBox>
 
     <VBox spacing="8">
-        <Label text="Transaction history"
+        <Label text="Import history"
                styleClass="content-description"/>
 
+        <FlowPane hgap="10" vgap="10">
+            <Label text="From"/>
+            <DatePicker fx:id="fromDate" promptText="Start date" prefWidth="170"/>
+            <Label text="To"/>
+            <DatePicker fx:id="toDate" promptText="End date" prefWidth="170"/>
+            <ComboBox fx:id="filterProduct" promptText="All products" prefWidth="240"/>
+            <Button text="Apply filters" onAction="#onFilter" styleClass="module-button"/>
+            <Button text="Clear filters" onAction="#onClearFilters" styleClass="module-secondary-button"/>
+        </FlowPane>
         <TableView fx:id="transactionTable"
                    prefHeight="260">
             <columns>

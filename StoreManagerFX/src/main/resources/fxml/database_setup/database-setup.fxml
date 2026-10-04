@@ -17,7 +17,7 @@
         <Insets top="32" right="32" bottom="32" left="32"/>
     </padding>
 
-    <Label text="Thiết lập kết nối MySQL"/>
+    <Label text="Database connection"/>
 
     <TextField fx:id="hostField"
                promptText="Host"/>
@@ -34,10 +34,10 @@
     <PasswordField fx:id="passwordField"
                    promptText="Password"/>
 
-    <Button text="Test Connection"
+    <Button text="Test connection"
             onAction="#onTestConnection"/>
 
-    <Button text="Save &amp; Continue"
+    <Button text="Save and continue"
             onAction="#onSaveAndContinue"/>
 
 </VBox>

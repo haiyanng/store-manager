@@ -13,11 +13,11 @@
       spacing="10">
 
     <VBox spacing="4">
-        <Label text="Quick Product Dropdown"
+        <Label text="Select product"
                styleClass="analytics-section-title"/>
 
         <ComboBox fx:id="quickPickComboBox"
-                  promptText="Quick pick product"
+                  promptText="Choose a product"
                   maxWidth="Infinity"/>
     </VBox>
 
@@ -26,7 +26,7 @@
                styleClass="analytics-section-title"/>
 
         <TextField fx:id="searchField"
-                   promptText="Search by name, SKU, or barcode"
+                   promptText="Search by name or SKU"
                    maxWidth="Infinity"
                    styleClass="module-input"/>
     </VBox>
@@ -48,9 +48,9 @@
                              text="SKU"
                              prefWidth="130"/>
 
-                <TableColumn fx:id="resultBarcodeColumn"
-                             text="Barcode"
-                             prefWidth="140"/>
+                <TableColumn fx:id="resultStockColumn"
+                             text="Stock"
+                             prefWidth="100" minWidth="80" style="-fx-alignment: CENTER-RIGHT;"/>
             </columns>
         </TableView>
     </VBox>

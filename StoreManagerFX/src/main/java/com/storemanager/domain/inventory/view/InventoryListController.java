@@ -1,28 +1,22 @@
 package com.storemanager.domain.inventory.view;
 
-import com.storemanager.core.security.PermissionGuard;
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.inventory.model.InventoryItem;
 import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.presenter.InventoryPresenter;
-import com.storemanager.domain.product.model.Product;
 import com.storemanager.core.util.TimeFormatUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class InventoryListController {
-
-    @FXML
-    private InventoryAdjustmentFormController adjustmentFormController;
 
     @FXML
     private TableView<InventoryItem> inventoryTable;
@@ -41,6 +35,9 @@ public class InventoryListController {
 
     @FXML
     private TableColumn<InventoryItem, String> itemUpdatedAtColumn;
+
+    @FXML private TableColumn<InventoryItem, String> itemExpiryColumn;
+    @FXML private TableColumn<InventoryItem, String> itemExpiryStatusColumn;
 
     @FXML
     private TableView<InventoryTransaction> transactionTable;
@@ -67,24 +64,46 @@ public class InventoryListController {
     private TableColumn<InventoryTransaction, String> transactionCreatedAtColumn;
 
     @FXML
-    private Button applyButton;
-
-    @FXML
-    private Button clearButton;
-
-    @FXML
     private Label statusLabel;
+
+    @FXML private javafx.scene.control.CheckBox lowStockOnly;
+    @FXML private javafx.scene.control.DatePicker fromDate;
+    @FXML private javafx.scene.control.DatePicker toDate;
+    @FXML private javafx.scene.control.ComboBox<com.storemanager.domain.product.model.Product> filterProduct;
+    public boolean isLowStockOnly() { return lowStockOnly.isSelected(); }
+    public java.time.LocalDate getFromDate() { return fromDate.getValue(); }
+    public java.time.LocalDate getToDate() { return toDate.getValue(); }
+    public Long getFilterProductId() { return filterProduct.getValue() == null ? null : filterProduct.getValue().getId(); }
+    public void setFilterProducts(List<com.storemanager.domain.product.model.Product> products) {
+        Long selected = getFilterProductId();
+        filterProduct.setItems(FXCollections.observableArrayList(products));
+        filterProduct.setValue(products.stream().filter(p -> p.getId().equals(selected)).findFirst().orElse(null));
+    }
+    @FXML public void onFilter() { presenter.applyFilters(); }
+    @FXML public void onClearFilters() {
+        fromDate.setValue(null); toDate.setValue(null); filterProduct.setValue(null);
+        presenter.applyFilters();
+    }
 
     private InventoryPresenter presenter;
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(inventoryTable, "No stock records found.");
+        UiFeedback.emptyTable(transactionTable, "No imports match the selected filters.");
+
 
         presenter =
                 new InventoryPresenter(
                         this
                 );
 
+        filterProduct.setConverter(new javafx.util.StringConverter<>() {
+            public String toString(com.storemanager.domain.product.model.Product p) {
+                return p == null ? "All products" : p.getName() + " (" + p.getSku() + ")";
+            }
+            public com.storemanager.domain.product.model.Product fromString(String s) { return null; }
+        });
         configureInventoryTable();
         configureTransactionTable();
 
@@ -92,41 +111,9 @@ public class InventoryListController {
     }
 
     @FXML
-    public void onApplyAdjustment() {
-
-        presenter.adjustStock(
-                adjustmentFormController.readTransaction()
-        );
-    }
-
-    @FXML
-    public void onClear() {
-
-        presenter.clearForm();
-    }
-
-    @FXML
     public void onRefresh() {
 
         presenter.refresh();
-    }
-
-    public void setProducts(
-            List<Product> products
-    ) {
-
-        adjustmentFormController.setProducts(
-                products
-        );
-    }
-
-    public void setQuickPickProducts(
-            List<Product> products
-    ) {
-
-        adjustmentFormController.setQuickPickProducts(
-                products
-        );
     }
 
     public void setInventoryItems(
@@ -151,48 +138,36 @@ public class InventoryListController {
         );
     }
 
-    public void clearAdjustmentForm() {
-
-        adjustmentFormController.clear();
-    }
-
     public void setBusy(
             boolean busy
     ) {
 
-        adjustmentFormController.setBusy(busy);
         inventoryTable.setDisable(busy);
         transactionTable.setDisable(busy);
-
-        boolean canAdjust =
-                PermissionGuard.canAdjustInventory();
-        adjustmentFormController.setBusy(busy || !canAdjust);
-        applyButton.setDisable(busy || !canAdjust);
-        clearButton.setDisable(busy || !canAdjust);
+        lowStockOnly.setDisable(busy);
+        fromDate.setDisable(busy);
+        toDate.setDisable(busy);
+        filterProduct.setDisable(busy);
     }
 
     public void setStatus(
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, inventoryTable, transactionTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureInventoryTable() {
+        itemExpiryColumn.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getNearestExpiryDate() == null ? "N/A"
+                        : cell.getValue().getNearestExpiryDate().toString()));
+        itemExpiryStatusColumn.setCellValueFactory(new PropertyValueFactory<>("expiryStatus"));
 
         itemIdColumn.setCellValueFactory(
                 new PropertyValueFactory<>("id")

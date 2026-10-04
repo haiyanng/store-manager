@@ -1,5 +1,6 @@
 package com.storemanager.domain.auth.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.domain.auth.dto.LoginResponse;
 import com.storemanager.domain.auth.presenter.LoginPresenter;
@@ -10,7 +11,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.InputMethodEvent;
-import javafx.scene.control.Alert;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
@@ -30,6 +30,7 @@ public class LoginController {
 
     private final LoginPresenter presenter =
             new LoginPresenter();
+    private boolean loginInProgress;
 
     @FXML
     public void initialize() {
@@ -50,22 +51,25 @@ public class LoginController {
     @FXML
     public void onLogin() {
 
-        LoginResponse response =
-                presenter.login(
-                        usernameField.getText(),
-                        passwordField.getText()
-                );
+        if (loginInProgress) return;
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        loginInProgress = true;
+        setBusy(true);
+        presenter.loginAsync(username, password, response -> {
+            if (!response.success()) { showError(response.message()); return; }
+            SceneManager.switchScene("/fxml/dashboard/dashboard-shell.fxml");
+        }, error -> showError(error.getMessage()), () -> {
+            loginInProgress = false;
+            setBusy(false);
+        });
+    }
 
-        if (!response.success()) {
-            showError(
-                    response.message()
-            );
-            return;
-        }
-
-        SceneManager.switchScene(
-                "/fxml/dashboard/dashboard-shell.fxml"
-        );
+    private void setBusy(boolean busy) {
+        usernameField.setDisable(busy);
+        passwordField.setDisable(busy);
+        loginButton.setDisable(busy || presenter.getLicenseStatus().isBlocked());
+        loginButton.setText(busy ? "Signing in..." : "Login");
     }
 
     private void updateLicenseStatus(
@@ -120,20 +124,6 @@ public class LoginController {
     private void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(
-                null
-        );
-
-        alert.setContentText(
-                message
-        );
-
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 }

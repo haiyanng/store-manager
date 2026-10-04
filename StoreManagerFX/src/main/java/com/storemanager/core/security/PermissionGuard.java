@@ -6,18 +6,11 @@ import com.storemanager.domain.user.model.User;
 
 public class PermissionGuard {
 
-    public static boolean isDeveloper() {
-
-        return hasRole(
-                RoleType.DEVELOPER
-        );
-    }
-
     public static boolean isOwner() {
 
         return hasRole(
                 RoleType.OWNER
-        ) || isDeveloper();
+        );
     }
 
     public static boolean isManager() {
@@ -48,8 +41,7 @@ public class PermissionGuard {
 
     public static boolean canViewDashboard() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager()
                 || isEmployee()
                 || isViewer();
@@ -57,15 +49,13 @@ public class PermissionGuard {
 
     public static boolean canViewEmployee() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager();
     }
 
     public static boolean canViewProduct() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager()
                 || isStaff()
                 || isViewer();
@@ -73,86 +63,47 @@ public class PermissionGuard {
 
     public static boolean canModifyProduct() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager();
     }
 
     public static boolean canViewInventory() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager()
                 || isStaff();
     }
 
     public static boolean canAdjustInventory() {
 
-        return isDeveloper()
-                || isOwner()
+        // Shared by import and transactional stock workflows, not inventory UI actions.
+        return isOwner()
                 || isManager();
     }
 
     public static boolean canViewOrder() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager()
                 || isStaff();
     }
 
     public static boolean canCreateSale() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager()
                 || isStaff();
     }
 
     public static boolean canCancelSale() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager();
-    }
-
-    public static boolean canViewOnlineOrders() {
-
-        return isDeveloper()
-                || isOwner()
-                || isManager();
-    }
-
-    public static boolean canModifyOnlineOrders() {
-
-        return canViewOnlineOrders();
-    }
-
-    public static boolean canCancelOnlineOrder() {
-
-        return canModifyOnlineOrders();
-    }
-
-    public static boolean canRefundOnlineOrder() {
-
-        return isDeveloper()
-                || isOwner()
-                || isManager();
-    }
-
-    public static boolean canViewCustomers() {
-
-        return isDeveloper()
-                || isOwner()
-                || isManager()
-                || isStaff()
-                || isViewer();
     }
 
     public static boolean canViewReports() {
 
-        return isDeveloper()
-                || isOwner()
+        return isOwner()
                 || isManager()
                 || isViewer();
     }
@@ -164,14 +115,12 @@ public class PermissionGuard {
 
     public static boolean canManageUsers() {
 
-        return isDeveloper()
-                || isOwner();
+        return isOwner();
     }
 
     public static boolean canAccessSystemTools() {
 
-        return isDeveloper()
-                || isOwner();
+        return isOwner();
     }
 
     public static boolean canBackupDatabase() {
@@ -186,16 +135,7 @@ public class PermissionGuard {
 
     public static boolean canViewAuditLogs() {
 
-        return isDeveloper()
-                || isOwner();
-    }
-
-    public static boolean isRootDeveloper(
-            User user
-    ) {
-
-        return user != null
-                && user.getRole() == RoleType.DEVELOPER;
+        return isOwner();
     }
 
     public static boolean canEditUser(
@@ -206,16 +146,13 @@ public class PermissionGuard {
             return false;
         }
 
-        if (isDeveloper()) {
-            return true;
-        }
-
         return isOwner()
                 && (
                 target.getRole() == RoleType.MANAGER
                         || target.getRole() == RoleType.STAFF
                         || target.getRole() == RoleType.VIEWER
                         || target.getRole() == RoleType.EMPLOYEE
+                        || target.getRole() == RoleType.CUSTOMER
         );
     }
 
@@ -235,16 +172,13 @@ public class PermissionGuard {
             return false;
         }
 
-        if (isDeveloper()) {
-            return true;
-        }
-
         return isOwner()
                 && (
                 target.getRole() == RoleType.MANAGER
                         || target.getRole() == RoleType.STAFF
                         || target.getRole() == RoleType.VIEWER
                         || target.getRole() == RoleType.EMPLOYEE
+                        || target.getRole() == RoleType.CUSTOMER
         );
     }
 
@@ -261,11 +195,7 @@ public class PermissionGuard {
             return false;
         }
 
-        if (isRootDeveloper(target)) {
-            return newRole == RoleType.DEVELOPER;
-        }
-
-        return newRole != RoleType.DEVELOPER;
+        return true;
     }
 
     private static boolean hasRole(

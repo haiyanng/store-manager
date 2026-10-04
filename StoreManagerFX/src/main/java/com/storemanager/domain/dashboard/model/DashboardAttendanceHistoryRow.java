@@ -4,8 +4,6 @@ public class DashboardAttendanceHistoryRow {
 
     private String dateLabel;
 
-    private String branchName;
-
     private String checkInTime;
 
     private String checkOutTime;
@@ -21,14 +19,6 @@ public class DashboardAttendanceHistoryRow {
 
     public void setDateLabel(String dateLabel) {
         this.dateLabel = dateLabel;
-    }
-
-    public String getBranchName() {
-        return branchName;
-    }
-
-    public void setBranchName(String branchName) {
-        this.branchName = branchName;
     }
 
     public String getCheckInTime() {

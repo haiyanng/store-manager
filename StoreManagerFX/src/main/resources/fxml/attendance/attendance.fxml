@@ -18,11 +18,7 @@
         <Label text="Attendance"
                styleClass="content-title"/>
 
-        <Label text="Track employee work sessions before payroll."
-               styleClass="content-description"/>
-
-        <Label fx:id="branchContextLabel"
-               text="Current branch: -"
+        <Label text="Track employee work sessions."
                styleClass="content-description"/>
 
         <Label fx:id="sessionStatusLabel"
@@ -35,19 +31,15 @@
                   promptText="Employee"
                   prefWidth="320"/>
 
-        <ComboBox fx:id="branchComboBox"
-                  promptText="Branch"
-                  prefWidth="260"/>
-
-        <Button text="Check In"
+        <Button fx:id="checkInButton" text="Check in"
                 styleClass="module-button"
                 onAction="#onCheckIn"/>
 
-        <Button text="Check Out"
+        <Button fx:id="checkOutButton" text="Check out"
                 styleClass="module-button"
                 onAction="#onCheckOut"/>
 
-        <Button text="Refresh"
+        <Button fx:id="refreshButton" text="Refresh"
                 styleClass="module-button"
                 onAction="#onRefresh"/>
     </HBox>
@@ -66,10 +58,6 @@
                 <TableColumn fx:id="sessionEmployeeColumn"
                              text="Employee"
                              prefWidth="220"/>
-
-                <TableColumn fx:id="sessionBranchColumn"
-                             text="Branch"
-                             prefWidth="180"/>
 
                 <TableColumn fx:id="checkInColumn"
                              text="Check in"

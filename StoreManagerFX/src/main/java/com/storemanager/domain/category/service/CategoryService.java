@@ -4,8 +4,10 @@ import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.category.repository.CategoryRepository;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.audit.service.AuditService;
+import com.storemanager.domain.audit.service.AuditSnapshots;
 
 import java.util.List;
+import java.util.Map;
 
 public class CategoryService {
 
@@ -22,63 +24,59 @@ public class CategoryService {
         return categoryRepository.findAll();
     }
 
-    public boolean create(
-            Category category
-    ) {
-
-        validateCategoryWriteAccess("CATEGORY_CREATE");
-        validate(category);
-
-        return categoryRepository.save(category);
+    public boolean create(Category category) {
+        return change(category, "CATEGORY_CREATE");
     }
 
-    public boolean update(
-            Category category
-    ) {
-
-        validateCategoryWriteAccess("CATEGORY_UPDATE");
-
-        if (category.getId() == null) {
-            throw new RuntimeException(
-                    "Category is required"
-            );
-        }
-
-        validate(category);
-
-        return categoryRepository.update(category);
+    public boolean update(Category category) {
+        return change(category, "CATEGORY_UPDATE");
     }
 
-    public boolean delete(
-            Category category
-    ) {
-
-        validateCategoryWriteAccess("CATEGORY_DELETE");
-
-        if (category == null || category.getId() == null) {
-            throw new RuntimeException(
-                    "Category is required"
-            );
-        }
-
-        return categoryRepository.delete(category);
+    public boolean delete(Category category) {
+        return change(category, "CATEGORY_DELETE");
     }
 
-    public boolean deactivate(
-            Category category
-    ) {
+    public boolean deactivate(Category category) {
+        return change(category, "CATEGORY_ARCHIVE");
+    }
 
-        validateCategoryWriteAccess("CATEGORY_ARCHIVE");
-
-        if (category == null || category.getId() == null) {
-            throw new RuntimeException(
-                    "Category is required"
-            );
+    private boolean change(Category category, String action) {
+        validateCategoryWriteAccess(action);
+        Map<String, Object> before = null;
+        Map<String, Object> attempted = AuditSnapshots.category(category);
+        Map<String, Object> after;
+        boolean success;
+        try {
+            if (category == null) throw new IllegalArgumentException("Category is required");
+            boolean creating = action.endsWith("_CREATE");
+            boolean deleting = action.endsWith("_DELETE");
+            Category stored = null;
+            if (!creating) {
+                if (category.getId() == null) throw new IllegalArgumentException("Select a category first");
+                stored = categoryRepository.findById(category.getId());
+                if (stored == null) throw new IllegalArgumentException("Category no longer exists. Refresh the list and try again.");
+                before = AuditSnapshots.category(stored);
+            }
+            Category candidate = category;
+            if (action.endsWith("_ARCHIVE") || action.endsWith("_RESTORE")) {
+                candidate = stored;
+                candidate.setActive(action.endsWith("_RESTORE"));
+            }
+            if (!deleting) validate(candidate);
+            attempted = deleting ? null : AuditSnapshots.category(candidate);
+            success = creating ? categoryRepository.save(candidate)
+                    : deleting ? categoryRepository.delete(candidate) : categoryRepository.update(candidate);
+            after = success ? (deleting ? null : AuditSnapshots.category(candidate)) : before;
+            if (success && !deleting) category.setActive(candidate.isActive());
+        } catch (RuntimeException e) {
+            auditService.recordChange("CATEGORY", action, "CATEGORY", category == null ? null : category.getId(),
+                    false, e.getMessage(), before, before, attempted);
+            throw e;
         }
-
-        category.setActive(false);
-
-        return update(category);
+        auditService.recordChange("CATEGORY", action, "CATEGORY", category.getId(), success,
+                success ? null : "Unable to save category changes. Check the data and database connection.",
+                before, after, success ? null : attempted);
+        return success;
     }
 
     private void validate(
@@ -110,14 +108,7 @@ public class CategoryService {
     private void validateCategoryViewAccess() {
 
         if (!PermissionGuard.canViewProduct()) {
-            auditService.recordPermissionDenied(
-                    "CATEGORY_VIEW",
-                    "CATEGORY",
-                    null,
-                    "Category access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF/VIEWER"
-            );
+            auditService.recordPermissionDenied("CATEGORY_VIEW", "CATEGORY", null, "Category access denied", "OWNER/MANAGER/STAFF/VIEWER");
             throw new RuntimeException("Category access denied");
         }
     }
@@ -127,14 +118,7 @@ public class CategoryService {
     ) {
 
         if (!PermissionGuard.canModifyProduct()) {
-            auditService.recordPermissionDenied(
-                    action,
-                    "CATEGORY",
-                    null,
-                    "Category modification denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied(action, "CATEGORY", null, "Category modification denied", "OWNER/MANAGER");
             throw new RuntimeException("Current user cannot modify categories");
         }
     }

@@ -19,11 +19,6 @@ import java.util.List;
 
 public class AttendanceAnomalyRepository {
 
-    public AttendanceAnomalyRepository() {
-
-        initializeTables();
-    }
-
     public AttendanceAnomaly findById(
             Long id
     ) {
@@ -137,22 +132,6 @@ public class AttendanceAnomalyRepository {
                 parameters.add(filter.getEmployeeId());
             }
 
-            if (filter.getBranchId() != null) {
-                sql.append(" AND branch_id = ?");
-                parameters.add(filter.getBranchId());
-            } else if (filter.getBranchIds() != null
-                    && !filter.getBranchIds().isEmpty()) {
-                sql.append(" AND branch_id IN (");
-                for (int i = 0; i < filter.getBranchIds().size(); i++) {
-                    if (i > 0) {
-                        sql.append(", ");
-                    }
-                    sql.append("?");
-                    parameters.add(filter.getBranchIds().get(i));
-                }
-                sql.append(")");
-            }
-
             if (filter.getFromDate() != null) {
                 sql.append(" AND DATE(created_at) >= ?");
                 parameters.add(Date.valueOf(filter.getFromDate()));
@@ -186,8 +165,7 @@ public class AttendanceAnomalyRepository {
             return anomalies;
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return anomalies;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -206,7 +184,6 @@ public class AttendanceAnomalyRepository {
                         INSERT INTO attendance_anomalies (
                             attendance_session_id,
                             employee_id,
-                            branch_id,
                             type,
                             severity,
                             message,
@@ -218,7 +195,7 @@ public class AttendanceAnomalyRepository {
                             resolved_at,
                             created_at
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                         """,
                         Statement.RETURN_GENERATED_KEYS
                 )
@@ -226,17 +203,16 @@ public class AttendanceAnomalyRepository {
 
             statement.setObject(1, anomaly.getAttendanceSessionId());
             statement.setObject(2, anomaly.getEmployeeId());
-            statement.setObject(3, anomaly.getBranchId());
-            statement.setString(4, anomaly.getType().name());
-            statement.setString(5, anomaly.getSeverity().name());
-            statement.setString(6, anomaly.getMessage());
-            statement.setString(7, anomaly.getStatus().name());
-            statement.setBoolean(8, anomaly.isEmployeeNotified());
-            statement.setBoolean(9, anomaly.isManagerReported());
-            statement.setString(10, anomaly.getManagerReportText());
-            statement.setObject(11, anomaly.getResolvedByUserId());
+            statement.setString(3, anomaly.getType().name());
+            statement.setString(4, anomaly.getSeverity().name());
+            statement.setString(5, anomaly.getMessage());
+            statement.setString(6, anomaly.getStatus().name());
+            statement.setBoolean(7, anomaly.isEmployeeNotified());
+            statement.setBoolean(8, anomaly.isManagerReported());
+            statement.setString(9, anomaly.getManagerReportText());
+            statement.setObject(10, anomaly.getResolvedByUserId());
             statement.setTimestamp(
-                    12,
+                    11,
                     anomaly.getResolvedAt() == null
                             ? null
                             : Timestamp.valueOf(anomaly.getResolvedAt())
@@ -365,10 +341,9 @@ public class AttendanceAnomalyRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection = ConnectionFactory.getConnection();
                 Statement statement = connection.createStatement()
         ) {
 
@@ -378,7 +353,6 @@ public class AttendanceAnomalyRepository {
                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
                         attendance_session_id BIGINT NOT NULL,
                         employee_id BIGINT NOT NULL,
-                        branch_id BIGINT NULL,
                         type VARCHAR(60) NOT NULL,
                         severity VARCHAR(20) NOT NULL,
                         message TEXT NOT NULL,
@@ -415,9 +389,6 @@ public class AttendanceAnomalyRepository {
         anomaly.setId(resultSet.getLong("id"));
         anomaly.setAttendanceSessionId(resultSet.getLong("attendance_session_id"));
         anomaly.setEmployeeId(resultSet.getLong("employee_id"));
-
-        long branchId = resultSet.getLong("branch_id");
-        anomaly.setBranchId(resultSet.wasNull() ? null : branchId);
 
         anomaly.setType(
                 AttendanceAnomalyType.valueOf(resultSet.getString("type"))

@@ -1,5 +1,6 @@
 package com.storemanager.domain.product.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.category.model.Category;
 import com.storemanager.core.security.PermissionGuard;
 import com.storemanager.domain.product.model.Product;
@@ -34,8 +35,6 @@ public class ProductListController {
     @FXML
     private TableColumn<Product, String> skuColumn;
 
-    @FXML
-    private TableColumn<Product, String> barcodeColumn;
 
     @FXML
     private TableColumn<Product, String> categoryColumn;
@@ -61,15 +60,28 @@ public class ProductListController {
     @FXML
     private Label statusLabel;
 
+    private boolean busy;
+    @FXML private Button clearButton;
+    @FXML private Button refreshButton;
+    @FXML private javafx.scene.Node productForm;
+
     private ProductPresenter presenter;
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(productTable, "No active products found.");
+        UiFeedback.moneyColumn(basePriceColumn);
+        UiFeedback.booleanColumn(activeColumn, "Active", "Inactive");
+
 
         presenter =
                 new ProductPresenter(
                         this
                 );
+
+        productTable.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+        );
 
         idColumn.setCellValueFactory(
                 new PropertyValueFactory<>("id")
@@ -83,9 +95,6 @@ public class ProductListController {
                 new PropertyValueFactory<>("sku")
         );
 
-        barcodeColumn.setCellValueFactory(
-                new PropertyValueFactory<>("barcode")
-        );
 
         categoryColumn.setCellValueFactory(
                 cellData ->
@@ -121,22 +130,31 @@ public class ProductListController {
 
     @FXML
     public void onCreate() {
+        try {
 
         presenter.saveProduct(
                 productFormController.readProduct()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onUpdate() {
+        try {
 
         presenter.saveProduct(
                 productFormController.readProduct()
         );
+        } catch (RuntimeException e) {
+            showError(e.getMessage());
+        }
     }
 
     @FXML
     public void onDelete() {
+        if (!UiFeedback.confirm("Deactivate product?", "The selected product will become inactive. Existing transaction history is retained.")) return;
 
         presenter.deleteProduct();
     }
@@ -192,53 +210,37 @@ public class ProductListController {
         productFormController.clear();
     }
 
-    public void setUpdateEnabled(
-            boolean enabled
-    ) {
-
-        updateButton.setDisable(
-                !enabled || !PermissionGuard.canModifyProduct()
-        );
+    public void setUpdateEnabled(boolean enabled) {
+        setBusy(busy);
     }
 
-    public void setDeleteEnabled(
-            boolean enabled
-    ) {
-
-        deleteButton.setDisable(
-                !enabled || !PermissionGuard.canModifyProduct()
-        );
+    public void setDeleteEnabled(boolean enabled) {
+        setBusy(busy);
     }
 
-    public void setBusy(
-            boolean busy
-    ) {
-
+    public void setBusy(boolean busy) {
+        this.busy = busy;
+        boolean allowed = PermissionGuard.canModifyProduct();
+        boolean selected = productTable.getSelectionModel().getSelectedItem() != null;
         productTable.setDisable(busy);
-        boolean canModify =
-                PermissionGuard.canModifyProduct();
-        createButton.setDisable(busy || !canModify);
-        productFormController.setBusy(busy || !canModify);
+        productForm.setDisable(busy || !allowed);
+        refreshButton.setDisable(busy);
+        clearButton.setDisable(busy);
+        createButton.setDisable(busy || !allowed || selected);
+        updateButton.setDisable(busy || !allowed || !selected);
+        deleteButton.setDisable(busy || !allowed || !selected);
     }
 
     public void setStatus(
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, productTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 }

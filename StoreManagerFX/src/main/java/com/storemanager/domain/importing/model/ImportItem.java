@@ -1,6 +1,7 @@
 package com.storemanager.domain.importing.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class ImportItem {
 
@@ -15,6 +16,12 @@ public class ImportItem {
     private BigDecimal unitCost;
 
     private BigDecimal subtotal;
+
+    private LocalDate expiryDate;
+
+    public LocalDate getExpiryDate() { return expiryDate; }
+
+    public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
 
     public ImportItem() {
     }

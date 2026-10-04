@@ -1,5 +1,6 @@
 package com.storemanager.domain.system_tool.migration_export.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationHistoryEntry;
 import com.storemanager.domain.system_tool.migration_export.model.MigrationPreviewResult;
@@ -9,6 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -36,9 +38,6 @@ public class MigrationExportController {
 
     @FXML
     private CheckBox attendanceCheckBox;
-
-    @FXML
-    private CheckBox payrollCheckBox;
 
     @FXML
     private CheckBox imagesCheckBox;
@@ -115,6 +114,8 @@ public class MigrationExportController {
 
     @FXML
     public void initialize() {
+        UiFeedback.emptyTable(historyTable, "No records found.");
+
 
         presenter =
                 new MigrationExportPresenter(
@@ -145,7 +146,6 @@ public class MigrationExportController {
         employeesCheckBox.setSelected(true);
         salesCheckBox.setSelected(true);
         attendanceCheckBox.setSelected(true);
-        payrollCheckBox.setSelected(true);
         imagesCheckBox.setSelected(true);
         auditLogsCheckBox.setSelected(true);
 
@@ -243,7 +243,13 @@ public class MigrationExportController {
 
     @FXML
     public void onImportPackage() {
-
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setHeaderText("Import catalog snapshot?");
+        confirmation.setContentText("This imports categories, products, stock quantities and their images. "
+                + "Current stock quantities will be replaced by the package snapshot. "
+                + "Sales, import history, accounts, employees, attendance and audit logs will not be restored. "
+                + "For full recovery, use Restore Backup with a complete backup ZIP.");
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
         presenter.importPackage();
     }
 
@@ -254,7 +260,6 @@ public class MigrationExportController {
                 employeesCheckBox.isSelected(),
                 salesCheckBox.isSelected(),
                 attendanceCheckBox.isSelected(),
-                payrollCheckBox.isSelected(),
                 imagesCheckBox.isSelected(),
                 auditLogsCheckBox.isSelected()
         );
@@ -273,7 +278,6 @@ public class MigrationExportController {
         employeesCheckBox.setDisable(busy);
         salesCheckBox.setDisable(busy);
         attendanceCheckBox.setDisable(busy);
-        payrollCheckBox.setDisable(busy);
         imagesCheckBox.setDisable(busy);
         auditLogsCheckBox.setDisable(busy);
     }
@@ -382,15 +386,7 @@ public class MigrationExportController {
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     public void clearSelectedPackage() {

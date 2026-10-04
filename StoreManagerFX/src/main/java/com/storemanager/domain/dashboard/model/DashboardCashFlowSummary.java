@@ -12,10 +12,6 @@ public class DashboardCashFlowSummary {
 
     private BigDecimal productBusinessCashFlow;
 
-    private BigDecimal payrollCashFlow;
-
-    private BigDecimal finalCashFlow;
-
     public DashboardCashFlowSummary() {
     }
 
@@ -51,19 +47,4 @@ public class DashboardCashFlowSummary {
         this.productBusinessCashFlow = productBusinessCashFlow;
     }
 
-    public BigDecimal getPayrollCashFlow() {
-        return payrollCashFlow;
-    }
-
-    public void setPayrollCashFlow(BigDecimal payrollCashFlow) {
-        this.payrollCashFlow = payrollCashFlow;
-    }
-
-    public BigDecimal getFinalCashFlow() {
-        return finalCashFlow;
-    }
-
-    public void setFinalCashFlow(BigDecimal finalCashFlow) {
-        this.finalCashFlow = finalCashFlow;
-    }
 }

@@ -9,8 +9,6 @@ import com.storemanager.domain.user.model.RoleType;
 import com.storemanager.domain.user.model.User;
 import com.storemanager.domain.user.repository.UserRepository;
 
-
-
 public class DatabaseInitializer {
 
     public static void initialize() {
@@ -37,6 +35,8 @@ public class DatabaseInitializer {
             );
 
             initializeBusinessTables(connection, statement);
+            initializeDomainSchemas(connection);
+            new UserRepository().migrateLegacyRoles();
             createDefaultAdmin();
             System.out.println("Database initialized successfully");
 
@@ -45,10 +45,26 @@ public class DatabaseInitializer {
             e.printStackTrace();
 
             throw new RuntimeException(
-                    "Database initialization failed",
+                    "Database initialization failed: " + e.getMessage(),
                     e
             );
         }
+    }
+
+    private static void initializeDomainSchemas(Connection connection) throws Exception {
+        // All schema creation and compatibility checks run once before opening application screens.
+        com.storemanager.domain.employee.repository.EmployeeRepository.initializeSchema(connection);
+        com.storemanager.domain.category.repository.CategoryRepository.initializeSchema(connection);
+        com.storemanager.domain.product.repository.ProductRepository.initializeSchema(connection);
+        com.storemanager.domain.importing.repository.ImportRepository.initializeSchema(connection);
+        com.storemanager.domain.inventory.repository.InventoryRepository.initializeSchema(connection);
+        com.storemanager.domain.sale.repository.SaleRepository.initializeSchema(connection);
+        com.storemanager.domain.attendance.repository.AttendanceRepository.initializeSchema(connection);
+        com.storemanager.domain.attendance_anomaly.repository.WorkShiftRuleRepository.initializeSchema(connection);
+        com.storemanager.domain.attendance_anomaly.repository.AttendanceAnomalyRepository.initializeSchema(connection);
+        com.storemanager.domain.notification.repository.NotificationRepository.initializeSchema(connection);
+        com.storemanager.domain.message.repository.MessageRepository.initializeSchema(connection);
+        com.storemanager.domain.audit.repository.AuditLogRepository.initializeSchema(connection);
     }
 
     private static void initializeBusinessTables(
@@ -90,7 +106,6 @@ public class DatabaseInitializer {
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     name VARCHAR(180) NOT NULL,
                     sku VARCHAR(80) NOT NULL,
-                    barcode VARCHAR(80),
                     category_id BIGINT NULL,
                     base_price DECIMAL(18, 2) NOT NULL DEFAULT 0,
                     unit VARCHAR(40) NOT NULL,
@@ -192,187 +207,14 @@ public class DatabaseInitializer {
 
         statement.execute(
                 """
-                CREATE TABLE IF NOT EXISTS customers (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    email VARCHAR(180) NOT NULL UNIQUE,
-                    password_hash VARCHAR(255) NOT NULL,
-                    full_name VARCHAR(180) NOT NULL,
-                    phone VARCHAR(40),
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS customer_addresses (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    customer_id BIGINT NOT NULL,
-                    recipient_name VARCHAR(180),
-                    phone VARCHAR(40),
-                    line1 VARCHAR(255),
-                    city VARCHAR(120),
-                    country VARCHAR(120),
-                    is_default BOOLEAN NOT NULL DEFAULT TRUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS carts (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    customer_id BIGINT NOT NULL UNIQUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS cart_items (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    cart_id BIGINT NOT NULL,
-                    product_id BIGINT NOT NULL,
-                    quantity INT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    UNIQUE KEY uq_cart_product (cart_id, product_id)
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS orders (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    customer_id BIGINT NOT NULL,
-                    status VARCHAR(40) NOT NULL DEFAULT 'PENDING',
-                    total_amount DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                    recipient_name VARCHAR(180),
-                    phone VARCHAR(40),
-                    shipping_address VARCHAR(500),
-                    payment_method VARCHAR(80),
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS order_items (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    order_id BIGINT NOT NULL,
-                    product_id BIGINT NOT NULL,
-                    product_name VARCHAR(180) NOT NULL,
-                    quantity INT NOT NULL,
-                    unit_price DECIMAL(18, 2) NOT NULL,
-                    subtotal DECIMAL(18, 2) NOT NULL
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS payment_methods (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    customer_id BIGINT NOT NULL,
-                    label VARCHAR(120) NOT NULL,
-                    provider VARCHAR(80) NOT NULL,
-                    last_four VARCHAR(8),
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS online_order_status_history (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    order_id BIGINT NOT NULL,
-                    action VARCHAR(40) NOT NULL,
-                    old_status VARCHAR(40) NOT NULL,
-                    new_status VARCHAR(40) NOT NULL,
-                    note VARCHAR(1000),
-                    created_by_user_id BIGINT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS branches (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    name VARCHAR(160) NOT NULL,
-                    code VARCHAR(80),
-                    address VARCHAR(255),
-                    phone VARCHAR(40),
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS employee_branch_assignments (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    employee_id BIGINT NOT NULL,
-                    branch_id BIGINT NOT NULL,
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    assigned_by_user_id BIGINT
-                )
-                """
-        );
-
-        statement.execute(
-                """
                 CREATE TABLE IF NOT EXISTS attendance_sessions (
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     employee_id BIGINT NOT NULL,
-                    branch_id BIGINT NULL,
                     check_in_time TIMESTAMP NOT NULL,
                     check_out_time TIMESTAMP NULL,
                     worked_hours DECIMAL(10, 2) NULL,
                     created_by_user_id BIGINT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS employee_salary_configs (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    employee_id BIGINT NOT NULL UNIQUE,
-                    hourly_rate DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                    active BOOLEAN NOT NULL DEFAULT TRUE,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
-                """
-        );
-
-        statement.execute(
-                """
-                CREATE TABLE IF NOT EXISTS payroll_records (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    employee_id BIGINT NOT NULL,
-                    month INT NOT NULL,
-                    year INT NOT NULL,
-                    total_hours DECIMAL(10, 2) NOT NULL DEFAULT 0,
-                    hourly_rate_snapshot DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                    total_salary DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    generated_by_user_id BIGINT,
-                    UNIQUE KEY uk_payroll_employee_month_year (employee_id, month, year)
                 )
                 """
         );
@@ -418,26 +260,37 @@ public class DatabaseInitializer {
                     reason VARCHAR(500),
                     details_json TEXT,
                     details TEXT,
-                    branch_id BIGINT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """
         );
 
+        initializeSalePaymentColumns(connection);
+        initializeImportExpiryColumn(connection);
         addColumnIfMissing(connection, "employees", "user_id", "ALTER TABLE employees ADD COLUMN user_id BIGINT NULL");
         addColumnIfMissing(connection, "employees", "image_path", "ALTER TABLE employees ADD COLUMN image_path VARCHAR(255) NULL");
         addColumnIfMissing(connection, "categories", "image_path", "ALTER TABLE categories ADD COLUMN image_path VARCHAR(255) NULL");
         addColumnIfMissing(connection, "products", "image_path", "ALTER TABLE products ADD COLUMN image_path VARCHAR(255) NULL");
         addColumnIfMissing(connection, "products", "short_description", "ALTER TABLE products ADD COLUMN short_description VARCHAR(255) NULL");
         addColumnIfMissing(connection, "products", "full_description", "ALTER TABLE products ADD COLUMN full_description TEXT NULL");
-        addColumnIfMissing(connection, "orders", "updated_at", "ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-        addColumnIfMissing(connection, "employee_branch_assignments", "assigned_by_user_id", "ALTER TABLE employee_branch_assignments ADD COLUMN assigned_by_user_id BIGINT");
-        addColumnIfMissing(connection, "attendance_sessions", "branch_id", "ALTER TABLE attendance_sessions ADD COLUMN branch_id BIGINT NULL");
         addColumnIfMissing(connection, "audit_logs", "actor_username", "ALTER TABLE audit_logs ADD COLUMN actor_username VARCHAR(100)");
         addColumnIfMissing(connection, "audit_logs", "module", "ALTER TABLE audit_logs ADD COLUMN module VARCHAR(80)");
         addColumnIfMissing(connection, "audit_logs", "success", "ALTER TABLE audit_logs ADD COLUMN success BOOLEAN NOT NULL DEFAULT TRUE");
         addColumnIfMissing(connection, "audit_logs", "reason", "ALTER TABLE audit_logs ADD COLUMN reason VARCHAR(500)");
         addColumnIfMissing(connection, "audit_logs", "details_json", "ALTER TABLE audit_logs ADD COLUMN details_json TEXT");
+    }
+
+    public static void initializeSalePaymentColumns(Connection connection) throws Exception {
+        // NULL means payment information was not recorded for a legacy order.
+        addColumnIfMissing(connection, "sale_orders", "amount_received",
+                "ALTER TABLE sale_orders ADD COLUMN amount_received DECIMAL(18,2) NULL");
+        addColumnIfMissing(connection, "sale_orders", "change_amount",
+                "ALTER TABLE sale_orders ADD COLUMN change_amount DECIMAL(18,2) NULL");
+    }
+
+    public static void initializeImportExpiryColumn(Connection connection) throws Exception {
+        addColumnIfMissing(connection, "import_items", "expiry_date",
+                "ALTER TABLE import_items ADD COLUMN expiry_date DATE NULL");
     }
 
     private static void addColumnIfMissing(
@@ -496,7 +349,7 @@ public class DatabaseInitializer {
         );
 
         admin.setRole(
-                RoleType.DEVELOPER
+                RoleType.OWNER
         );
 
         admin.setActive(true);

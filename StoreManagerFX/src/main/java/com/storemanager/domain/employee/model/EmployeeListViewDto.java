@@ -16,8 +16,6 @@ public class EmployeeListViewDto {
 
     private String linkedRole;
 
-    private String branchDisplayName;
-
     public Long getEmployeeId() {
         return employeeId;
     }
@@ -74,11 +72,4 @@ public class EmployeeListViewDto {
         this.linkedRole = linkedRole;
     }
 
-    public String getBranchDisplayName() {
-        return branchDisplayName;
-    }
-
-    public void setBranchDisplayName(String branchDisplayName) {
-        this.branchDisplayName = branchDisplayName;
-    }
 }

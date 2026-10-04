@@ -16,11 +16,6 @@ import java.util.List;
 
 public class AuditLogRepository {
 
-    public AuditLogRepository() {
-
-        initializeTables();
-    }
-
     public boolean save(
             AuditLog log
     ) {
@@ -47,10 +42,9 @@ public class AuditLogRepository {
                                     reason,
                                     details_json,
                                     details,
-                                    branch_id,
                                     created_at
                                 )
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                                 """
                         )
         ) {
@@ -65,7 +59,6 @@ public class AuditLogRepository {
             statement.setString(8, log.getReason());
             statement.setString(9, log.getDetailsJson());
             statement.setString(10, log.getDetails());
-            statement.setObject(11, log.getBranchId());
 
             return statement.executeUpdate() > 0;
 
@@ -103,7 +96,6 @@ public class AuditLogRepository {
                             audit_logs.reason AS reason,
                             audit_logs.details_json AS details_json,
                             audit_logs.details AS details,
-                            audit_logs.branch_id AS branch_id,
                             audit_logs.created_at AS created_at
                         FROM audit_logs
                         LEFT JOIN users ON audit_logs.user_id = users.id
@@ -185,18 +177,13 @@ public class AuditLogRepository {
             return logs;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-            return logs;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -215,7 +202,6 @@ public class AuditLogRepository {
                         reason VARCHAR(500),
                         details_json TEXT,
                         details TEXT,
-                        branch_id BIGINT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                     """
@@ -256,7 +242,6 @@ public class AuditLogRepository {
         log.setReason(resultSet.getString("reason"));
         log.setDetailsJson(resultSet.getString("details_json"));
         log.setDetails(resultSet.getString("details"));
-        log.setBranchId((Long) resultSet.getObject("branch_id"));
 
         Timestamp createdAt =
                 resultSet.getTimestamp("created_at");
@@ -268,7 +253,7 @@ public class AuditLogRepository {
         return log;
     }
 
-    private void addColumnIfMissing(
+    private static void addColumnIfMissing(
             Connection connection,
             String column,
             String alterSql

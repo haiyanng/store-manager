@@ -40,10 +40,23 @@ public class DatabaseSetupPresenter {
 
         DatabaseInitializer.initialize();
 
-        SceneManager.switchScene(
-                "/fxml/auth/login.fxml"
-        );
-
         return true;
+    }
+
+    public void testConnectionAsync(DatabaseSettings settings,
+            java.util.function.Consumer<Boolean> success,
+            java.util.function.Consumer<Throwable> failure, Runnable finished) {
+        com.storemanager.core.runtime.async.AsyncTaskRunner.run(
+                () -> testConnection(settings), success, failure, finished);
+    }
+
+    public void saveAndContinueAsync(DatabaseSettings settings,
+            java.util.function.Consumer<Boolean> success,
+            java.util.function.Consumer<Throwable> failure, Runnable finished) {
+        com.storemanager.core.runtime.async.AsyncTaskRunner.run(
+                () -> saveAndContinue(settings), saved -> {
+                    if (saved) SceneManager.switchScene("/fxml/auth/login.fxml");
+                    success.accept(saved);
+                }, failure, finished);
     }
 }

@@ -29,14 +29,13 @@
             <ComboBox fx:id="typeFilterComboBox" prefWidth="170"/>
             <ComboBox fx:id="severityFilterComboBox" prefWidth="150"/>
             <ComboBox fx:id="employeeFilterComboBox" prefWidth="210"/>
-            <ComboBox fx:id="branchFilterComboBox" prefWidth="180"/>
         </HBox>
 
         <HBox spacing="10">
             <DatePicker fx:id="fromDatePicker" promptText="From"/>
             <DatePicker fx:id="toDatePicker" promptText="To"/>
             <Button fx:id="applyFilterButton" text="Apply" onAction="#onApplyFilters"/>
-            <Button fx:id="clearFilterButton" text="Clear" onAction="#onClearFilters"/>
+            <Button fx:id="clearFilterButton" text="Clear filters" onAction="#onClearFilters"/>
             <Button fx:id="refreshButton" text="Refresh" onAction="#onRefresh"/>
         </HBox>
     </VBox>
@@ -50,7 +49,6 @@
             <columns>
                 <TableColumn fx:id="anomalyIdColumn" text="ID" prefWidth="70"/>
                 <TableColumn fx:id="anomalyEmployeeColumn" text="Employee" prefWidth="190"/>
-                <TableColumn fx:id="anomalyBranchColumn" text="Branch" prefWidth="160"/>
                 <TableColumn fx:id="anomalyTypeColumn" text="Type" prefWidth="160"/>
                 <TableColumn fx:id="anomalySeverityColumn" text="Severity" prefWidth="90"/>
                 <TableColumn fx:id="anomalyStatusColumn" text="Status" prefWidth="120"/>
@@ -68,7 +66,7 @@
 
             <VBox fx:id="managerActionsBox" spacing="8">
                 <Button fx:id="submitReportButton"
-                        text="Submit Report"
+                        text="Submit report"
                         styleClass="module-button"
                         maxWidth="Infinity"
                         onAction="#onSubmitReport"/>
@@ -88,13 +86,13 @@
                         onAction="#onDismiss"/>
 
                 <Button fx:id="saveAttendanceButton"
-                        text="Save Attendance Edits"
+                        text="Save attendance changes"
                         styleClass="module-button"
                         maxWidth="Infinity"
                         onAction="#onSaveAttendanceEdits"/>
 
                 <Button fx:id="updateNotificationButton"
-                        text="Update Employee Notification"
+                        text="Update employee notification"
                         styleClass="module-button"
                         maxWidth="Infinity"
                         onAction="#onUpdateEmployeeNotification"/>

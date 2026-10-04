@@ -10,8 +10,6 @@ public final class DashboardMenuRegistry {
     public static final String DASHBOARD = "dashboard";
     public static final String EMPLOYEE = "employee";
     public static final String ATTENDANCE = "attendance";
-    public static final String PAYROLL = "payroll";
-    public static final String BRANCH = "branch";
     public static final String ATTENDANCE_ANOMALIES = "attendance_anomalies";
     public static final String USER_MANAGEMENT = "user_management";
     public static final String PRODUCT = "product";
@@ -19,7 +17,6 @@ public final class DashboardMenuRegistry {
     public static final String INVENTORY = "inventory";
     public static final String IMPORT = "import";
     public static final String ORDER = "order";
-    public static final String ONLINE_ORDER = "online_order";
     public static final String SYSTEM_TOOLS = "system_tools";
     public static final String AUDIT_LOGS = "audit_logs";
     public static final String NOTIFICATIONS = "notifications";
@@ -27,7 +24,6 @@ public final class DashboardMenuRegistry {
 
     private static final Set<RoleType> ALL_ROLES =
             Set.of(
-                    RoleType.DEVELOPER,
                     RoleType.OWNER,
                     RoleType.MANAGER,
                     RoleType.STAFF,
@@ -37,14 +33,12 @@ public final class DashboardMenuRegistry {
 
     private static final Set<RoleType> MANAGER_WORKFLOW_ROLES =
             Set.of(
-                    RoleType.DEVELOPER,
                     RoleType.OWNER,
                     RoleType.MANAGER
             );
 
     private static final Set<RoleType> STAFF_WORKFLOW_ROLES =
             Set.of(
-                    RoleType.DEVELOPER,
                     RoleType.OWNER,
                     RoleType.MANAGER,
                     RoleType.STAFF,
@@ -53,7 +47,6 @@ public final class DashboardMenuRegistry {
 
     private static final Set<RoleType> PRODUCT_VIEW_ROLES =
             Set.of(
-                    RoleType.DEVELOPER,
                     RoleType.OWNER,
                     RoleType.MANAGER,
                     RoleType.STAFF,
@@ -63,7 +56,6 @@ public final class DashboardMenuRegistry {
 
     private static final Set<RoleType> VIEWER_REPORT_ROLES =
             Set.of(
-                    RoleType.DEVELOPER,
                     RoleType.OWNER,
                     RoleType.MANAGER,
                     RoleType.VIEWER
@@ -71,7 +63,6 @@ public final class DashboardMenuRegistry {
 
     private static final Set<RoleType> ADMIN_ROLES =
             Set.of(
-                    RoleType.DEVELOPER,
                     RoleType.OWNER
             );
 
@@ -83,6 +74,13 @@ public final class DashboardMenuRegistry {
                             "/fxml/dashboard/dashboard-home.fxml",
                             true,
                             ALL_ROLES
+                    ),
+                    new DashboardMenuItem(
+                            ORDER,
+                            "Sale",
+                            "/fxml/sale/sale.fxml",
+                            true,
+                            STAFF_WORKFLOW_ROLES
                     ),
                     new DashboardMenuItem(
                             EMPLOYEE,
@@ -102,20 +100,6 @@ public final class DashboardMenuRegistry {
                             ATTENDANCE_ANOMALIES,
                             "Attendance Anomalies",
                             "/fxml/attendance_anomaly/attendance-anomaly-list.fxml",
-                            true,
-                            MANAGER_WORKFLOW_ROLES
-                    ),
-                    new DashboardMenuItem(
-                            PAYROLL,
-                            "Payroll",
-                            "/fxml/payroll/payroll.fxml",
-                            true,
-                            STAFF_WORKFLOW_ROLES
-                    ),
-                    new DashboardMenuItem(
-                            BRANCH,
-                            "Branch",
-                            "/fxml/branch/branch.fxml",
                             true,
                             MANAGER_WORKFLOW_ROLES
                     ),
@@ -142,7 +126,7 @@ public final class DashboardMenuRegistry {
                     ),
                     new DashboardMenuItem(
                             INVENTORY,
-                            "Inventory",
+                            "View Inventory",
                             "/fxml/inventory/inventory-list.fxml",
                             true,
                             STAFF_WORKFLOW_ROLES
@@ -151,20 +135,6 @@ public final class DashboardMenuRegistry {
                             IMPORT,
                             "Import",
                             "/fxml/importing/import.fxml",
-                            true,
-                            MANAGER_WORKFLOW_ROLES
-                    ),
-                    new DashboardMenuItem(
-                            ORDER,
-                            "Order",
-                            "/fxml/sale/sale.fxml",
-                            true,
-                            STAFF_WORKFLOW_ROLES
-                    ),
-                    new DashboardMenuItem(
-                            ONLINE_ORDER,
-                            "Online Orders",
-                            "/fxml/onlineorder/online-order.fxml",
                             true,
                             MANAGER_WORKFLOW_ROLES
                     ),

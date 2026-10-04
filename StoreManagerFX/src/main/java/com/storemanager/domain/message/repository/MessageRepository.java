@@ -13,10 +13,6 @@ import java.util.List;
 
 public class MessageRepository {
 
-    public MessageRepository() {
-        initializeTable();
-    }
-
     public boolean save(
             Message message
     ) {
@@ -251,11 +247,9 @@ public class MessageRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
                 Statement statement = connection.createStatement()
         ) {
 

@@ -16,7 +16,6 @@ public class AuditLogViewDto {
     private String reason;
     private String detailsJson;
     private String details;
-    private Long branchId;
     private LocalDateTime createdAt;
 
     public Long getId() {
@@ -113,14 +112,6 @@ public class AuditLogViewDto {
 
     public void setDetails(String details) {
         this.details = details;
-    }
-
-    public Long getBranchId() {
-        return branchId;
-    }
-
-    public void setBranchId(Long branchId) {
-        this.branchId = branchId;
     }
 
     public LocalDateTime getCreatedAt() {

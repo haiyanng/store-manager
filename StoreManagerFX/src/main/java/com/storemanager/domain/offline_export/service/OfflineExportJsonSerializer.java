@@ -44,10 +44,6 @@ public class OfflineExportJsonSerializer {
     ) {
 
         writeJson(
-                exportRoot.resolve(OfflineExportSpecV1.BRANCHES_FILE),
-                bundle.branches()
-        );
-        writeJson(
                 exportRoot.resolve(OfflineExportSpecV1.USERS_FILE),
                 bundle.users()
         );
@@ -67,13 +63,12 @@ public class OfflineExportJsonSerializer {
                 exportRoot.resolve(OfflineExportSpecV1.INVENTORY_FILE),
                 bundle.inventory()
         );
+        writeJson(exportRoot.resolve(OfflineExportSpecV1.IMPORT_RECEIPTS_FILE), bundle.importReceipts());
+        writeJson(exportRoot.resolve(OfflineExportSpecV1.IMPORT_ITEMS_FILE), bundle.importItems());
+        writeJson(exportRoot.resolve(OfflineExportSpecV1.INVENTORY_TRANSACTIONS_FILE), bundle.inventoryTransactions());
         writeJson(
                 exportRoot.resolve(OfflineExportSpecV1.ATTENDANCE_FILE),
                 bundle.attendance()
-        );
-        writeJson(
-                exportRoot.resolve(OfflineExportSpecV1.PAYROLL_FILE),
-                bundle.payroll()
         );
         writeJson(
                 exportRoot.resolve(OfflineExportSpecV1.SALES_FILE),

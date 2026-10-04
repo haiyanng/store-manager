@@ -65,6 +65,12 @@ public class SaleService {
         );
     }
 
+    public SaleOrder findOrderById(Long id) {
+        validateSaleAccess();
+        if (id == null) throw new IllegalArgumentException("Select a completed order first.");
+        return saleRepository.findOrderById(id);
+    }
+
     public List<SaleOrder> findRecentOrders() {
 
         validateSaleAccess();
@@ -143,7 +149,6 @@ public class SaleService {
                 product.getId(),
                 product.getName(),
                 product.getSku(),
-                product.getBarcode(),
                 product.getImagePath(),
                 product.getBasePrice() == null
                         ? BigDecimal.ZERO
@@ -157,6 +162,22 @@ public class SaleService {
         validateSaleAccess();
 
         return saleRepository.findTotalRevenue();
+    }
+
+    public BigDecimal findRevenueToday() {
+        validateSaleAccess();
+        LocalDate today = LocalDate.now();
+        return saleRepository.findRevenueForPeriod(today, today.plusDays(1));
+    }
+    public long countOrdersToday() {
+        validateSaleAccess();
+        LocalDate today = LocalDate.now();
+        return saleRepository.countOrdersForPeriod(today, today.plusDays(1));
+    }
+    public static void validateStock(String name, int available, int requested) {
+        if (requested > available) throw new IllegalArgumentException("Insufficient stock for " + name
+                + ": available " + available + ", requested " + requested + ", short by "
+                + ((long) requested - available) + ".");
     }
 
     public BigDecimal findRevenueForCurrentMonth() {
@@ -181,13 +202,15 @@ public class SaleService {
         return saleRepository.countOrdersForPeriod(startDate, endDate);
     }
 
-    public Long finalizeSale(
-            List<SaleCartItem> cartItems
+    public SaleOrder finalizeSale(
+            List<SaleCartItem> cartItems,
+            BigDecimal amountReceived
     ) {
 
         try {
             validateSaleCreateAccess();
             validateCart(cartItems);
+            validatePayment(calculateTotal(cartItems), amountReceived);
             validateStockAvailability(cartItems);
         } catch (RuntimeException e) {
             auditService.recordEvent(
@@ -204,6 +227,8 @@ public class SaleService {
 
         SaleOrder order =
                 buildOrder(cartItems);
+        order.setAmountReceived(amountReceived);
+        order.setChangeAmount(amountReceived.subtract(order.getTotalAmount()));
 
         List<SaleOrderItem> orderItems =
                 buildOrderItems(cartItems);
@@ -240,14 +265,41 @@ public class SaleService {
         );
 
         notificationService.notifyCurrentUser(
-                "Sale finalized",
-                "Sale order #"
+                "Order finalized",
+                "Order #"
                         + orderId
                         + " was saved",
                 NotificationType.INVENTORY
         );
 
-        return orderId;
+        order.setId(orderId);
+        return order;
+    }
+
+    public static BigDecimal parseAmountReceived(String text) {
+        String value = text == null ? "" : text.trim();
+        if (!value.matches("(?:[0-9]{1,16}|[0-9]{1,3}(?:,[0-9]{3}){1,5})(?:\\.[0-9]{1,2})?")) {
+            throw new IllegalArgumentException("Enter a valid amount received, for example 1000.00 or 1,000.00");
+        }
+        BigDecimal amount = new BigDecimal(value.replace(",", ""));
+        validateMoney(amount, "Amount received");
+        return amount;
+    }
+
+    public static void validatePayment(BigDecimal total, BigDecimal amountReceived) {
+        validateMoney(total, "Order total");
+        validateMoney(amountReceived, "Amount received");
+        if (amountReceived.compareTo(total) < 0) {
+            throw new IllegalArgumentException("Amount received must be at least the order total");
+        }
+    }
+
+    private static void validateMoney(BigDecimal amount, String field) {
+        if (amount == null || amount.signum() < 0
+                || amount.compareTo(new BigDecimal("9999999999999999.99")) > 0
+                || amount.stripTrailingZeros().scale() > 2) {
+            throw new IllegalArgumentException(field + " must be a non-negative amount with at most 2 decimal places, up to 9,999,999,999,999,999.99");
+        }
     }
 
     private Long persistSaleAndInventoryAtomically(
@@ -276,7 +328,7 @@ public class SaleService {
 
                 if (orderId == null) {
                     throw new RuntimeException(
-                            "Cannot create sale order"
+                            "Cannot create order"
                     );
                 }
 
@@ -296,7 +348,7 @@ public class SaleService {
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Cannot finalize sale atomically",
+                    "Unable to complete sale: " + rootMessage(e),
                     e
             );
         }
@@ -407,38 +459,6 @@ public class SaleService {
     }
 
     private void createInventorySaleTransaction(
-            Long orderId,
-            SaleOrderItem item
-    ) {
-
-        InventoryTransaction transaction =
-                new InventoryTransaction();
-
-        transaction.setProductId(
-                item.getProductId()
-        );
-        transaction.setType(
-                InventoryTransactionType.SALE
-        );
-        transaction.setQuantity(
-                item.getQuantity()
-        );
-        transaction.setReason(
-                "Sale order #" + orderId
-        );
-
-        boolean success =
-                inventoryService.adjustStock(transaction);
-
-        if (!success) {
-            throw new RuntimeException(
-                    "Cannot reduce inventory for product "
-                            + item.getProductId()
-            );
-        }
-    }
-
-    private void createInventorySaleTransaction(
             Connection connection,
             Long orderId,
             SaleOrderItem item
@@ -457,7 +477,7 @@ public class SaleService {
                 item.getQuantity()
         );
         transaction.setReason(
-                "Sale order #" + orderId
+                "Order #" + orderId
         );
 
         boolean success =
@@ -536,16 +556,9 @@ public class SaleService {
     private void validateSaleAccess() {
 
         if (!PermissionGuard.canViewOrder()) {
-            auditService.recordPermissionDenied(
-                    "SALE_VIEW",
-                    "SALE",
-                    null,
-                    "Sale access denied",
-                    null,
-                    "OWNER/MANAGER/STAFF"
-            );
+            auditService.recordPermissionDenied("SALE_VIEW", "SALE", null, "Order access denied", "OWNER/MANAGER/STAFF");
             throw new RuntimeException(
-                    "Sale access denied"
+                    "Order access denied"
             );
         }
     }
@@ -553,16 +566,9 @@ public class SaleService {
     private void validateSaleCreateAccess() {
 
         if (!PermissionGuard.canCreateSale()) {
-            auditService.recordPermissionDenied(
-                    "SALE_CREATE",
-                    "SALE",
-                    null,
-                    "Sale creation denied",
-                    null,
-                    "OWNER/MANAGER/STAFF"
-            );
+            auditService.recordPermissionDenied("SALE_CREATE", "SALE", null, "Order creation denied", "OWNER/MANAGER/STAFF");
             throw new RuntimeException(
-                    "Current user cannot create sales"
+                    "Current user cannot create orders"
             );
         }
     }
@@ -624,12 +630,7 @@ public class SaleService {
                             0
                     );
 
-            if (currentQuantity < cartItem.getQuantity()) {
-                throw new RuntimeException(
-                        "Insufficient stock for "
-                                + cartItem.getProduct().getName()
-                );
-            }
+            validateStock(cartItem.getProduct().getName(), currentQuantity, cartItem.getQuantity());
         }
     }
 

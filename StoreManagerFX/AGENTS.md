@@ -62,9 +62,9 @@ FXML
 
 - Use `RoleType` enum.
 - Do not hard-code role strings.
-- `DEVELOPER` is the unique technical root account.
-- UI must not create `DEVELOPER`.
-- `OWNER` cannot edit/delete `DEVELOPER`.
+- `OWNER` is the administrative role; no technical root role exists.
+- Legacy `USER` accounts map to `CUSTOMER`.
+- `CUSTOMER` has no back-office management permissions.
 - `MANAGER` and `EMPLOYEE` cannot access user management.
 
 ### 9. Resource Rules

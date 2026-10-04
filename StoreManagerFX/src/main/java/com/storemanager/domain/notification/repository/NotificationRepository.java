@@ -14,10 +14,6 @@ import java.util.List;
 
 public class NotificationRepository {
 
-    public NotificationRepository() {
-        initializeTable();
-    }
-
     public boolean save(
             Notification notification
     ) {
@@ -94,9 +90,7 @@ public class NotificationRepository {
             return notifications;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-            return notifications;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -167,12 +161,9 @@ public class NotificationRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -212,7 +203,7 @@ public class NotificationRepository {
         notification.setUserId(resultSet.getLong("user_id"));
         notification.setTitle(resultSet.getString("title"));
         notification.setContent(resultSet.getString("content"));
-        notification.setType(NotificationType.valueOf(resultSet.getString("type")));
+        notification.setType(NotificationType.fromStoredValue(resultSet.getString("type")));
         notification.setRead(resultSet.getBoolean("is_read"));
 
         Timestamp createdAt =

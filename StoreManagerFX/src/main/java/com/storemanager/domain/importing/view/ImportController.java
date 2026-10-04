@@ -1,5 +1,6 @@
 package com.storemanager.domain.importing.view;
 
+import com.storemanager.core.util.UiFeedback;
 import com.storemanager.domain.importing.model.ImportCartItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
 import com.storemanager.domain.importing.presenter.ImportPresenter;
@@ -17,7 +18,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class ImportController {
@@ -33,6 +33,11 @@ public class ImportController {
 
     @FXML
     private javafx.scene.control.TextField unitCostField;
+
+    @FXML private javafx.scene.control.DatePicker expiryDatePicker;
+    @FXML private TableColumn<ImportCartItem, String> itemExpiryColumn;
+    @FXML private javafx.scene.layout.HBox itemActions;
+    @FXML private javafx.scene.layout.HBox receiptActions;
 
     @FXML
     private TableView<ImportCartItem> importItemTable;
@@ -80,6 +85,14 @@ public class ImportController {
 
     @FXML
     public void initialize() {
+        UiFeedback.datePicker(expiryDatePicker);
+        expiryDatePicker.setPromptText("Expiry date (optional)");
+        UiFeedback.emptyTable(importItemTable, "No items added. Select a product and choose Add item.");
+        UiFeedback.emptyTable(receiptTable, "No import receipts found.");
+        UiFeedback.moneyColumn(itemUnitCostColumn);
+        UiFeedback.moneyColumn(itemSubtotalColumn);
+        UiFeedback.moneyColumn(receiptTotalColumn);
+
 
         presenter =
                 new ImportPresenter(
@@ -103,12 +116,15 @@ public class ImportController {
             presenter.addItem(
                     selectedProduct,
                     parseQuantity(),
-                    parseUnitCost()
+                    parseUnitCost(),
+                    UiFeedback.readDate(expiryDatePicker)
             );
 
         } catch (NumberFormatException e) {
 
             showError("Quantity and unit cost must be valid numbers");
+        } catch (IllegalArgumentException e) {
+            showError(e.getMessage());
         }
     }
 
@@ -183,9 +199,7 @@ public class ImportController {
     ) {
 
         totalLabel.setText(
-                totalCost == null
-                        ? "0.00"
-                        : totalCost.toPlainString()
+                UiFeedback.money(totalCost)
         );
     }
 
@@ -194,6 +208,8 @@ public class ImportController {
         productSelectionWorkflowController.clearSelection();
         quantityField.clear();
         unitCostField.clear();
+        expiryDatePicker.setValue(null);
+        expiryDatePicker.getEditor().clear();
         importItemTable.getSelectionModel().clearSelection();
     }
 
@@ -210,6 +226,9 @@ public class ImportController {
         productSelectionWorkflowController.setBusy(busy);
         quantityField.setDisable(busy);
         unitCostField.setDisable(busy);
+        expiryDatePicker.setDisable(busy);
+        itemActions.setDisable(busy);
+        receiptActions.setDisable(busy);
         importItemTable.setDisable(busy);
         receiptTable.setDisable(busy);
     }
@@ -218,24 +237,18 @@ public class ImportController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        UiFeedback.status(statusLabel, status, receiptTable);
     }
 
     public void showError(
             String message
     ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.ERROR
-                );
-
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        UiFeedback.showError(message);
     }
 
     private void configureImportItemTable() {
+        itemExpiryColumn.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getExpiryDate() == null ? "N/A" : cell.getValue().getExpiryDate().toString()));
 
         itemProductColumn.setCellValueFactory(
                 cellData ->

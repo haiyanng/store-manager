@@ -16,10 +16,6 @@ public class EmployeeDashboardDto {
 
     private String currentMonthWorkedHours;
 
-    private String assignedBranches;
-
-    private String latestPayrollSummary;
-
     private List<DashboardAttendanceHistoryRow> recentAttendanceHistory =
             new ArrayList<>();
 
@@ -64,22 +60,6 @@ public class EmployeeDashboardDto {
 
     public void setCurrentMonthWorkedHours(String currentMonthWorkedHours) {
         this.currentMonthWorkedHours = currentMonthWorkedHours;
-    }
-
-    public String getAssignedBranches() {
-        return assignedBranches;
-    }
-
-    public void setAssignedBranches(String assignedBranches) {
-        this.assignedBranches = assignedBranches;
-    }
-
-    public String getLatestPayrollSummary() {
-        return latestPayrollSummary;
-    }
-
-    public void setLatestPayrollSummary(String latestPayrollSummary) {
-        this.latestPayrollSummary = latestPayrollSummary;
     }
 
     public List<DashboardAttendanceHistoryRow> getRecentAttendanceHistory() {

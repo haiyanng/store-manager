@@ -29,11 +29,12 @@ public class AsyncTaskRunner {
             Runnable onFinally
     ) {
 
+        AuditActorContext.Actor actor = AuditActorContext.capture();
         EXECUTOR.submit(() -> {
             try {
 
                 T result =
-                        task.call();
+                        AuditActorContext.callAs(actor, task);
 
                 runOnUiThread(
                         () -> {

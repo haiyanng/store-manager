@@ -5,31 +5,30 @@ import com.storemanager.domain.audit.model.AuditLogViewDto;
 import com.storemanager.domain.audit.repository.AuditLogRepository;
 import com.storemanager.domain.attendance.model.AttendanceSession;
 import com.storemanager.domain.attendance.repository.AttendanceRepository;
-import com.storemanager.domain.branch.model.Branch;
-import com.storemanager.domain.branch.repository.BranchRepository;
 import com.storemanager.domain.category.model.Category;
 import com.storemanager.domain.category.repository.CategoryRepository;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
 import com.storemanager.domain.inventory.model.InventoryItem;
+import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.repository.InventoryRepository;
 import com.storemanager.domain.offline_export.OfflineExportSpecV1;
 import com.storemanager.domain.offline_export.dto.AttendanceSnapshot;
 import com.storemanager.domain.offline_export.dto.AuditLogSnapshot;
-import com.storemanager.domain.offline_export.dto.BranchSnapshot;
 import com.storemanager.domain.offline_export.dto.CategorySnapshot;
 import com.storemanager.domain.offline_export.dto.EmployeeSnapshot;
 import com.storemanager.domain.offline_export.dto.ExportImageAsset;
 import com.storemanager.domain.offline_export.dto.InventorySnapshot;
 import com.storemanager.domain.offline_export.dto.OfflineExportBundle;
 import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
-import com.storemanager.domain.offline_export.dto.PayrollSnapshot;
 import com.storemanager.domain.offline_export.dto.ProductSnapshot;
 import com.storemanager.domain.offline_export.dto.SaleItemSnapshot;
 import com.storemanager.domain.offline_export.dto.SaleSnapshot;
 import com.storemanager.domain.offline_export.dto.UserSnapshot;
-import com.storemanager.domain.payroll.model.PayrollRecord;
-import com.storemanager.domain.payroll.repository.PayrollRepository;
+import com.storemanager.domain.offline_export.dto.ImportReceiptSnapshot;
+import com.storemanager.domain.offline_export.dto.ImportItemSnapshot;
+import com.storemanager.domain.offline_export.dto.InventoryTransactionSnapshot;
+import com.storemanager.domain.offline_export.repository.OfflineImportHistoryRepository;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.repository.ProductRepository;
 import com.storemanager.domain.sale.model.SaleOrder;
@@ -43,9 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OfflineExportSnapshotCollector {
-
-    private final BranchRepository branchRepository =
-            new BranchRepository();
 
     private final UserRepository userRepository =
             new UserRepository();
@@ -65,9 +61,6 @@ public class OfflineExportSnapshotCollector {
     private final AttendanceRepository attendanceRepository =
             new AttendanceRepository();
 
-    private final PayrollRepository payrollRepository =
-            new PayrollRepository();
-
     private final SaleRepository saleRepository =
             new SaleRepository();
 
@@ -76,6 +69,8 @@ public class OfflineExportSnapshotCollector {
 
     private final ImageStorageService imageStorageService =
             new ImageStorageService();
+
+    private final OfflineImportHistoryRepository importHistoryRepository = new OfflineImportHistoryRepository();
 
     public OfflineExportBundle collect() {
 
@@ -90,12 +85,6 @@ public class OfflineExportSnapshotCollector {
 
         List<ExportImageAsset> imageAssets =
                 new ArrayList<>();
-
-        List<BranchSnapshot> branches =
-                branchRepository.findAllBranches()
-                        .stream()
-                        .map(this::toBranchSnapshot)
-                        .toList();
 
         List<UserSnapshot> users =
                 userRepository.findAll()
@@ -161,13 +150,13 @@ public class OfflineExportSnapshotCollector {
                                 .toList()
                         : List.of();
 
-        List<PayrollSnapshot> payroll =
-                selection != null && selection.payroll()
-                        ? payrollRepository.findPayrollRecords()
-                                .stream()
-                                .map(this::toPayrollSnapshot)
-                                .toList()
-                        : List.of();
+        List<ImportReceiptSnapshot> importReceipts = selection != null && selection.products()
+                ? importHistoryRepository.findAllReceipts() : List.of();
+        List<ImportItemSnapshot> importItems = selection != null && selection.products()
+                ? importHistoryRepository.findAllItems() : List.of();
+        List<InventoryTransactionSnapshot> inventoryTransactions = selection != null && selection.products()
+                ? inventoryRepository.findAllTransactions().stream().map(this::toInventoryTransactionSnapshot).toList()
+                : List.of();
 
         List<SaleSnapshot> sales =
                 selection != null && selection.sales()
@@ -198,30 +187,19 @@ public class OfflineExportSnapshotCollector {
         }
 
         return new OfflineExportBundle(
-                branches,
                 users,
                 employees,
                 categories,
                 products,
                 inventory,
                 attendance,
-                payroll,
                 sales,
                 saleItems,
                 auditLogs,
-                imageAssets
-        );
-    }
-
-    private BranchSnapshot toBranchSnapshot(
-            Branch branch
-    ) {
-
-        return new BranchSnapshot(
-                branch.getId(),
-                branch.getName(),
-                branch.getAddress(),
-                branch.isActive()
+                imageAssets,
+                importReceipts,
+                importItems,
+                inventoryTransactions
         );
     }
 
@@ -310,7 +288,6 @@ public class OfflineExportSnapshotCollector {
                 product.getId(),
                 product.getName(),
                 product.getSku(),
-                product.getBarcode(),
                 product.getCategoryId(),
                 product.getBasePrice(),
                 product.getUnit(),
@@ -338,29 +315,11 @@ public class OfflineExportSnapshotCollector {
         return new AttendanceSnapshot(
                 session.getId(),
                 session.getEmployeeId(),
-                session.getBranchId(),
                 session.getCheckInTime(),
                 session.getCheckOutTime(),
                 session.getWorkedHours(),
                 session.getCreatedByUserId(),
                 session.getCreatedAt()
-        );
-    }
-
-    private PayrollSnapshot toPayrollSnapshot(
-            PayrollRecord record
-    ) {
-
-        return new PayrollSnapshot(
-                record.getId(),
-                record.getEmployeeId(),
-                record.getMonth(),
-                record.getYear(),
-                record.getTotalHours(),
-                record.getHourlyRateSnapshot(),
-                record.getTotalSalary(),
-                record.getGeneratedAt(),
-                record.getGeneratedByUserId()
         );
     }
 
@@ -372,7 +331,9 @@ public class OfflineExportSnapshotCollector {
                 order.getId(),
                 order.getCreatedByUserId(),
                 order.getTotalAmount(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                order.getAmountReceived(),
+                order.getChangeAmount()
         );
     }
 
@@ -390,6 +351,12 @@ public class OfflineExportSnapshotCollector {
         );
     }
 
+    private InventoryTransactionSnapshot toInventoryTransactionSnapshot(InventoryTransaction transaction) {
+        return new InventoryTransactionSnapshot(transaction.getId(), transaction.getProductId(), transaction.getType(),
+                transaction.getQuantity(), transaction.getReason(), transaction.getCreatedByUserId(),
+                transaction.getCreatedAt());
+    }
+
     private AuditLogSnapshot toAuditLogSnapshot(
             AuditLogViewDto log
     ) {
@@ -401,7 +368,6 @@ public class OfflineExportSnapshotCollector {
                 log.getEntityType(),
                 log.getEntityId(),
                 log.getDetails(),
-                log.getBranchId(),
                 log.getCreatedAt()
         );
     }

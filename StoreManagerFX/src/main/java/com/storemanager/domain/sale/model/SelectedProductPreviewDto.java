@@ -6,7 +6,6 @@ public record SelectedProductPreviewDto(
         Long productId,
         String name,
         String sku,
-        String barcode,
         String imagePath,
         BigDecimal unitPrice,
         Integer stockQuantity

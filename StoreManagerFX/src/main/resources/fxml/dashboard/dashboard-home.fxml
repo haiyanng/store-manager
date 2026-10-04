@@ -77,10 +77,6 @@
                text="🟠 Not working"
                styleClass="analytics-section-text"/>
 
-        <Label fx:id="quickAttendanceBranchLabel"
-               text="Branch: -"
-               styleClass="analytics-section-text"/>
-
         <Label fx:id="quickAttendanceSessionLabel"
                text="Session: no active session"
                styleClass="analytics-section-text"/>
@@ -96,12 +92,12 @@
         <FlowPane hgap="10"
                   vgap="10">
             <Button fx:id="quickCheckInButton"
-                    text="Check-In"
+                    text="Check in"
                     styleClass="module-button"
                     onAction="#onQuickCheckIn"/>
 
             <Button fx:id="quickCheckOutButton"
-                    text="Check-Out"
+                    text="Check out"
                     styleClass="module-button"
                     onAction="#onQuickCheckOut"/>
         </FlowPane>
@@ -111,13 +107,10 @@
         <Label text="My Work" styleClass="analytics-section-title"/>
         <Label fx:id="todayHoursLabel" text="Today's worked hours: -" styleClass="analytics-section-text"/>
         <Label fx:id="monthHoursLabel" text="Current month worked hours: -" styleClass="analytics-section-text"/>
-        <Label fx:id="assignedBranchesLabel" text="Assigned branches: -" styleClass="analytics-section-text"/>
-        <Label fx:id="latestPayrollLabel" text="Latest payroll: -" styleClass="analytics-section-text"/>
 
         <TableView fx:id="attendanceHistoryTable" prefHeight="240" styleClass="analytics-table">
             <columns>
                 <TableColumn fx:id="historyDateColumn" text="Date"/>
-                <TableColumn fx:id="historyBranchColumn" text="Branch"/>
                 <TableColumn fx:id="historyCheckInColumn" text="Check-in"/>
                 <TableColumn fx:id="historyCheckOutColumn" text="Check-out"/>
                 <TableColumn fx:id="historyHoursColumn" text="Hours"/>
@@ -126,50 +119,11 @@
     </VBox>
 
     <VBox fx:id="managerSection" spacing="12" styleClass="analytics-section">
-        <Label text="Branch Operations" styleClass="analytics-section-title"/>
-        <Label fx:id="branchEmployeeCountLabel" text="Branch employee count: -" styleClass="analytics-section-text"/>
+        <Label text="Store Operations" styleClass="analytics-section-title"/>
         <Label fx:id="checkedInLabel" text="Employees currently checked-in: -" styleClass="analytics-section-text"/>
         <Label fx:id="attendanceOverviewLabel" text="Attendance overview: -" styleClass="analytics-section-text"/>
-        <Label fx:id="inventoryOverviewLabel" text="Branch inventory overview: -" styleClass="analytics-section-text"/>
-        <Label fx:id="salesOverviewLabel" text="Branch sales overview: -" styleClass="analytics-section-text"/>
-
-        <TableView fx:id="branchSummaryTable" prefHeight="220" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="branchNameColumn" text="Branch"/>
-                <TableColumn fx:id="branchSessionsColumn" text="Sessions"/>
-                <TableColumn fx:id="branchHoursColumn" text="Hours"/>
-                <TableColumn fx:id="branchEmployeesColumn" text="Employees"/>
-            </columns>
-        </TableView>
-
-        <TableView fx:id="locationTable" prefHeight="220" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="locationEmployeeColumn" text="Employee"/>
-                <TableColumn fx:id="locationBranchesColumn" text="Branches"/>
-                <TableColumn fx:id="locationAssignmentsColumn" text="Assignments"/>
-            </columns>
-        </TableView>
-    </VBox>
-
-    <VBox fx:id="onlineOrderSection" spacing="12" styleClass="analytics-section">
-        <Label text="Online Orders" styleClass="analytics-section-title"/>
-        <Label text="Read-only order summary and recent activity" styleClass="analytics-section-text"/>
-
-        <FlowPane fx:id="onlineOrderMetricsPane"
-                  hgap="14"
-                  vgap="14"
-                  prefWrapLength="1200"
-                  styleClass="analytics-grid"/>
-
-        <TableView fx:id="onlineOrderTable" prefHeight="240" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="onlineOrderIdColumn" text="Order ID"/>
-                <TableColumn fx:id="onlineOrderCustomerColumn" text="Customer"/>
-                <TableColumn fx:id="onlineOrderStatusColumn" text="Status"/>
-                <TableColumn fx:id="onlineOrderTotalColumn" text="Total Amount"/>
-                <TableColumn fx:id="onlineOrderCreatedAtColumn" text="Created Time"/>
-            </columns>
-        </TableView>
+        <Label fx:id="inventoryOverviewLabel" text="Inventory overview: -" styleClass="analytics-section-text"/>
+        <Label fx:id="salesOverviewLabel" text="Sales overview: -" styleClass="analytics-section-text"/>
     </VBox>
 
     <VBox fx:id="ownerSection" spacing="12" styleClass="analytics-section">
@@ -177,17 +131,8 @@
         <Label fx:id="totalEmployeesLabel" text="Total employees: -" styleClass="analytics-section-text"/>
         <Label fx:id="activeEmployeesLabel" text="Active employees: -" styleClass="analytics-section-text"/>
         <Label fx:id="workingEmployeesLabel" text="Employees currently working: -" styleClass="analytics-section-text"/>
-        <Label fx:id="payrollTotalsLabel" text="Payroll totals: -" styleClass="analytics-section-text"/>
         <Label fx:id="revenueTotalsLabel" text="Revenue totals: -" styleClass="analytics-section-text"/>
         <Label fx:id="inventoryAlertsLabel" text="Inventory alerts: -" styleClass="analytics-section-text"/>
-
-        <TableView fx:id="payrollTable" prefHeight="220" styleClass="analytics-table">
-            <columns>
-                <TableColumn fx:id="payrollEmployeeColumn" text="Employee"/>
-                <TableColumn fx:id="payrollHoursColumn" text="Hours"/>
-                <TableColumn fx:id="payrollSalaryColumn" text="Salary"/>
-            </columns>
-        </TableView>
 
         <TableView fx:id="cashFlowTable" prefHeight="220" styleClass="analytics-table">
             <columns>
@@ -195,15 +140,13 @@
                 <TableColumn fx:id="cashFlowRevenueColumn" text="Revenue"/>
                 <TableColumn fx:id="cashFlowImportColumn" text="Import cost"/>
                 <TableColumn fx:id="cashFlowProductColumn" text="Business cash flow"/>
-                <TableColumn fx:id="cashFlowPayrollColumn" text="Payroll cash flow"/>
-                <TableColumn fx:id="cashFlowFinalColumn" text="Final cash flow"/>
             </columns>
         </TableView>
 
         <TableView fx:id="inventoryAlertTable" prefHeight="220" styleClass="analytics-table">
             <columns>
                 <TableColumn fx:id="inventoryProductColumn" text="Product"/>
-                <TableColumn fx:id="inventoryQuantityColumn" text="Qty"/>
+                <TableColumn fx:id="inventoryQuantityColumn" text="Quantity"/>
                 <TableColumn fx:id="inventoryAlertColumn" text="Alert"/>
             </columns>
         </TableView>

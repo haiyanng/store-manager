@@ -10,8 +10,6 @@ public class AttendanceAnomaly {
 
     private Long employeeId;
 
-    private Long branchId;
-
     private AttendanceAnomalyType type;
 
     private AttendanceAnomalySeverity severity;
@@ -57,14 +55,6 @@ public class AttendanceAnomaly {
 
     public void setEmployeeId(Long employeeId) {
         this.employeeId = employeeId;
-    }
-
-    public Long getBranchId() {
-        return branchId;
-    }
-
-    public void setBranchId(Long branchId) {
-        this.branchId = branchId;
     }
 
     public AttendanceAnomalyType getType() {

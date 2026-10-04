@@ -6,10 +6,10 @@ import com.storemanager.core.runtime.async.LoadingState;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.sale.model.SaleCartItem;
 import com.storemanager.domain.sale.model.SaleOrder;
-import com.storemanager.domain.sale.model.SaleOrderItemDetail;
 import com.storemanager.domain.sale.model.SelectedProductPreviewDto;
 import com.storemanager.domain.sale.service.SaleService;
 import com.storemanager.domain.sale.view.SaleController;
+import com.storemanager.core.util.MoneyFormatUtil;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -49,10 +49,12 @@ public class SalePresenter extends BaseModulePresenter {
 
     public void loadSaleData() {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("Loading sale workspace...");
+        view.setStatus("Loading order workspace...");
         view.clearSelectedProductPreview();
 
         AsyncTaskRunner.run(
@@ -65,6 +67,7 @@ public class SalePresenter extends BaseModulePresenter {
                 data -> {
                     stockByProductId =
                             data.stockByProductId();
+                    view.setStockByProductId(stockByProductId);
                     view.setProducts(data.products());
                     view.setQuickPickProducts(data.quickPickProducts());
                     view.setRecentOrders(data.orders());
@@ -76,7 +79,7 @@ public class SalePresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load sale workspace");
+                    view.setStatus("Unable to load order workspace");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
@@ -109,7 +112,7 @@ public class SalePresenter extends BaseModulePresenter {
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot load order details");
+                    view.setStatus("Unable to load order details");
                     view.showError(throwable.getMessage());
                 },
                 () -> view.setBusy(false)
@@ -120,6 +123,8 @@ public class SalePresenter extends BaseModulePresenter {
             Product product,
             int quantity
     ) {
+
+        if (loadingState == LoadingState.LOADING) return;
 
         try {
 
@@ -138,6 +143,8 @@ public class SalePresenter extends BaseModulePresenter {
             SaleCartItem existingItem =
                     findCartItem(product);
 
+            int requested = existingItem == null ? quantity : Math.addExact(existingItem.getQuantity(), quantity);
+            SaleService.validateStock(product.getName(), stockByProductId.getOrDefault(product.getId(), 0), requested);
             if (existingItem == null) {
                 cartItems.add(
                         new SaleCartItem(
@@ -147,7 +154,7 @@ public class SalePresenter extends BaseModulePresenter {
                 );
             } else {
                 existingItem.setQuantity(
-                        existingItem.getQuantity() + quantity
+                        Math.addExact(existingItem.getQuantity(), quantity)
                 );
             }
 
@@ -164,6 +171,8 @@ public class SalePresenter extends BaseModulePresenter {
             SaleCartItem item
     ) {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         if (item == null) {
             view.showError("Select a cart item to remove");
             return;
@@ -175,44 +184,109 @@ public class SalePresenter extends BaseModulePresenter {
 
     public void clearCart() {
 
+        if (loadingState == LoadingState.LOADING) return;
+
         cartItems.clear();
+        view.resetPayment();
         view.clearEntryForm();
         updateCartView();
     }
 
-    public void finalizeSale() {
+    public void updateQuantity(SaleCartItem item, int quantity) {
+        if (loadingState == LoadingState.LOADING) return;
+        if (item == null || !cartItems.contains(item)) {
+            view.showError("Select a cart item to update");
+            return;
+        }
+        if (quantity <= 0) {
+            view.showError("Quantity must be positive");
+            return;
+        }
+        try {
+            SaleService.validateStock(item.getProduct().getName(),
+                    stockByProductId.getOrDefault(item.getProduct().getId(), 0), quantity);
+        } catch (IllegalArgumentException e) { view.showError(e.getMessage()); return; }
+        item.setQuantity(quantity);
+        updateCartView();
+    }
+
+    public void updatePayment(String text) {
+        if (text == null || text.isBlank()) {
+            view.setChangeText("-");
+            return;
+        }
+        try {
+            BigDecimal change = SaleService.parseAmountReceived(text).subtract(saleService.calculateTotal(cartItems));
+            view.setChangeText(change.signum() < 0
+                    ? "Short by " + MoneyFormatUtil.format(change.abs()) : MoneyFormatUtil.format(change));
+        } catch (IllegalArgumentException e) {
+            view.setChangeText("Enter a valid amount");
+        }
+    }
+
+    public void finalizeSale(String receivedText) {
+
+        if (loadingState == LoadingState.LOADING) return;
 
         if (cartItems.isEmpty()) {
             view.showError("Cart is empty");
             return;
         }
 
+        final BigDecimal amountReceived;
+        try {
+            amountReceived = SaleService.parseAmountReceived(receivedText);
+            SaleService.validatePayment(saleService.calculateTotal(cartItems), amountReceived);
+        } catch (IllegalArgumentException e) {
+            view.showError(e.getMessage());
+            return;
+        }
+
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("Finalizing sale...");
+        view.setStatus("Finalizing order...");
 
         List<SaleCartItem> saleItems =
                 new ArrayList<>(cartItems);
 
         AsyncTaskRunner.run(
-                () -> saleService.finalizeSale(saleItems),
-                orderId -> {
+                () -> saleService.finalizeSale(saleItems, amountReceived),
+                order -> {
                     cartItems.clear();
                     view.clearEntryForm();
+                    view.resetPayment();
                     updateCartView();
-                    view.setStatus("Sale order #" + orderId + " created");
+                    view.showOrderCompleted(order);
+                    loadingState = LoadingState.SUCCESS;
                     loadSaleData();
                 },
                 throwable -> {
                     loadingState =
                             LoadingState.ERROR;
-                    view.setStatus("Cannot finalize sale");
+                    view.setStatus("Cannot finalize order");
                     view.showError(throwable.getMessage());
                     view.setBusy(false);
                 },
                 null
         );
+    }
+
+    public void exportInvoice(SaleOrder order, java.nio.file.Path destination) {
+        if (loadingState == LoadingState.LOADING) return;
+        if (order == null) { view.showError("Select a completed order to export its invoice."); return; }
+        if (destination == null) return;
+        loadingState = LoadingState.LOADING; view.setBusy(true);
+        AsyncTaskRunner.run(() -> {
+            new com.storemanager.domain.sale.service.InvoiceService().export(order, destination);
+            return destination;
+        }, path -> {
+            loadingState = LoadingState.SUCCESS;
+            view.setStatus("Invoice exported to " + path);
+        }, error -> {
+            loadingState = LoadingState.ERROR;
+            view.showError("Unable to export invoice: " + error.getMessage());
+        }, () -> view.setBusy(false));
     }
 
     public void onSelectedProductChanged(
@@ -263,6 +337,7 @@ public class SalePresenter extends BaseModulePresenter {
                 saleService.calculateTotal(cartItems);
 
         view.setTotalAmount(total);
+        updatePayment(view.getAmountReceivedText());
     }
 
     private record SaleData(

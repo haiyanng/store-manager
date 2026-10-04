@@ -10,16 +10,10 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class WorkShiftRuleRepository {
-
-    public WorkShiftRuleRepository() {
-
-        initializeTables();
-    }
 
     public List<WorkShiftRule> findAll() {
 
@@ -32,7 +26,7 @@ public class WorkShiftRuleRepository {
                         """
                         SELECT *
                         FROM work_shift_rules
-                        ORDER BY active DESC, branch_id, id DESC
+                        ORDER BY active DESC, id DESC
                         """
                 )
         ) {
@@ -49,80 +43,8 @@ public class WorkShiftRuleRepository {
         }
     }
 
-    public List<WorkShiftRule> findByBranchId(
-            Long branchId
-    ) {
-
-        List<WorkShiftRule> rules = new ArrayList<>();
-
-        if (branchId == null) {
-            return rules;
-        }
-
-        try (
-                Connection connection = ConnectionFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        """
-                        SELECT *
-                        FROM work_shift_rules
-                        WHERE branch_id = ?
-                        ORDER BY active DESC, id DESC
-                        """
-                )
-        ) {
-
-            statement.setLong(1, branchId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    rules.add(mapRule(resultSet));
-                }
-            }
-
-            return rules;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return rules;
-        }
-    }
-
-    public WorkShiftRule findActiveByBranchId(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return null;
-        }
-
-        try (
-                Connection connection = ConnectionFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        """
-                        SELECT *
-                        FROM work_shift_rules
-                        WHERE branch_id = ?
-                          AND active = TRUE
-                        ORDER BY id DESC
-                        LIMIT 1
-                        """
-                )
-        ) {
-
-            statement.setLong(1, branchId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return mapRule(resultSet);
-                }
-            }
-
-            return null;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+    public WorkShiftRule findActive() {
+        return findAll().stream().filter(WorkShiftRule::isActive).findFirst().orElse(null);
     }
 
     public boolean save(
@@ -138,7 +60,6 @@ public class WorkShiftRuleRepository {
                 PreparedStatement statement = connection.prepareStatement(
                         """
                         INSERT INTO work_shift_rules (
-                            branch_id,
                             shift_name,
                             start_time,
                             end_time,
@@ -149,7 +70,7 @@ public class WorkShiftRuleRepository {
                             created_at,
                             updated_at
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         """,
                         Statement.RETURN_GENERATED_KEYS
                 )
@@ -188,8 +109,7 @@ public class WorkShiftRuleRepository {
                 PreparedStatement statement = connection.prepareStatement(
                         """
                         UPDATE work_shift_rules
-                        SET branch_id = ?,
-                            shift_name = ?,
+                        SET shift_name = ?,
                             start_time = ?,
                             end_time = ?,
                             late_tolerance_minutes = ?,
@@ -203,7 +123,7 @@ public class WorkShiftRuleRepository {
         ) {
 
             fillStatement(statement, rule);
-            statement.setLong(9, rule.getId());
+            statement.setLong(8, rule.getId());
 
             return statement.executeUpdate() > 0;
 
@@ -213,10 +133,9 @@ public class WorkShiftRuleRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection = ConnectionFactory.getConnection();
                 Statement statement = connection.createStatement()
         ) {
 
@@ -224,7 +143,6 @@ public class WorkShiftRuleRepository {
                     """
                     CREATE TABLE IF NOT EXISTS work_shift_rules (
                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                        branch_id BIGINT NOT NULL,
                         shift_name VARCHAR(120) NOT NULL,
                         start_time TIME NOT NULL,
                         end_time TIME NOT NULL,
@@ -238,6 +156,8 @@ public class WorkShiftRuleRepository {
                     )
                     """
             );
+
+            com.storemanager.core.database.LegacySchemaCompatibility.allowUnassignedShiftRules(connection);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -253,19 +173,18 @@ public class WorkShiftRuleRepository {
             WorkShiftRule rule
     ) throws Exception {
 
-        statement.setObject(1, rule.getBranchId());
-        statement.setString(2, rule.getShiftName());
-        statement.setTime(3, Time.valueOf(rule.getStartTime()));
-        statement.setTime(4, Time.valueOf(rule.getEndTime()));
-        statement.setObject(5, rule.getLateToleranceMinutes());
-        statement.setObject(6, rule.getEarlyToleranceMinutes());
+        statement.setString(1, rule.getShiftName());
+        statement.setTime(2, Time.valueOf(rule.getStartTime()));
+        statement.setTime(3, Time.valueOf(rule.getEndTime()));
+        statement.setObject(4, rule.getLateToleranceMinutes());
+        statement.setObject(5, rule.getEarlyToleranceMinutes());
         statement.setBigDecimal(
-                7,
+                6,
                 rule.getMaxWorkHours() == null
                         ? BigDecimal.ZERO
                         : rule.getMaxWorkHours()
         );
-        statement.setBoolean(8, rule.isActive());
+        statement.setBoolean(7, rule.isActive());
     }
 
     private WorkShiftRule mapRule(
@@ -275,7 +194,6 @@ public class WorkShiftRuleRepository {
         WorkShiftRule rule = new WorkShiftRule();
 
         rule.setId(resultSet.getLong("id"));
-        rule.setBranchId(resultSet.getLong("branch_id"));
         rule.setShiftName(resultSet.getString("shift_name"));
         rule.setStartTime(resultSet.getTime("start_time").toLocalTime());
         rule.setEndTime(resultSet.getTime("end_time").toLocalTime());

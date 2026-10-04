@@ -2,40 +2,47 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.category.view.CategoryFormController"
-      spacing="10">
+      spacing="24" alignment="CENTER_LEFT" maxWidth="Infinity">
 
-    <HBox spacing="10"
-          alignment="CENTER_LEFT">
-        <ImageView fx:id="imagePreview"
-                   fitWidth="96"
-                   fitHeight="96"
-                   preserveRatio="true"
-                   smooth="true"/>
-
-        <VBox spacing="8">
-            <Button text="Select Image"
-                    onAction="#onSelectImage"
-                    styleClass="module-secondary-button"/>
-
-            <Button text="Remove Image"
-                    onAction="#onRemoveImage"
-                    styleClass="module-secondary-button"/>
+    <HBox spacing="10" alignment="CENTER" minWidth="234" prefWidth="234" maxWidth="234">
+        <StackPane minWidth="80" prefWidth="80" maxWidth="80"
+                   minHeight="80" prefHeight="80" maxHeight="80"
+                   styleClass="record-image-frame">
+            <ImageView fx:id="imagePreview" fitWidth="72" fitHeight="72"
+                       preserveRatio="true" smooth="true"/>
+        </StackPane>
+        <VBox spacing="6" alignment="CENTER" maxWidth="140">
+            <Button text="Select image" onAction="#onSelectImage"
+                    maxWidth="Infinity" styleClass="module-secondary-button"/>
+            <Button text="Remove image" onAction="#onRemoveImage"
+                    maxWidth="Infinity" styleClass="module-secondary-button"/>
         </VBox>
     </HBox>
 
-    <TextField fx:id="nameField"
-               promptText="Category name"
-               maxWidth="Infinity"
-               styleClass="module-input"/>
-
-    <CheckBox fx:id="activeCheckBox"
-              text="Active"/>
-</VBox>
+    <GridPane hgap="20" vgap="14" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="75" hgrow="ALWAYS" minWidth="0"/>
+            <ColumnConstraints percentWidth="25" hgrow="ALWAYS" minWidth="0"/>
+        </columnConstraints>
+        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="1">
+            <Label text="Category name" styleClass="record-field-label"/>
+            <TextField fx:id="nameField" promptText="Category name" minWidth="0"
+                       maxWidth="Infinity" styleClass="module-input"/>
+        </VBox>
+        <VBox spacing="6" GridPane.columnIndex="1">
+            <Label text="Status" styleClass="record-field-label"/>
+            <CheckBox fx:id="activeCheckBox" text="Active" minHeight="40"/>
+        </VBox>
+    </GridPane>
+</HBox>

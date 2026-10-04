@@ -1,6 +1,7 @@
 package com.storemanager.domain.importing.repository;
 
 import com.storemanager.core.database.ConnectionFactory;
+import com.storemanager.core.database.DatabaseInitializer;
 import com.storemanager.domain.importing.model.ImportItem;
 import com.storemanager.domain.importing.model.ImportReceipt;
 
@@ -15,11 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImportRepository {
-
-    public ImportRepository() {
-
-        initializeTables();
-    }
 
     public Long saveReceipt(
             ImportReceipt receipt,
@@ -130,10 +126,7 @@ public class ImportRepository {
             return receipts;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return receipts;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -291,12 +284,9 @@ public class ImportRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -325,6 +315,8 @@ public class ImportRepository {
                     )
                     """
             );
+
+            DatabaseInitializer.initializeImportExpiryColumn(connection);
 
         } catch (Exception e) {
 
@@ -407,9 +399,10 @@ public class ImportRepository {
                                     product_id,
                                     quantity,
                                     unit_cost,
-                                    subtotal
+                                    subtotal,
+                                    expiry_date
                                 )
-                                VALUES (?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?)
                                 """
                         )
         ) {
@@ -419,6 +412,7 @@ public class ImportRepository {
             statement.setInt(3, item.getQuantity());
             statement.setBigDecimal(4, item.getUnitCost());
             statement.setBigDecimal(5, item.getSubtotal());
+            statement.setDate(6, item.getExpiryDate() == null ? null : java.sql.Date.valueOf(item.getExpiryDate()));
             statement.executeUpdate();
         }
     }

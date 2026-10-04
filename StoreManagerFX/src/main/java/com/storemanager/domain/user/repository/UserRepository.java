@@ -15,6 +15,29 @@ import java.util.Optional;
 
 public class UserRepository {
 
+    public void migrateLegacyRoles() {
+
+        try (
+                Connection connection = ConnectionFactory.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users SET role = ? WHERE UPPER(TRIM(role)) = ?"
+                )
+        ) {
+            statement.setString(1, RoleType.CUSTOMER.name());
+            statement.setString(2, "USER");
+            statement.executeUpdate();
+
+            // Retired administrative accounts now follow ordinary owner permissions.
+            statement.setString(1, RoleType.OWNER.name());
+            statement.setString(2, "DEVELOPER");
+            statement.executeUpdate();
+            statement.setString(2, "ADMIN");
+            statement.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot migrate legacy user roles", e);
+        }
+    }
+
     public Optional<User> findByUsername(
             String username
     ) {
@@ -53,10 +76,7 @@ public class UserRepository {
             return Optional.empty();
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return Optional.empty();
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -97,10 +117,7 @@ public class UserRepository {
             return Optional.empty();
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return Optional.empty();
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 
@@ -123,7 +140,7 @@ public class UserRepository {
                                     active
                                 )
                                 VALUES (?, ?, ?, ?)
-                                """
+                                """, Statement.RETURN_GENERATED_KEYS
                         )
 
         ) {
@@ -149,11 +166,23 @@ public class UserRepository {
             );
 
             statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) user.setId(keys.getLong(1));
+            }
 
         } catch (Exception e) {
 
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to create account. Check the username and database connection.", e);
         }
+    }
+
+    public boolean changePassword(Long id, String previousHash, String newHash) {
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "UPDATE users SET password = ? WHERE id = ? AND password = ? AND active = TRUE")) {
+            statement.setString(1, newHash); statement.setLong(2, id); statement.setString(3, previousHash);
+            return statement.executeUpdate() == 1;
+        } catch (Exception e) { throw new IllegalStateException("Unable to save password. Check the database connection and try again.", e); }
     }
 
     public boolean updateUser(
@@ -281,10 +310,7 @@ public class UserRepository {
             return users;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return users;
+            throw new IllegalStateException("Unable to load records. Check the database connection and try again.", e);
         }
     }
 

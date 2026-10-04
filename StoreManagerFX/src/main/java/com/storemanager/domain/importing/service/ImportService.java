@@ -320,43 +320,12 @@ public class ImportService {
             item.setSubtotal(
                     cartItem.getSubtotal()
             );
+            item.setExpiryDate(cartItem.getExpiryDate());
 
             importItems.add(item);
         }
 
         return importItems;
-    }
-
-    private void createInventoryImportTransaction(
-            Long receiptId,
-            ImportItem item
-    ) {
-
-        InventoryTransaction transaction =
-                new InventoryTransaction();
-
-        transaction.setProductId(
-                item.getProductId()
-        );
-        transaction.setType(
-                InventoryTransactionType.IMPORT
-        );
-        transaction.setQuantity(
-                item.getQuantity()
-        );
-        transaction.setReason(
-                "Import receipt #" + receiptId
-        );
-
-        boolean success =
-                inventoryService.adjustStock(transaction);
-
-        if (!success) {
-            throw new RuntimeException(
-                    "Cannot increase inventory for product "
-                            + item.getProductId()
-            );
-        }
     }
 
     private void createInventoryImportTransaction(
@@ -398,14 +367,7 @@ public class ImportService {
     private void validateImportAccess() {
 
         if (!PermissionGuard.canAdjustInventory()) {
-            auditService.recordPermissionDenied(
-                    "IMPORT_CREATE",
-                    "IMPORT",
-                    null,
-                    "Import access denied",
-                    null,
-                    "OWNER/MANAGER"
-            );
+            auditService.recordPermissionDenied("IMPORT_CREATE", "IMPORT", null, "Import access denied", "OWNER/MANAGER");
             throw new RuntimeException(
                     "Current user cannot import inventory"
             );
@@ -430,6 +392,7 @@ public class ImportService {
         }
 
         for (ImportCartItem cartItem : cartItems) {
+            validateExpiryDate(cartItem.getExpiryDate());
             if (cartItem.getProduct() == null
                     || cartItem.getProduct().getId() == null) {
                 throw new RuntimeException(
@@ -454,6 +417,16 @@ public class ImportService {
                         "Unit cost cannot be negative"
                 );
             }
+
+            if (cartItem.getUnitCost().stripTrailingZeros().scale() > 2) {
+                throw new IllegalArgumentException("Unit cost must have at most 2 decimal places");
+            }
+        }
+    }
+
+    public static void validateExpiryDate(LocalDate expiryDate) {
+        if (expiryDate != null && expiryDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Expiry date cannot be before today");
         }
     }
 

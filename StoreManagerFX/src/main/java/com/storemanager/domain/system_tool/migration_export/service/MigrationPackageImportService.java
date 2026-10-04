@@ -215,7 +215,6 @@ public class MigrationPackageImportService {
 
             product.setName(snapshot.name());
             product.setSku(snapshot.sku());
-            product.setBarcode(snapshot.barcode());
             product.setCategoryId(
                     categoryIdsBySourceId.get(
                             snapshot.sourceCategoryId()

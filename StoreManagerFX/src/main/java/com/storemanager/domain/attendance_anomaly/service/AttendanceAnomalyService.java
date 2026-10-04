@@ -13,9 +13,6 @@ import com.storemanager.domain.attendance_anomaly.model.WorkShiftRule;
 import com.storemanager.domain.attendance_anomaly.repository.AttendanceAnomalyRepository;
 import com.storemanager.domain.attendance_anomaly.repository.WorkShiftRuleRepository;
 import com.storemanager.domain.audit.service.AuditService;
-import com.storemanager.domain.branch.model.Branch;
-import com.storemanager.domain.branch.model.EmployeeBranchAssignment;
-import com.storemanager.domain.branch.repository.BranchRepository;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
 import com.storemanager.domain.notification.model.NotificationType;
@@ -28,17 +25,11 @@ import com.storemanager.core.util.TimeFormatUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class AttendanceAnomalyService {
 
@@ -64,9 +55,6 @@ public class AttendanceAnomalyService {
     private final WorkShiftRuleRepository workShiftRuleRepository =
             new WorkShiftRuleRepository();
 
-    private final BranchRepository branchRepository =
-            new BranchRepository();
-
     private final EmployeeRepository employeeRepository =
             new EmployeeRepository();
 
@@ -79,50 +67,10 @@ public class AttendanceAnomalyService {
     private final AuditService auditService =
             new AuditService();
 
-    public List<AttendanceAnomaly> findReviewAnomalies(
-            AttendanceAnomalyFilter filter
-    ) {
-
-        RoleType role =
-                getCurrentRole();
-
-        if (role == null) {
-            return List.of();
-        }
-
-        if (PermissionGuard.isDeveloper()
-                || PermissionGuard.isOwner()) {
-            return anomalyRepository.findAll(filter);
-        }
-
-        if (!PermissionGuard.isManager()) {
-            auditService.recordPermissionDenied(
-                    AuditService.ACTION_PERMISSION_DENIED,
-                    "ATTENDANCE_ANOMALY",
-                    null,
-                    "Attendance anomaly review denied",
-                    null
-            );
-            throw new RuntimeException("Attendance anomaly access denied");
-        }
-
-        List<Long> branchIds =
-                getManagerBranchIds();
-
-        if (branchIds.isEmpty()) {
-            return List.of();
-        }
-
-        AttendanceAnomalyFilter scopedFilter =
-                copyFilter(filter);
-        scopedFilter.setBranchIds(branchIds);
-
-        if (scopedFilter.getBranchId() != null
-                && !branchIds.contains(scopedFilter.getBranchId())) {
-            return List.of();
-        }
-
-        return anomalyRepository.findAll(scopedFilter);
+    public List<AttendanceAnomaly> findReviewAnomalies(AttendanceAnomalyFilter filter) {
+        requireReviewAccess();
+        scanOpenSessionsForMissingCheckout();
+        return anomalyRepository.findAll(filter);
     }
 
     public AttendanceAnomaly findAnomalyById(
@@ -151,81 +99,14 @@ public class AttendanceAnomalyService {
             return null;
         }
 
-        ensureCanReviewBranch(session.getBranchId());
+        requireReviewAccess();
         return session;
     }
 
     public List<Employee> findReviewEmployees() {
-
-        if (PermissionGuard.isDeveloper()
-                || PermissionGuard.isOwner()) {
-            return employeeRepository.findAll()
-                    .stream()
-                    .filter(Employee::isActive)
-                    .sorted(Comparator.comparing(Employee::getFullName,
-                            Comparator.nullsLast(String::compareToIgnoreCase)))
-                    .toList();
-        }
-
-        if (!PermissionGuard.isManager()) {
-            return List.of();
-        }
-
-        Set<Long> branchIds =
-                getManagerBranchIds()
-                        .stream()
-                        .collect(Collectors.toSet());
-
-        if (branchIds.isEmpty()) {
-            return List.of();
-        }
-
-        Map<Long, Employee> employeesById =
-                employeeRepository.findAll()
-                        .stream()
-                        .filter(Employee::isActive)
-                        .collect(
-                                Collectors.toMap(
-                                        Employee::getId,
-                                        Function.identity(),
-                                        (left, right) -> left
-                                )
-                        );
-
-        return branchRepository.findAllAssignments()
-                .stream()
-                .filter(EmployeeBranchAssignment::isActive)
-                .filter(assignment -> branchIds.contains(assignment.getBranchId()))
-                .map(EmployeeBranchAssignment::getEmployeeId)
-                .distinct()
-                .map(employeesById::get)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Employee::getFullName,
-                        Comparator.nullsLast(String::compareToIgnoreCase)))
-                .toList();
-    }
-
-    public List<Branch> findReviewBranches() {
-
-        if (PermissionGuard.isDeveloper()
-                || PermissionGuard.isOwner()) {
-            return branchRepository.findActiveBranches();
-        }
-
-        if (!PermissionGuard.isManager()) {
-            return List.of();
-        }
-
-        Employee currentEmployee =
-                getCurrentEmployee();
-
-        if (currentEmployee == null) {
-            return List.of();
-        }
-
-        return branchRepository.findActiveBranchesForEmployeeId(
-                currentEmployee.getId()
-        );
+        requireReviewAccess();
+        return employeeRepository.findAll().stream().filter(Employee::isActive)
+                .sorted(Comparator.comparing(Employee::getFullName, Comparator.nullsLast(String::compareToIgnoreCase))).toList();
     }
 
     public boolean submitManagerReport(
@@ -268,13 +149,7 @@ public class AttendanceAnomalyService {
                     anomaly.getResolvedAt()
             );
 
-            auditService.record(
-                    "ATTENDANCE_ANOMALY_MANAGER_REPORT",
-                    "ATTENDANCE_ANOMALY",
-                    anomalyId,
-                    "Manager report submitted: " + clean(reportText),
-                    anomaly.getBranchId()
-            );
+            auditService.record("ATTENDANCE_ANOMALY_MANAGER_REPORT", "ATTENDANCE_ANOMALY", anomalyId, "Manager report submitted: " + clean(reportText));
 
             notifyReviewStakeholders(
                     anomaly,
@@ -316,13 +191,7 @@ public class AttendanceAnomalyService {
                 );
 
         if (updated) {
-            auditService.record(
-                    "ATTENDANCE_ANOMALY_RESOLVED",
-                    "ATTENDANCE_ANOMALY",
-                    anomalyId,
-                    "Attendance anomaly resolved",
-                    anomaly.getBranchId()
-            );
+            auditService.record("ATTENDANCE_ANOMALY_RESOLVED", "ATTENDANCE_ANOMALY", anomalyId, "Attendance anomaly resolved");
         }
 
         return updated;
@@ -355,13 +224,7 @@ public class AttendanceAnomalyService {
                 );
 
         if (updated) {
-            auditService.record(
-                    "ATTENDANCE_ANOMALY_DISMISSED",
-                    "ATTENDANCE_ANOMALY",
-                    anomalyId,
-                    "Attendance anomaly dismissed",
-                    anomaly.getBranchId()
-            );
+            auditService.record("ATTENDANCE_ANOMALY_DISMISSED", "ATTENDANCE_ANOMALY", anomalyId, "Attendance anomaly dismissed");
         }
 
         return updated;
@@ -388,17 +251,11 @@ public class AttendanceAnomalyService {
                 );
 
         if (updated) {
-            auditService.record(
-                    enabled
+            auditService.record(enabled
                             ? "ATTENDANCE_ANOMALY_EMPLOYEE_NOTIFICATION_ENABLED"
-                            : "ATTENDANCE_ANOMALY_EMPLOYEE_NOTIFICATION_DISABLED",
-                    "ATTENDANCE_ANOMALY",
-                    anomalyId,
-                    enabled
+                            : "ATTENDANCE_ANOMALY_EMPLOYEE_NOTIFICATION_DISABLED", "ATTENDANCE_ANOMALY", anomalyId, enabled
                             ? "Employee notification enabled"
-                            : "Employee notification disabled",
-                    anomaly.getBranchId()
-            );
+                            : "Employee notification disabled");
 
             if (enabled) {
                 notifyEmployee(anomaly, anomaly.getType(), anomaly.getMessage());
@@ -437,10 +294,6 @@ public class AttendanceAnomalyService {
             currentSession.setEmployeeId(updatedSession.getEmployeeId());
         }
 
-        if (updatedSession.getBranchId() != null) {
-            currentSession.setBranchId(updatedSession.getBranchId());
-        }
-
         currentSession.setCheckInTime(
                 TimeFormatUtil.truncateToSeconds(
                         updatedSession.getCheckInTime()
@@ -468,13 +321,7 @@ public class AttendanceAnomalyService {
                 attendanceRepository.updateSession(currentSession);
 
         if (updated) {
-            auditService.record(
-                    "ATTENDANCE_EDITED_FROM_ANOMALY",
-                    "ATTENDANCE_SESSION",
-                    currentSession.getId(),
-                    "Attendance edited from anomaly review",
-                    anomaly.getBranchId()
-            );
+            auditService.record("ATTENDANCE_EDITED_FROM_ANOMALY", "ATTENDANCE_SESSION", currentSession.getId(), "Attendance edited from anomaly review");
 
             evaluateSavedSession(currentSession);
         }
@@ -491,7 +338,7 @@ public class AttendanceAnomalyService {
         }
 
         WorkShiftRule rule =
-                resolveRule(session.getBranchId());
+                resolveRule();
 
         if (rule == null) {
             return;
@@ -507,13 +354,12 @@ public class AttendanceAnomalyService {
         for (AttendanceSession session : attendanceRepository.findOpenSessions()) {
             if (session == null
                     || session.getId() == null
-                    || session.getCheckInTime() == null
-                    || session.getBranchId() == null) {
+                    || session.getCheckInTime() == null) {
                 continue;
             }
 
             WorkShiftRule rule =
-                    resolveRule(session.getBranchId());
+                    resolveRule();
 
             if (rule == null) {
                 continue;
@@ -542,9 +388,7 @@ public class AttendanceAnomalyService {
             }
 
             String message =
-                    "Missing check-out detected for "
-                            + branchName(session.getBranchId())
-                            + " starting at "
+                    "Missing check-out for session starting at "
                             + TimeFormatUtil.formatTime(
                                     session.getCheckInTime().toLocalTime()
                             );
@@ -770,7 +614,6 @@ public class AttendanceAnomalyService {
 
         anomaly.setAttendanceSessionId(session.getId());
         anomaly.setEmployeeId(session.getEmployeeId());
-        anomaly.setBranchId(session.getBranchId());
         anomaly.setType(type);
         anomaly.setSeverity(
                 severity == null ? AttendanceAnomalySeverity.LOW : severity
@@ -787,13 +630,7 @@ public class AttendanceAnomalyService {
             return false;
         }
 
-        auditService.record(
-                "ATTENDANCE_ANOMALY_CREATED",
-                "ATTENDANCE_ANOMALY",
-                anomaly.getId(),
-                message,
-                session.getBranchId()
-        );
+        auditService.record("ATTENDANCE_ANOMALY_CREATED", "ATTENDANCE_ANOMALY", anomaly.getId(), message);
 
         notifyReviewStakeholders(
                 anomaly,
@@ -832,7 +669,7 @@ public class AttendanceAnomalyService {
             }
         }
 
-        for (User user : findManagerRecipientsForBranch(anomaly.getBranchId())) {
+        for (User user : findManagerRecipients()) {
             if (user == null || user.getId() == null) {
                 continue;
             }
@@ -896,57 +733,14 @@ public class AttendanceAnomalyService {
                 .stream()
                 .filter(User::isActive)
                 .filter(user ->
-                        user.getRole() == RoleType.DEVELOPER
-                                || user.getRole() == RoleType.OWNER
+                        user.getRole() == RoleType.OWNER
                 )
                 .toList();
     }
 
-    private List<User> findManagerRecipientsForBranch(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return List.of();
-        }
-
-        Map<Long, Employee> employeesById =
-                employeeRepository.findAll()
-                        .stream()
-                        .collect(
-                                Collectors.toMap(
-                                        Employee::getId,
-                                        Function.identity(),
-                                        (left, right) -> left
-                                )
-                        );
-
-        Map<Long, User> usersById =
-                userRepository.findAll()
-                        .stream()
-                        .filter(User::isActive)
-                        .collect(
-                                Collectors.toMap(
-                                        User::getId,
-                                        Function.identity(),
-                                        (left, right) -> left
-                                )
-                        );
-
-        return branchRepository.findAllAssignments()
-                .stream()
-                .filter(EmployeeBranchAssignment::isActive)
-                .filter(assignment -> branchId.equals(assignment.getBranchId()))
-                .map(EmployeeBranchAssignment::getEmployeeId)
-                .distinct()
-                .map(employeesById::get)
-                .filter(Objects::nonNull)
-                .map(Employee::getUserId)
-                .filter(Objects::nonNull)
-                .map(usersById::get)
-                .filter(Objects::nonNull)
-                .filter(user -> user.getRole() == RoleType.MANAGER)
-                .toList();
+    private List<User> findManagerRecipients() {
+        return userRepository.findAll().stream().filter(User::isActive)
+                .filter(user -> user.getRole() == RoleType.MANAGER).toList();
     }
 
     private void ensureCanReviewAnomaly(
@@ -957,27 +751,11 @@ public class AttendanceAnomalyService {
             return;
         }
 
-        ensureCanReviewBranch(anomaly.getBranchId());
+        requireReviewAccess();
     }
 
-    private void ensureCanReviewBranch(
-            Long branchId
-    ) {
-
-        if (PermissionGuard.isDeveloper()
-                || PermissionGuard.isOwner()) {
-            return;
-        }
-
-        if (PermissionGuard.isManager()) {
-            List<Long> branchIds = getManagerBranchIds();
-            if (branchId == null || branchIds.contains(branchId)) {
-                return;
-            }
-            denyReviewAccess(branchId, "Attendance anomaly access denied");
-        }
-
-        denyReviewAccess(branchId, "Attendance anomaly access denied");
+    private void requireReviewAccess() {
+        if (!canManageAnomalyReview()) denyReviewAccess(null, "Attendance anomaly access denied");
     }
 
     private void denyReviewAccess(
@@ -985,30 +763,18 @@ public class AttendanceAnomalyService {
             String message
     ) {
 
-        auditService.recordPermissionDenied(
-                AuditService.ACTION_PERMISSION_DENIED,
-                "ATTENDANCE_ANOMALY",
-                entityId,
-                message,
-                null
-        );
+        auditService.recordPermissionDenied(AuditService.ACTION_PERMISSION_DENIED, "ATTENDANCE_ANOMALY", entityId, message);
         throw new RuntimeException(message);
     }
 
     private boolean canAdminReview() {
 
-        return PermissionGuard.isDeveloper()
-                || PermissionGuard.isOwner();
+        return PermissionGuard.isOwner();
     }
 
     private boolean canManageAnomalyReview() {
 
         return canAdminReview() || PermissionGuard.isManager();
-    }
-
-    private boolean canManagerReport() {
-
-        return PermissionGuard.isManager();
     }
 
     private AttendanceAnomaly requireAnomaly(
@@ -1040,50 +806,16 @@ public class AttendanceAnomalyService {
         copy.setType(filter.getType());
         copy.setSeverity(filter.getSeverity());
         copy.setEmployeeId(filter.getEmployeeId());
-        copy.setBranchId(filter.getBranchId());
-        copy.setBranchIds(filter.getBranchIds());
         copy.setFromDate(filter.getFromDate());
         copy.setToDate(filter.getToDate());
         return copy;
     }
 
-    private List<Long> getManagerBranchIds() {
-
-        Employee currentEmployee =
-                getCurrentEmployee();
-
-        if (currentEmployee == null) {
-            return List.of();
-        }
-
-        return branchRepository.findActiveBranchesForEmployeeId(
-                        currentEmployee.getId()
-                )
-                .stream()
-                .map(Branch::getId)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private WorkShiftRule resolveRule(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return null;
-        }
-
-        WorkShiftRule rule =
-                workShiftRuleRepository.findActiveByBranchId(branchId);
-
-        if (rule != null) {
-            return rule;
-        }
-
-        WorkShiftRule fallback =
-                new WorkShiftRule();
-        fallback.setBranchId(branchId);
-        fallback.setShiftName("Default shift");
+    private WorkShiftRule resolveRule() {
+        WorkShiftRule rule = workShiftRuleRepository.findActive();
+        if (rule != null) return rule;
+        WorkShiftRule fallback = new WorkShiftRule();
+        fallback.setShiftName("Store shift");
         fallback.setStartTime(DEFAULT_SHIFT_START);
         fallback.setEndTime(DEFAULT_SHIFT_END);
         fallback.setEarlyToleranceMinutes(DEFAULT_EARLY_TOLERANCE_MINUTES);
@@ -1220,24 +952,6 @@ public class AttendanceAnomalyService {
         }
 
         return AttendanceAnomalySeverity.LOW;
-    }
-
-    private String branchName(
-            Long branchId
-    ) {
-
-        if (branchId == null) {
-            return "unknown branch";
-        }
-
-        Branch branch =
-                branchRepository.findBranchById(branchId);
-
-        if (branch == null || branch.getName() == null) {
-            return "branch #" + branchId;
-        }
-
-        return branch.getName();
     }
 
     private String notificationTitleFor(

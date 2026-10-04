@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OwnerDashboardDto {
+    private String attendanceOverview;
+    public String getAttendanceOverview() { return attendanceOverview; }
+    public void setAttendanceOverview(String value) { attendanceOverview = value; }
 
     private String title;
 
@@ -18,22 +21,9 @@ public class OwnerDashboardDto {
 
     private long employeesCurrentlyWorking;
 
-    private String payrollTotals;
-
     private String revenueTotals;
 
     private String inventoryAlertsSummary;
-
-    private DashboardOnlineOrderSnapshot onlineOrderDashboard;
-
-    private List<DashboardBranchSummary> branchOperationalSummaries =
-            new ArrayList<>();
-
-    private List<DashboardEmployeeLocationRow> employeeLocations =
-            new ArrayList<>();
-
-    private List<DashboardPayrollSummary> payrollSummaries =
-            new ArrayList<>();
 
     private List<DashboardCashFlowSummary> cashFlowSummaries =
             new ArrayList<>();
@@ -92,14 +82,6 @@ public class OwnerDashboardDto {
         this.employeesCurrentlyWorking = employeesCurrentlyWorking;
     }
 
-    public String getPayrollTotals() {
-        return payrollTotals;
-    }
-
-    public void setPayrollTotals(String payrollTotals) {
-        this.payrollTotals = payrollTotals;
-    }
-
     public String getRevenueTotals() {
         return revenueTotals;
     }
@@ -114,38 +96,6 @@ public class OwnerDashboardDto {
 
     public void setInventoryAlertsSummary(String inventoryAlertsSummary) {
         this.inventoryAlertsSummary = inventoryAlertsSummary;
-    }
-
-    public DashboardOnlineOrderSnapshot getOnlineOrderDashboard() {
-        return onlineOrderDashboard;
-    }
-
-    public void setOnlineOrderDashboard(DashboardOnlineOrderSnapshot onlineOrderDashboard) {
-        this.onlineOrderDashboard = onlineOrderDashboard;
-    }
-
-    public List<DashboardBranchSummary> getBranchOperationalSummaries() {
-        return branchOperationalSummaries;
-    }
-
-    public void setBranchOperationalSummaries(List<DashboardBranchSummary> branchOperationalSummaries) {
-        this.branchOperationalSummaries = branchOperationalSummaries;
-    }
-
-    public List<DashboardEmployeeLocationRow> getEmployeeLocations() {
-        return employeeLocations;
-    }
-
-    public void setEmployeeLocations(List<DashboardEmployeeLocationRow> employeeLocations) {
-        this.employeeLocations = employeeLocations;
-    }
-
-    public List<DashboardPayrollSummary> getPayrollSummaries() {
-        return payrollSummaries;
-    }
-
-    public void setPayrollSummaries(List<DashboardPayrollSummary> payrollSummaries) {
-        this.payrollSummaries = payrollSummaries;
     }
 
     public List<DashboardCashFlowSummary> getCashFlowSummaries() {
