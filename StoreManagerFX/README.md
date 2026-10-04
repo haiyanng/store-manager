@@ -61,9 +61,13 @@ Ví dụ định dạng (ID và thời gian minh họa):
 
 ## Sao lưu database
 
-OWNER thực hiện sao lưu trong System Tools, chọn chương trình `mysqldump` (XAMPP thường ở `C:\xampp\mysql\bin\mysqldump.exe`) và nơi lưu file `.sql`, có thể chọn USB.
+OWNER thực hiện sao lưu trong System Tools, chọn chương trình `mysqldump` (XAMPP thường ở `C:\xampp\mysql\bin\mysqldump.exe`) và nơi lưu file `.zip`, có thể chọn USB. Gói sao lưu đầy đủ chứa `database.sql`, toàn bộ thư mục `data/images` và dấu nhận dạng định dạng; không chứa cấu hình kết nối database của máy.
 
-Ứng dụng xuất ra file tạm trong cùng thư mục đích. Chỉ khi `mysqldump` kết thúc thành công và file có dữ liệu, ứng dụng mới chuyển file tạm thành file đã chọn. Nếu quá trình xuất bị lỗi, bản sao lưu cũ tại đường dẫn đó vẫn được giữ và thông báo hiển thị nguyên nhân từ `mysqldump`. Đây là sao lưu do người dùng thực hiện; chưa có lịch sao lưu tự động.
+Ứng dụng xuất ra file tạm trong cùng thư mục đích. Chỉ khi `mysqldump` kết thúc thành công, file SQL có dữ liệu và ảnh đã được đóng gói thành công, ứng dụng mới chuyển file tạm thành file đã chọn. Nếu quá trình xuất bị lỗi, bản sao lưu cũ tại đường dẫn đó vẫn được giữ và thông báo hiển thị nguyên nhân. Đây là sao lưu do người dùng thực hiện; chưa có lịch sao lưu tự động.
+
+Restore Backup nhận gói ZIP đầy đủ mới hoặc file SQL cũ. ZIP được kiểm tra định dạng và đường dẫn trước khi chạy SQL, rồi thay bộ ảnh trong `data/images` bằng bộ ảnh đã sao lưu. Nếu SQL đã khôi phục nhưng bước lưu ảnh thất bại, ứng dụng báo rõ phần thất bại để người dùng giữ gói sao lưu và thử lại. File SQL cũ chỉ khôi phục database và không có ảnh. Lệnh SQL của MySQL vẫn có thể thay đổi dữ liệu một phần nếu bị lỗi giữa chừng; cần giữ bản sao lưu hiện tại trước khi restore.
+
+Migration & Export là gói JSON phục vụ trao đổi dữ liệu, khác với gói sao lưu đầy đủ. Chọn Products xuất thêm tồn kho, lịch sử giao dịch kho, phiếu nhập, chi tiết nhập và hạn sử dụng; Sales giữ cả tiền nhận và tiền thừa. Gói JSON không chứa mật khẩu. Import Catalog Only chỉ nhập danh mục, sản phẩm, số lượng tồn và ảnh của chúng, với số lượng tồn lấy từ snapshot. Tài khoản, nhân viên, chấm công, đơn bán, lịch sử nhập và audit trong JSON chỉ dùng để xuất dữ liệu; để phục hồi toàn bộ ứng dụng cần dùng Restore Backup với ZIP đầy đủ.
 
 ## Mô hình một cửa hàng
 

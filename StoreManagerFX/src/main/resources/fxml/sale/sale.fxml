@@ -20,7 +20,7 @@
       spacing="18">
 
     <VBox spacing="6">
-        <Label text="Order"
+        <Label text="Sale"
                styleClass="content-title"/>
 
         <Label text="Create in-store orders and track completed sales."
@@ -32,7 +32,7 @@
     </fx:define>
 
     <HBox spacing="12">
-        <ToggleButton fx:id="orderTabButton" text="Order" selected="true"
+        <ToggleButton fx:id="orderTabButton" text="Sale" selected="true"
                       toggleGroup="$orderViewGroup"
                       styleClass="module-button, order-tab-button"
                       onAction="#onShowOrder"/>
@@ -91,10 +91,6 @@
 
                         <Label fx:id="selectedProductPreviewSkuLabel"
                                text="SKU: -"
-                               styleClass="analytics-card-detail"/>
-
-                        <Label fx:id="selectedProductPreviewBarcodeLabel"
-                               text="Barcode: -"
                                styleClass="analytics-card-detail"/>
 
                         <Label fx:id="selectedProductPreviewPriceLabel"
@@ -188,6 +184,8 @@
             <Button text="Complete order"
                     styleClass="module-button"
                     onAction="#onFinalizeSale"/>
+            <Button text="Export last invoice" styleClass="module-secondary-button"
+                    onAction="#onExportLastInvoice"/>
         </HBox>
 
     </VBox>
@@ -195,6 +193,7 @@
     <VBox spacing="18" visible="${detailsTabButton.selected}" managed="${detailsTabButton.selected}">
 
         <VBox spacing="8">
+            <Button text="Export invoice" onAction="#onExportInvoice" styleClass="module-button"/>
             <Label text="Recent orders"
                    styleClass="content-description"/>
 
@@ -257,7 +256,7 @@
     </VBox>
 
     <Label fx:id="statusLabel"
-           text="Ready"
+           text="Ready" visible="false" managed="false"
            styleClass="content-description"/>
 
     <padding>

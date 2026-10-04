@@ -4,7 +4,6 @@ import com.storemanager.core.navigation.ContentManager;
 import com.storemanager.core.navigation.SceneManager;
 import com.storemanager.core.session.AppSession;
 import com.storemanager.core.runtime.async.AsyncTaskRunner;
-import com.storemanager.domain.auth.service.AuthService;
 import com.storemanager.domain.dashboard.model.DashboardMenuItem;
 import com.storemanager.domain.dashboard.model.DashboardMenuRegistry;
 import com.storemanager.domain.dashboard.presenter.DashboardShellPresenter;
@@ -59,6 +58,7 @@ public class DashboardShellController {
             new MessageService();
 
     private Timeline badgeTimeline;
+    private boolean logoutInProgress;
 
     @FXML
     public void initialize() {
@@ -119,13 +119,61 @@ public class DashboardShellController {
 
     @FXML
     public void onLogout() {
-
+        if (logoutInProgress) return;
+        logoutInProgress = true;
         stopBadgePolling();
-        new AuthService().logout();
+        var shell = contentArea.getScene().getRoot();
+        shell.setDisable(true);
+        presenter.logout(() -> SceneManager.switchScene("/fxml/auth/login.fxml"), error -> {
+            logoutInProgress = false;
+            shell.setDisable(false);
+            startBadgePolling();
+            com.storemanager.core.util.UiFeedback.showError(error.getMessage());
+        });
+    }
 
-        SceneManager.switchScene(
-                "/fxml/auth/login.fxml"
-        );
+    @FXML public void onChangePassword() {
+        javafx.scene.control.Dialog<Void> dialog = new javafx.scene.control.Dialog<>();
+        dialog.setTitle("Change password");
+        dialog.initOwner(contentArea.getScene().getWindow());
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/typography.css").toExternalForm());
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/password-dialog.css").toExternalForm());
+        dialog.getDialogPane().getStyleClass().add("password-dialog");
+        var current = new javafx.scene.control.PasswordField();
+        var replacement = new javafx.scene.control.PasswordField();
+        var confirmation = new javafx.scene.control.PasswordField();
+        current.setPromptText("Current password"); replacement.setPromptText("New password");
+        confirmation.setPromptText("Confirm new password");
+        Label status = new Label(); status.setWrapText(true);
+        var form = new VBox(12, new Label("Current password"), current,
+                new Label("New password"), replacement, new Label("Confirm new password"), confirmation, status);
+        form.setPrefWidth(360); dialog.getDialogPane().setContent(form);
+        var save = new javafx.scene.control.ButtonType("Save password", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(save, javafx.scene.control.ButtonType.CANCEL);
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
+        saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            event.consume(); saveButton.setDisable(true); status.setText("Saving password...");
+            presenter.changePassword(current.getText(), replacement.getText(), confirmation.getText(), () -> {
+                dialog.close();
+                showPasswordChanged();
+            }, error -> { saveButton.setDisable(false); status.setText(error.getMessage()); });
+        });
+        dialog.showAndWait();
+    }
+
+    private void showPasswordChanged() {
+        Alert done = new Alert(Alert.AlertType.INFORMATION);
+        done.initOwner(contentArea.getScene().getWindow());
+        done.setTitle("Store Manager");
+        done.setHeaderText("Password changed successfully");
+        done.setContentText("Your password has been updated.\nUse your new password the next time you sign in.");
+        done.getDialogPane().getStylesheets().add(getClass().getResource("/css/password-dialog.css").toExternalForm());
+        done.getDialogPane().getStyleClass().addAll("password-dialog", "password-success-dialog");
+        done.getDialogPane().setPrefWidth(460);
+        Label icon = new Label("\u2713");
+        icon.getStyleClass().add("password-success-icon");
+        done.setGraphic(icon);
+        done.showAndWait();
     }
 
     private void startBadgePolling() {

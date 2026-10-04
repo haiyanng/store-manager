@@ -76,7 +76,7 @@
               prefHeight="170" promptText="Select an event to inspect its changes and copy the details."/>
 
     <Label fx:id="statusLabel"
-           text="Ready"
+           text="Ready" visible="false" managed="false"
            styleClass="content-description"/>
 
     <padding>

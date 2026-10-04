@@ -13,11 +13,6 @@ import java.util.List;
 
 public class CategoryRepository {
 
-    public CategoryRepository() {
-
-        initializeTable();
-    }
-
     public List<Category> findAll() {
 
         List<Category> categories =
@@ -175,12 +170,9 @@ public class CategoryRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -210,7 +202,7 @@ public class CategoryRepository {
         }
     }
 
-    private void addImagePathColumnIfMissing(
+    private static void addImagePathColumnIfMissing(
             Connection connection
     ) throws Exception {
 

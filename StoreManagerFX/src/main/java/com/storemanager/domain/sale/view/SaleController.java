@@ -110,8 +110,6 @@ public class SaleController {
     @FXML
     private Label selectedProductPreviewSkuLabel;
 
-    @FXML
-    private Label selectedProductPreviewBarcodeLabel;
 
     @FXML
     private Label selectedProductPreviewPriceLabel;
@@ -126,6 +124,7 @@ public class SaleController {
     private ImageView selectedProductImageView;
 
     private SalePresenter presenter;
+    private SaleOrder lastCompletedOrder;
 
     @FXML
     public void initialize() {
@@ -228,6 +227,7 @@ public class SaleController {
     public void resetPayment() { amountReceivedField.clear(); }
 
     public void showOrderCompleted(SaleOrder order) {
+        lastCompletedOrder = order;
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Store Manager");
         alert.setHeaderText("Order #" + order.getId() + " completed");
@@ -237,10 +237,36 @@ public class SaleController {
         alert.showAndWait();
     }
 
+    @FXML public void onExportInvoice() {
+        SaleOrder order = orderTable.getSelectionModel().getSelectedItem();
+        if (order == null) { presenter.exportInvoice(null, null); return; }
+        exportInvoice(order);
+    }
+
+    @FXML public void onExportLastInvoice() {
+        if (lastCompletedOrder == null) {
+            showError("Complete a sale first, or select a completed order in Order details to export its invoice.");
+            return;
+        }
+        exportInvoice(lastCompletedOrder);
+    }
+
+    private void exportInvoice(SaleOrder order) {
+        javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+        chooser.setTitle("Export invoice"); chooser.setInitialFileName("invoice-" + order.getId() + ".html");
+        chooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("HTML invoice (*.html)", "*.html"));
+        File file = chooser.showSaveDialog(cartTable.getScene().getWindow());
+        if (file != null) presenter.exportInvoice(order, file.toPath());
+    }
+
     @FXML
     public void onRefresh() {
 
         presenter.loadSaleData();
+    }
+
+    public void setStockByProductId(java.util.Map<Long, Integer> stock) {
+        productSelectionWorkflowController.setStockByProductId(stock);
     }
 
     public void setProducts(
@@ -322,9 +348,6 @@ public class SaleController {
         selectedProductPreviewSkuLabel.setText(
                 "SKU: " + safeText(preview.sku())
         );
-        selectedProductPreviewBarcodeLabel.setText(
-                "Barcode: " + safeText(preview.barcode())
-        );
         selectedProductPreviewPriceLabel.setText(
                 "Unit price: " + formatPrice(preview.unitPrice())
         );
@@ -345,7 +368,6 @@ public class SaleController {
         );
         selectedProductPreviewNameLabel.setText("Name: -");
         selectedProductPreviewSkuLabel.setText("SKU: -");
-        selectedProductPreviewBarcodeLabel.setText("Barcode: -");
         selectedProductPreviewPriceLabel.setText("Unit price: 0.00");
         selectedProductPreviewStockLabel.setText("Stock: N/A");
 

@@ -153,7 +153,7 @@ Việc vô hiệu hóa danh mục không nên được hiểu là đã đồng t
 
 ### 5.3. Product — Quản lý sản phẩm
 
-Thông tin sản phẩm gồm Product name, Category, SKU, Barcode, Base price, Unit, ảnh và trạng thái Active. SKU là mã nội bộ để nhận diện hàng hóa; Barcode là thông tin mã vạch; Unit là đơn vị như chai, hộp hoặc cái. Base price được dùng làm giá bán cơ sở trong luồng Order.
+Thông tin sản phẩm gồm Product name, Category, SKU, Base price, Unit, ảnh và trạng thái Active. SKU là mã nội bộ để nhận diện hàng hóa; Unit là đơn vị như chai, hộp hoặc cái. Base price được dùng làm giá bán cơ sở trong luồng Order.
 
 1. Tạo danh mục trước nếu muốn phân loại sản phẩm.
 2. Mở Product và chọn Clear form.
@@ -207,7 +207,7 @@ Nếu thêm lại cùng một sản phẩm với cùng giá nhập và cùng h�
 
 OWNER, MANAGER hoặc STAFF mở Order để ghi nhận đơn bán trực tiếp.
 
-1. Chọn sản phẩm; xem ảnh, SKU, Barcode, Unit price và Stock ở phần xem trước.
+1. Chọn sản phẩm; xem ảnh, SKU, Unit price và Stock ở phần xem trước.
 2. Nhập Qty và nhấn Add item.
 3. Thêm các sản phẩm khác vào Cart.
 4. Kiểm tra Quantity, Unit price, Subtotal và Total.

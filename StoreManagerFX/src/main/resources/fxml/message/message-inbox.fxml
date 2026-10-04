@@ -107,7 +107,7 @@
                                 onAction="#onSendMessage"
                                 styleClass="module-button"/>
                         <Label fx:id="statusLabel"
-                               text="Ready"
+                               text="Ready" visible="false" managed="false"
                                styleClass="content-description"/>
                     </HBox>
                 </VBox>

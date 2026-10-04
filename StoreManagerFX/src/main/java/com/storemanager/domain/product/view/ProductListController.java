@@ -35,8 +35,6 @@ public class ProductListController {
     @FXML
     private TableColumn<Product, String> skuColumn;
 
-    @FXML
-    private TableColumn<Product, String> barcodeColumn;
 
     @FXML
     private TableColumn<Product, String> categoryColumn;
@@ -55,9 +53,6 @@ public class ProductListController {
 
     @FXML
     private Button updateButton;
-
-    @FXML
-    private Button deleteButton;
 
     @FXML
     private Label statusLabel;
@@ -97,9 +92,6 @@ public class ProductListController {
                 new PropertyValueFactory<>("sku")
         );
 
-        barcodeColumn.setCellValueFactory(
-                new PropertyValueFactory<>("barcode")
-        );
 
         categoryColumn.setCellValueFactory(
                 cellData ->
@@ -158,13 +150,6 @@ public class ProductListController {
     }
 
     @FXML
-    public void onDelete() {
-        if (!UiFeedback.confirm("Deactivate product?", "The selected product will become inactive. Existing transaction history is retained.")) return;
-
-        presenter.deleteProduct();
-    }
-
-    @FXML
     public void onClear() {
 
         presenter.clearForm();
@@ -219,10 +204,6 @@ public class ProductListController {
         setBusy(busy);
     }
 
-    public void setDeleteEnabled(boolean enabled) {
-        setBusy(busy);
-    }
-
     public void setBusy(boolean busy) {
         this.busy = busy;
         boolean allowed = PermissionGuard.canModifyProduct();
@@ -233,7 +214,6 @@ public class ProductListController {
         clearButton.setDisable(busy);
         createButton.setDisable(busy || !allowed || selected);
         updateButton.setDisable(busy || !allowed || !selected);
-        deleteButton.setDisable(busy || !allowed || !selected);
     }
 
     public void setStatus(

@@ -10,6 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -242,7 +243,13 @@ public class MigrationExportController {
 
     @FXML
     public void onImportPackage() {
-
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setHeaderText("Import catalog snapshot?");
+        confirmation.setContentText("This imports categories, products, stock quantities and their images. "
+                + "Current stock quantities will be replaced by the package snapshot. "
+                + "Sales, import history, accounts, employees, attendance and audit logs will not be restored. "
+                + "For full recovery, use Restore Backup with a complete backup ZIP.");
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
         presenter.importPackage();
     }
 
@@ -279,7 +286,7 @@ public class MigrationExportController {
             String status
     ) {
 
-        migrationStatusLabel.setText(status);
+        UiFeedback.status(migrationStatusLabel, status);
     }
 
     public void setPreview(
@@ -345,7 +352,7 @@ public class MigrationExportController {
             String statusLabelText
     ) {
 
-        migrationStatusLabel.setText(statusLabelText);
+        UiFeedback.status(migrationStatusLabel, statusLabelText);
     }
 
     public void showInfo(

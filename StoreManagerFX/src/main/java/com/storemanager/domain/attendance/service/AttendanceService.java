@@ -77,13 +77,17 @@ public class AttendanceService {
         result.setStatusLabel("Not working");
         result.setTodayWorkedHours(BigDecimal.ZERO);
         Employee employee = getCurrentEmployee();
-        result.setEmployeeLinked(employee != null && employee.isActive());
-        if (!result.isEmployeeLinked()) {
+        if (employee == null) {
             result.setStatusLabel("No active linked employee. Contact the owner.");
             return result;
         }
         List<AttendanceSession> sessions = findSessionsByEmployeeId(employee.getId());
         AttendanceSession open = sessions.stream().filter(s -> s.getCheckOutTime() == null).findFirst().orElse(null);
+        result.setEmployeeLinked(employee.isActive() || open != null);
+        if (!result.isEmployeeLinked()) {
+            result.setStatusLabel("Your employee record is inactive. Contact the owner.");
+            return result;
+        }
         result.setActiveSession(open);
         result.setLatestCheckInTime(sessions.stream().map(AttendanceSession::getCheckInTime)
                 .filter(java.util.Objects::nonNull).max(LocalDateTime::compareTo).orElse(null));
@@ -113,7 +117,7 @@ public class AttendanceService {
         boolean saved;
         try {
             validateAccess();
-            Employee employee = resolveEmployee(requested);
+            Employee employee = resolveEmployee(requested, checkOut);
             session = repository.findOpenSessionByEmployeeId(employee.getId());
             if (checkOut) {
                 if (session == null) throw new IllegalStateException("No active attendance session found");
@@ -150,7 +154,7 @@ public class AttendanceService {
         return saved;
     }
 
-    private Employee resolveEmployee(Employee requested) {
+    private Employee resolveEmployee(Employee requested, boolean checkingOut) {
         Employee target = requested;
         if (isEmployeeSelfService()) {
             target = getCurrentEmployee();
@@ -160,7 +164,8 @@ public class AttendanceService {
         }
         if (target == null || target.getId() == null) throw new IllegalArgumentException("Select an employee first");
         target = employees.findById(target.getId());
-        if (target == null || !target.isActive()) throw new IllegalStateException("Employee is missing or inactive");
+        if (target == null) throw new IllegalStateException("Employee no longer exists. Refresh the employee list.");
+        if (!checkingOut && !target.isActive()) throw new IllegalStateException("Inactive employees cannot check in. Ask the owner or manager to activate the employee first.");
         return target;
     }
 

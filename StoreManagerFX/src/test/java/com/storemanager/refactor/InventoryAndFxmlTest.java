@@ -135,8 +135,10 @@ public class InventoryAndFxmlTest {
             assertFalse(((TableView<?>) loader.getNamespace().get("transactionTable")).isEditable());
             var root = (javafx.scene.Parent) loader.getRoot();
             var buttons = root.lookupAll(".button");
-            assertEquals(1, buttons.size());
-            assertEquals("Refresh", ((Button) buttons.iterator().next()).getText());
+            assertEquals(java.util.Set.of("Refresh", "Apply filters", "Clear filters"),
+                    buttons.stream().map(node -> ((Button) node).getText()).collect(java.util.stream.Collectors.toSet()));
+            assertNotNull(loader.getNamespace().get("lowStockOnly"));
+            assertNotNull(loader.getNamespace().get("filterProduct"));
             ((InventoryListController) loader.getController()).onRefresh();
             return null;
         });
@@ -210,6 +212,56 @@ public class InventoryAndFxmlTest {
         assertTrue(Files.exists(destination.resolve("attendance.json")));
         assertTrue(Files.exists(destination.resolve("sales.json")));
         assertTrue(Files.exists(destination.resolve("manifest.json")));
+    }
+
+    @Test
+    public void productSelectionShowsStockAndRefreshesWithoutLosingSearch() throws Exception {
+        onFx(() -> {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/shared/product-selection-workflow.fxml"));
+            loader.load();
+            com.storemanager.domain.product.view.ProductSelectionWorkflowController controller = loader.getController();
+            var product = new com.storemanager.domain.product.model.Product();
+            product.setId(42L);
+            product.setName("Stock test");
+            product.setSku("STOCK-42");
+            controller.setProducts(List.of(product));
+            controller.setStockByProductId(java.util.Map.of(42L, 12));
+            var search = (javafx.scene.control.TextField) loader.getNamespace().get("searchField");
+            search.setText("STOCK-42");
+            @SuppressWarnings("unchecked")
+            var column = (javafx.scene.control.TableColumn<com.storemanager.domain.product.model.Product, String>) loader.getNamespace().get("resultStockColumn");
+            assertTrue(column.isVisible());
+            assertEquals("12", column.getCellData(product));
+            controller.setStockByProductId(java.util.Map.of(42L, 9));
+            assertEquals("9", column.getCellData(product));
+            assertEquals("STOCK-42", search.getText());
+            controller.setStockByProductId(java.util.Map.of());
+            assertEquals("0", column.getCellData(product));
+            return null;
+        });
+    }
+
+    @Test
+    public void productCreateAndUpdateKeepFieldsAligned() {
+        var repository = new com.storemanager.domain.product.repository.ProductRepository();
+        var product = new com.storemanager.domain.product.model.Product();
+        product.setName("Product persistence test");
+        product.setSku("PERSIST-42");
+        product.setUnit("box");
+        product.setBasePrice(new java.math.BigDecimal("12500.00"));
+        product.setImagePath("images/test.png");
+        product.setActive(true);
+        assertTrue(repository.save(product));
+        var saved = repository.findById(product.getId());
+        assertEquals("box", saved.getUnit());
+        assertEquals("images/test.png", saved.getImagePath());
+        assertEquals(0, product.getBasePrice().compareTo(saved.getBasePrice()));
+        product.setName("Updated product");
+        product.setUnit("bottle");
+        assertTrue(repository.update(product));
+        saved = repository.findById(product.getId());
+        assertEquals("Updated product", saved.getName());
+        assertEquals("bottle", saved.getUnit());
     }
 
     private static InventoryTransaction transaction(InventoryTransactionType type, int quantity) {

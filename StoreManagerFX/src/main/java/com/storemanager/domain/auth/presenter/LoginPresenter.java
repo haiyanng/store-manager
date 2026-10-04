@@ -53,4 +53,11 @@ public class LoginPresenter {
                 licenseStatus
         );
     }
+
+    public void loginAsync(String username, String password,
+            java.util.function.Consumer<LoginResponse> success,
+            java.util.function.Consumer<Throwable> failure, Runnable finished) {
+        com.storemanager.core.runtime.async.AsyncTaskRunner.run(
+                () -> login(username, password), success, failure, finished);
+    }
 }

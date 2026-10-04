@@ -189,7 +189,7 @@ public class MigrationExportPresenter {
         loadingState =
                 LoadingState.LOADING;
         view.setBusy(true);
-        view.setStatus("Importing package...");
+        view.setStatus("Importing catalog snapshot...");
 
         AsyncTaskRunner.run(
                 () -> migrationExportService.importPackage(
@@ -262,7 +262,7 @@ public class MigrationExportPresenter {
         view.setHistory(
                 migrationExportService.findHistory()
         );
-        view.setStatus("Import completed");
+        view.setStatus("Catalog import completed");
         view.showInfo(
                 "Imported "
                         + result.productCount()
@@ -270,7 +270,8 @@ public class MigrationExportPresenter {
                         + result.categoryCount()
                         + " categories, "
                         + result.inventoryCount()
-                        + " inventory rows."
+                        + " inventory rows. Sales, import history, accounts, employees, attendance and audit logs "
+                        + "were not restored. Use a complete backup ZIP for full recovery."
         );
     }
 

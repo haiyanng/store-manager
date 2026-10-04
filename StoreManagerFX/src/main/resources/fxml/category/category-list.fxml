@@ -30,8 +30,6 @@
         <Label text="Category details" styleClass="record-section-title"/>
         <fx:include fx:id="categoryForm" source="category-form.fxml"/>
         <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="record-actions">
-            <Button fx:id="deactivateButton" text="Deactivate"
-                    styleClass="record-danger-button" onAction="#onDeactivate"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
             <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
@@ -72,7 +70,7 @@
     </TableView>
 
     <Label fx:id="statusLabel"
-           text="Ready"
+           text="Ready" visible="false" managed="false"
            styleClass="content-description"/>
 
     <padding>

@@ -13,11 +13,6 @@ import java.util.List;
 
 public class EmployeeRepository {
 
-    public EmployeeRepository() {
-
-        initializeTable();
-    }
-
     public List<Employee> findAll() {
 
         List<Employee> employees =
@@ -295,44 +290,12 @@ public class EmployeeRepository {
     public boolean delete(
             Employee employee
     ) {
-
-        try (
-
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(
-                                """
-                                DELETE FROM employees
-                                WHERE id = ?
-                                """
-                        )
-
-        ) {
-
-            statement.setLong(
-                    1,
-                    employee.getId()
-            );
-
-            return statement.executeUpdate() > 0;
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return false;
-        }
+        throw new IllegalStateException("Employee records cannot be deleted. Deactivate the employee instead to preserve attendance history.");
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
 
@@ -369,7 +332,7 @@ public class EmployeeRepository {
         }
     }
 
-    private void addImagePathColumnIfMissing(
+    private static void addImagePathColumnIfMissing(
             Connection connection
     ) throws Exception {
 
@@ -405,7 +368,7 @@ public class EmployeeRepository {
         }
     }
 
-    private void addUserIdColumnIfMissing(
+    private static void addUserIdColumnIfMissing(
             Connection connection
     ) throws Exception {
 
@@ -445,7 +408,7 @@ public class EmployeeRepository {
         }
     }
 
-    private void addUserIdUniqueIndexIfMissing(
+    private static void addUserIdUniqueIndexIfMissing(
             Connection connection
     ) throws Exception {
 

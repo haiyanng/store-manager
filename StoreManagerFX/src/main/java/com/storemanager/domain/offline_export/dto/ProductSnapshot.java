@@ -6,7 +6,6 @@ public record ProductSnapshot(
         Long sourceId,
         String name,
         String sku,
-        String barcode,
         Long sourceCategoryId,
         BigDecimal basePrice,
         String unit,

@@ -9,51 +9,34 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
 
+import java.util.List;
+import java.util.concurrent.Callable;
 
 public class NotificationCenterPresenter {
 
     private final NotificationCenterController view;
-
-    private final NotificationService notificationService =
-            new NotificationService();
-
-    private LoadingState loadingState =
-            LoadingState.IDLE;
-
+    private final NotificationService notificationService = new NotificationService();
+    private LoadingState loadingState = LoadingState.IDLE;
     private Long selectedNotificationId;
-
     private Timeline pollingTimeline;
+    private boolean busy;
 
-    public NotificationCenterPresenter(
-            NotificationCenterController view
-    ) {
-
+    public NotificationCenterPresenter(NotificationCenterController view) {
         this.view = view;
     }
 
     public void initialize() {
-
         refreshNotifications();
     }
 
     public void startPolling() {
-
-        if (pollingTimeline != null) {
-            return;
-        }
-
-        pollingTimeline = new Timeline(
-                new KeyFrame(
-                        Duration.seconds(15),
-                        event -> refreshSilently()
-                )
-        );
+        if (pollingTimeline != null) return;
+        pollingTimeline = new Timeline(new KeyFrame(Duration.seconds(15), event -> refreshNotifications(false)));
         pollingTimeline.setCycleCount(Timeline.INDEFINITE);
         pollingTimeline.play();
     }
 
     public void stopPolling() {
-
         if (pollingTimeline != null) {
             pollingTimeline.stop();
             pollingTimeline = null;
@@ -61,116 +44,89 @@ public class NotificationCenterPresenter {
     }
 
     public void refreshNotifications() {
-
         refreshNotifications(true);
     }
 
-    private void refreshNotifications(
-            boolean interactive
-    ) {
-
-        Long selectedNotificationId =
-                view.getSelectedNotificationId();
-
-        loadingState = LoadingState.LOADING;
-        if (interactive) {
-            view.setBusy(true);
-            view.setStatus("Loading notifications...");
-        }
-
-        AsyncTaskRunner.run(
-                () -> notificationService.findNotificationsForCurrentUser(),
-                notifications -> {
-                    view.setNotifications(notifications);
-                    if (!interactive) {
-                        view.selectNotificationById(selectedNotificationId);
-                    }
-                    view.setRecentNotifications(
-                            notificationService.findRecentNotificationsForCurrentUser(5)
-                    );
-                    view.setUnreadCount(
-                            notificationService.countUnreadForCurrentUser()
-                    );
-                    loadingState = LoadingState.SUCCESS;
-                    if (interactive) {
-                        view.setStatus("Ready");
-                    }
-                },
-                throwable -> {
-                    loadingState = LoadingState.ERROR;
-                    if (interactive) {
-                        view.setStatus("Unable to load notifications");
-                        view.showError(throwable.getMessage());
-                    }
-                },
-                () -> {
-                    if (interactive) {
-                        view.setBusy(false);
-                    }
-                }
-        );
+    private void refreshNotifications(boolean interactive) {
+        runTask(this::loadNotifications, "Loading notifications...", "Unable to load notifications", interactive);
     }
 
-    public void selectNotification(
-            Notification notification
-    ) {
-
-        if (notification == null) {
-            selectedNotificationId = null;
-            view.setMarkAsReadEnabled(false);
-            return;
-        }
-
-        selectedNotificationId = notification.getId();
-        view.setMarkAsReadEnabled(!notification.isRead());
+    public void selectNotification(Notification notification) {
+        selectedNotificationId = notification == null ? null : notification.getId();
+        view.setMarkAsReadEnabled(notification != null && !notification.isRead());
     }
 
     public void markSelectedAsRead() {
-
+        if (busy) return;
         if (selectedNotificationId == null) {
             view.showError("Select a notification first");
             return;
         }
-
+        Long notificationId = selectedNotificationId;
+        busy = true;
         loadingState = LoadingState.LOADING;
         view.setBusy(true);
         view.setStatus("Marking notification as read...");
-
-        AsyncTaskRunner.run(
-                () -> {
-                    boolean success =
-                            notificationService.markAsRead(
-                                    selectedNotificationId
-                            );
-
+        boolean[] saved = {false};
+        AsyncTaskRunner.run(() -> notificationService.markAsRead(notificationId),
+                success -> {
                     if (!success) {
-                        throw new RuntimeException(
-                                "Cannot mark notification as read"
-                        );
+                        loadingState = LoadingState.ERROR;
+                        view.setStatus("Cannot update notification");
+                        view.showError("Cannot mark notification as read");
+                        return;
                     }
-
-                    return Boolean.TRUE;
-                },
-                result -> {
-                    refreshNotifications(false);
-                    loadingState = LoadingState.SUCCESS;
-                    view.setStatus("Ready");
-                },
-                throwable -> {
+                    saved[0] = true;
+                    view.setMarkAsReadEnabled(false);
+                }, error -> {
                     loadingState = LoadingState.ERROR;
                     view.setStatus("Cannot update notification");
-                    view.showError(throwable.getMessage());
-                },
-                () -> view.setBusy(false)
-        );
+                    view.showError(error.getMessage());
+                }, () -> {
+                    if (saved[0]) {
+                        busy = false;
+                        runTask(this::loadNotifications, "Refreshing notifications...",
+                                "Notification updated; unable to refresh. Click Refresh to reload.", true);
+                    } else {
+                        finishTask();
+                    }
+                });
     }
 
     public LoadingState getLoadingState() {
         return loadingState;
     }
 
-    private void refreshSilently() {
+    private List<Notification> loadNotifications() {
+        return notificationService.findNotificationsForCurrentUser();
+    }
 
-        refreshNotifications(false);
+    private void runTask(Callable<List<Notification>> task, String status, String failureStatus, boolean interactive) {
+        if (busy) return;
+        Long selection = view.getSelectedNotificationId();
+        busy = true;
+        loadingState = LoadingState.LOADING;
+        view.setBusy(true);
+        if (interactive) view.setStatus(status);
+        AsyncTaskRunner.run(task,
+                notifications -> {
+                    view.setNotifications(notifications);
+                    view.selectNotificationById(selection);
+                    view.setRecentNotifications(notifications.stream().limit(5).toList());
+                    view.setUnreadCount(notifications.stream().filter(notification -> !notification.isRead()).count());
+                    loadingState = LoadingState.SUCCESS;
+                    if (interactive) view.setStatus("Ready");
+                }, error -> {
+                    loadingState = LoadingState.ERROR;
+                    if (interactive) {
+                        view.setStatus(failureStatus);
+                        view.showError(error.getMessage());
+                    }
+                }, this::finishTask);
+    }
+
+    private void finishTask() {
+        busy = false;
+        view.setBusy(false);
     }
 }

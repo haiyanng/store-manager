@@ -19,11 +19,6 @@ import java.util.List;
 
 public class AttendanceAnomalyRepository {
 
-    public AttendanceAnomalyRepository() {
-
-        initializeTables();
-    }
-
     public AttendanceAnomaly findById(
             Long id
     ) {
@@ -346,10 +341,9 @@ public class AttendanceAnomalyRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection = ConnectionFactory.getConnection();
                 Statement statement = connection.createStatement()
         ) {
 

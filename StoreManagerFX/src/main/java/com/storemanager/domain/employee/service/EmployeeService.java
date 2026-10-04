@@ -65,7 +65,8 @@ public class EmployeeService {
     }
 
     public boolean delete(Employee employee) {
-        return change(employee, "EMPLOYEE_DELETE");
+        validateWriteAccess("EMPLOYEE_DELETE");
+        throw new IllegalStateException("Employee records cannot be deleted. Deactivate the employee instead to preserve attendance history.");
     }
 
     private boolean change(Employee employee, String action) {
@@ -77,7 +78,6 @@ public class EmployeeService {
         try {
             if (employee == null) throw new IllegalArgumentException("Employee is required");
             boolean creating = action.endsWith("_CREATE");
-            boolean deleting = action.endsWith("_DELETE");
             Employee stored = null;
             if (!creating) {
                 if (employee.getId() == null) throw new IllegalArgumentException("Select an employee first");
@@ -86,12 +86,17 @@ public class EmployeeService {
                 before = AuditSnapshots.employee(stored);
             }
             Employee candidate = employee;
-            if (!deleting) validate(candidate);
-            attempted = deleting ? null : AuditSnapshots.employee(candidate);
+            validate(candidate);
+            if (!creating && !candidate.isActive()
+                    && attendanceRepository.findOpenSessionByEmployeeId(candidate.getId()) != null) {
+                throw new IllegalStateException("Cannot deactivate " + candidate.getFullName()
+                        + " while they are checked in. Check out the employee first, then deactivate them.");
+            }
+            attempted = AuditSnapshots.employee(candidate);
             success = creating ? employeeRepository.save(candidate)
-                    : deleting ? employeeRepository.delete(candidate) : employeeRepository.update(candidate);
-            after = success ? (deleting ? null : AuditSnapshots.employee(candidate)) : before;
-            if (success && !deleting) employee.setActive(candidate.isActive());
+                    : employeeRepository.update(candidate);
+            after = success ? AuditSnapshots.employee(candidate) : before;
+            if (success) employee.setActive(candidate.isActive());
         } catch (RuntimeException e) {
             auditService.recordChange("EMPLOYEE", action, "EMPLOYEE", employee == null ? null : employee.getId(),
                     false, e.getMessage(), before, before, attempted);

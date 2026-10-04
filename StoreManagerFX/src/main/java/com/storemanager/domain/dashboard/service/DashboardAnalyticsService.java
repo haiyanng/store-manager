@@ -186,7 +186,7 @@ public class DashboardAnalyticsService {
 
         dto.setTitle("My Work");
         dto.setSubtitle("Your attendance at this store");
-        dto.setMetrics(buildEmployeeMetrics(employee));
+        dto.setMetrics(buildSalesMetrics());
         dto.setTodayWorkedHours(
                 formatHours(sumAttendanceHoursForEmployeeToday(employee))
         );
@@ -249,65 +249,18 @@ public class DashboardAnalyticsService {
                 new DashboardMetricCard("Month hours", formatDurationHours(sumAttendanceHoursForEmployeeCurrentMonth(employee)), "Current month worked hours"));
     }
 
-    private List<DashboardMetricCard> buildManagerMetrics() {
+    private List<DashboardMetricCard> buildManagerMetrics() { return buildSalesMetrics(); }
+
+    private List<DashboardMetricCard> buildOwnerMetrics() { return buildSalesMetrics(); }
+
+    private List<DashboardMetricCard> buildSalesMetrics() {
+        var items = inventoryService.findItemsWithExpiry();
         return List.of(
-                new DashboardMetricCard("Checked in", String.valueOf(countEmployeesCurrentlyCheckedIn()), "Employees currently on shift"),
-                new DashboardMetricCard("Attendance", formatDurationHours(sumAttendanceHoursForCurrentMonth()), "Current month at this store"),
-                new DashboardMetricCard("Inventory value", formatMoney(inventoryService.findInventoryValue()), "Current stock value"),
-                new DashboardMetricCard("Orders", String.valueOf(saleService.countOrdersForCurrentMonth()), "Current month order count"),
-                new DashboardMetricCard("Employees", String.valueOf(employeeService.findAll().size()), "Employee records"));
-    }
-
-    private List<DashboardMetricCard> buildOwnerMetrics() {
-
-        BigDecimal revenueMonth =
-                saleService.findRevenueForCurrentMonth();
-
-        BigDecimal revenueAllTime =
-                saleService.findTotalRevenue();
-
-        BigDecimal importAllTime =
-                importService.findTotalImportCost();
-
-        long totalEmployees =
-                countTotalEmployees();
-
-        long activeEmployees =
-                countActiveEmployees();
-
-        long workingEmployees =
-                countEmployeesCurrentlyCheckedIn();
-
-        long inventoryAlerts =
-                buildInventoryAlertRows().size();
-
-        return List.of(
-                new DashboardMetricCard(
-                        "Total employees",
-                        String.valueOf(totalEmployees),
-                        "All employee records"
-                ),
-                new DashboardMetricCard(
-                        "Active employees",
-                        String.valueOf(activeEmployees),
-                        "Currently active staff"
-                ),
-                new DashboardMetricCard(
-                        "Working now",
-                        String.valueOf(workingEmployees),
-                        "Open attendance sessions"
-                ),
-                new DashboardMetricCard(
-                        "Revenue total",
-                        formatMoney(revenueAllTime),
-                        "All-time sales revenue"
-                ),
-                new DashboardMetricCard(
-                        "Inventory alerts",
-                        String.valueOf(inventoryAlerts),
-                        "Low stock items requiring attention"
-                )
-        );
+                new DashboardMetricCard("Today's sales", formatMoney(saleService.findRevenueToday()), "Sales revenue today"),
+                new DashboardMetricCard("Today's orders", String.valueOf(saleService.countOrdersToday()), "Completed orders today"),
+                new DashboardMetricCard("Low stock", String.valueOf(items.stream().filter(InventoryService::isLowStock).count()), "Products with fewer than 10 units"),
+                new DashboardMetricCard("Expiring soon", String.valueOf(items.stream().filter(i -> i.getQuantity() > 0)
+                        .filter(i -> "EXPIRING SOON".equals(i.getExpiryStatus())).count()), "Products expiring within 7 days"));
     }
 
     private List<DashboardCashFlowSummary> buildCashFlowSummaries() {
@@ -486,7 +439,7 @@ public class DashboardAnalyticsService {
 
         return quantitiesByProduct.entrySet()
                 .stream()
-                .filter(entry -> entry.getValue().compareTo(BigDecimal.valueOf(5)) <= 0)
+                .filter(entry -> entry.getValue().compareTo(BigDecimal.TEN) < 0)
                 .map(entry -> {
                     DashboardInventoryAlertRow row =
                             new DashboardInventoryAlertRow();

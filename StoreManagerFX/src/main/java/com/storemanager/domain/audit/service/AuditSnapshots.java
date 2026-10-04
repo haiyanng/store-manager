@@ -29,7 +29,7 @@ public final class AuditSnapshots {
     public static Map<String, Object> product(Product value) {
         if (value == null) return null;
         return fields("id", value.getId(), "name", value.getName(), "sku", value.getSku(),
-                "barcode", value.getBarcode(), "category_id", value.getCategoryId(),
+                "category_id", value.getCategoryId(),
                 "base_price", value.getBasePrice(), "unit", value.getUnit(),
                 "image_path", value.getImagePath(), "active", value.isActive());
     }

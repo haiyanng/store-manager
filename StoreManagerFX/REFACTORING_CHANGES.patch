@@ -1,0 +1,4477 @@
+diff --git a/StoreManagerFX/AGENTS.md b/StoreManagerFX/AGENTS.md
+index 269438b..3df27c4 100644
+--- a/StoreManagerFX/AGENTS.md
++++ b/StoreManagerFX/AGENTS.md
+@@ -62,9 +62,9 @@ FXML
+ 
+ - Use `RoleType` enum.
+ - Do not hard-code role strings.
+-- `DEVELOPER` is the unique technical root account.
+-- UI must not create `DEVELOPER`.
+-- `OWNER` cannot edit/delete `DEVELOPER`.
++- `OWNER` is the administrative role; no technical root role exists.
++- Legacy `USER` accounts map to `CUSTOMER`.
++- `CUSTOMER` has no back-office management permissions.
+ - `MANAGER` and `EMPLOYEE` cannot access user management.
+ 
+ ### 9. Resource Rules
+diff --git a/StoreManagerFX/pom.xml b/StoreManagerFX/pom.xml
+index f923c94..d5c47a0 100644
+--- a/StoreManagerFX/pom.xml
++++ b/StoreManagerFX/pom.xml
+@@ -30,6 +30,20 @@
+ 
+     <dependencies>
+ 
++        <dependency>
++            <groupId>junit</groupId>
++            <artifactId>junit</artifactId>
++            <version>4.13.2</version>
++            <scope>test</scope>
++        </dependency>
++
++        <dependency>
++            <groupId>com.h2database</groupId>
++            <artifactId>h2</artifactId>
++            <version>2.3.232</version>
++            <scope>test</scope>
++        </dependency>
++
+         <!-- JavaFX -->
+ 
+         <dependency>
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/core/database/DatabaseInitializer.java b/StoreManagerFX/src/main/java/com/storemanager/core/database/DatabaseInitializer.java
+index 2d7fed3..60b4e15 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/core/database/DatabaseInitializer.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/core/database/DatabaseInitializer.java
+@@ -37,6 +37,7 @@ public class DatabaseInitializer {
+             );
+ 
+             initializeBusinessTables(connection, statement);
++            new UserRepository().migrateLegacyRoles();
+             createDefaultAdmin();
+             System.out.println("Database initialized successfully");
+ 
+@@ -348,35 +349,6 @@ public class DatabaseInitializer {
+                 """
+         );
+ 
+-        statement.execute(
+-                """
+-                CREATE TABLE IF NOT EXISTS employee_salary_configs (
+-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+-                    employee_id BIGINT NOT NULL UNIQUE,
+-                    hourly_rate DECIMAL(18, 2) NOT NULL DEFAULT 0,
+-                    active BOOLEAN NOT NULL DEFAULT TRUE,
+-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-                )
+-                """
+-        );
+-
+-        statement.execute(
+-                """
+-                CREATE TABLE IF NOT EXISTS payroll_records (
+-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+-                    employee_id BIGINT NOT NULL,
+-                    month INT NOT NULL,
+-                    year INT NOT NULL,
+-                    total_hours DECIMAL(10, 2) NOT NULL DEFAULT 0,
+-                    hourly_rate_snapshot DECIMAL(18, 2) NOT NULL DEFAULT 0,
+-                    total_salary DECIMAL(18, 2) NOT NULL DEFAULT 0,
+-                    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+-                    generated_by_user_id BIGINT,
+-                    UNIQUE KEY uk_payroll_employee_month_year (employee_id, month, year)
+-                )
+-                """
+-        );
+-
+         statement.execute(
+                 """
+                 CREATE TABLE IF NOT EXISTS notifications (
+@@ -496,7 +468,7 @@ public class DatabaseInitializer {
+         );
+ 
+         admin.setRole(
+-                RoleType.DEVELOPER
++                RoleType.OWNER
+         );
+ 
+         admin.setActive(true);
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/core/security/PermissionGuard.java b/StoreManagerFX/src/main/java/com/storemanager/core/security/PermissionGuard.java
+index 0c2c41f..755c242 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/core/security/PermissionGuard.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/core/security/PermissionGuard.java
+@@ -6,18 +6,11 @@ import com.storemanager.domain.user.model.User;
+ 
+ public class PermissionGuard {
+ 
+-    public static boolean isDeveloper() {
+-
+-        return hasRole(
+-                RoleType.DEVELOPER
+-        );
+-    }
+-
+     public static boolean isOwner() {
+ 
+         return hasRole(
+                 RoleType.OWNER
+-        ) || isDeveloper();
++        );
+     }
+ 
+     public static boolean isManager() {
+@@ -48,8 +41,7 @@ public class PermissionGuard {
+ 
+     public static boolean canViewDashboard() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isEmployee()
+                 || isViewer();
+@@ -57,15 +49,13 @@ public class PermissionGuard {
+ 
+     public static boolean canViewEmployee() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager();
+     }
+ 
+     public static boolean canViewProduct() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isStaff()
+                 || isViewer();
+@@ -73,53 +63,47 @@ public class PermissionGuard {
+ 
+     public static boolean canModifyProduct() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager();
+     }
+ 
+     public static boolean canViewInventory() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isStaff();
+     }
+ 
+     public static boolean canAdjustInventory() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        // Shared by import and transactional stock workflows, not inventory UI actions.
++        return isOwner()
+                 || isManager();
+     }
+ 
+     public static boolean canViewOrder() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isStaff();
+     }
+ 
+     public static boolean canCreateSale() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isStaff();
+     }
+ 
+     public static boolean canCancelSale() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager();
+     }
+ 
+     public static boolean canViewOnlineOrders() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager();
+     }
+ 
+@@ -135,15 +119,13 @@ public class PermissionGuard {
+ 
+     public static boolean canRefundOnlineOrder() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager();
+     }
+ 
+     public static boolean canViewCustomers() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isStaff()
+                 || isViewer();
+@@ -151,8 +133,7 @@ public class PermissionGuard {
+ 
+     public static boolean canViewReports() {
+ 
+-        return isDeveloper()
+-                || isOwner()
++        return isOwner()
+                 || isManager()
+                 || isViewer();
+     }
+@@ -164,14 +145,12 @@ public class PermissionGuard {
+ 
+     public static boolean canManageUsers() {
+ 
+-        return isDeveloper()
+-                || isOwner();
++        return isOwner();
+     }
+ 
+     public static boolean canAccessSystemTools() {
+ 
+-        return isDeveloper()
+-                || isOwner();
++        return isOwner();
+     }
+ 
+     public static boolean canBackupDatabase() {
+@@ -186,16 +165,7 @@ public class PermissionGuard {
+ 
+     public static boolean canViewAuditLogs() {
+ 
+-        return isDeveloper()
+-                || isOwner();
+-    }
+-
+-    public static boolean isRootDeveloper(
+-            User user
+-    ) {
+-
+-        return user != null
+-                && user.getRole() == RoleType.DEVELOPER;
++        return isOwner();
+     }
+ 
+     public static boolean canEditUser(
+@@ -206,16 +176,13 @@ public class PermissionGuard {
+             return false;
+         }
+ 
+-        if (isDeveloper()) {
+-            return true;
+-        }
+-
+         return isOwner()
+                 && (
+                 target.getRole() == RoleType.MANAGER
+                         || target.getRole() == RoleType.STAFF
+                         || target.getRole() == RoleType.VIEWER
+                         || target.getRole() == RoleType.EMPLOYEE
++                        || target.getRole() == RoleType.CUSTOMER
+         );
+     }
+ 
+@@ -235,16 +202,13 @@ public class PermissionGuard {
+             return false;
+         }
+ 
+-        if (isDeveloper()) {
+-            return true;
+-        }
+-
+         return isOwner()
+                 && (
+                 target.getRole() == RoleType.MANAGER
+                         || target.getRole() == RoleType.STAFF
+                         || target.getRole() == RoleType.VIEWER
+                         || target.getRole() == RoleType.EMPLOYEE
++                        || target.getRole() == RoleType.CUSTOMER
+         );
+     }
+ 
+@@ -261,11 +225,7 @@ public class PermissionGuard {
+             return false;
+         }
+ 
+-        if (isRootDeveloper(target)) {
+-            return newRole == RoleType.DEVELOPER;
+-        }
+-
+-        return newRole != RoleType.DEVELOPER;
++        return true;
+     }
+ 
+     private static boolean hasRole(
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/presenter/AttendanceAnomalyPresenter.java b/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/presenter/AttendanceAnomalyPresenter.java
+index 49f7714..641eb5b 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/presenter/AttendanceAnomalyPresenter.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/presenter/AttendanceAnomalyPresenter.java
+@@ -337,8 +337,7 @@ public class AttendanceAnomalyPresenter extends BaseModulePresenter {
+     ) {
+ 
+         boolean isAdmin =
+-                role == RoleType.DEVELOPER
+-                        || role == RoleType.OWNER;
++                role == RoleType.OWNER;
+         boolean isManager =
+                 role == RoleType.MANAGER;
+ 
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/service/AttendanceAnomalyService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/service/AttendanceAnomalyService.java
+index ae8167c..16bb4e0 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/service/AttendanceAnomalyService.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/attendance_anomaly/service/AttendanceAnomalyService.java
+@@ -90,8 +90,7 @@ public class AttendanceAnomalyService {
+             return List.of();
+         }
+ 
+-        if (PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner()) {
++        if (PermissionGuard.isOwner()) {
+             return anomalyRepository.findAll(filter);
+         }
+ 
+@@ -157,8 +156,7 @@ public class AttendanceAnomalyService {
+ 
+     public List<Employee> findReviewEmployees() {
+ 
+-        if (PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner()) {
++        if (PermissionGuard.isOwner()) {
+             return employeeRepository.findAll()
+                     .stream()
+                     .filter(Employee::isActive)
+@@ -207,8 +205,7 @@ public class AttendanceAnomalyService {
+ 
+     public List<Branch> findReviewBranches() {
+ 
+-        if (PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner()) {
++        if (PermissionGuard.isOwner()) {
+             return branchRepository.findActiveBranches();
+         }
+ 
+@@ -896,8 +893,7 @@ public class AttendanceAnomalyService {
+                 .stream()
+                 .filter(User::isActive)
+                 .filter(user ->
+-                        user.getRole() == RoleType.DEVELOPER
+-                                || user.getRole() == RoleType.OWNER
++                        user.getRole() == RoleType.OWNER
+                 )
+                 .toList();
+     }
+@@ -964,8 +960,7 @@ public class AttendanceAnomalyService {
+             Long branchId
+     ) {
+ 
+-        if (PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner()) {
++        if (PermissionGuard.isOwner()) {
+             return;
+         }
+ 
+@@ -997,8 +992,7 @@ public class AttendanceAnomalyService {
+ 
+     private boolean canAdminReview() {
+ 
+-        return PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner();
++        return PermissionGuard.isOwner();
+     }
+ 
+     private boolean canManageAnomalyReview() {
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/audit/service/AuditService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/audit/service/AuditService.java
+index 93b90ed..20af43a 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/audit/service/AuditService.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/audit/service/AuditService.java
+@@ -17,8 +17,6 @@ public class AuditService {
+     public static final String ACTION_LOGIN_FAILED = "LOGIN_FAILED";
+     public static final String ACTION_LOGOUT = "LOGOUT";
+     public static final String ACTION_PERMISSION_DENIED = "PERMISSION_DENIED";
+-    public static final String ACTION_PAYROLL_GENERATED = "PAYROLL_GENERATED";
+-    public static final String ACTION_SALARY_CONFIG_UPDATED = "SALARY_CONFIG_UPDATED";
+     public static final String ACTION_EMPLOYEE_BRANCH_ASSIGNMENT = "EMPLOYEE_BRANCH_ASSIGNMENT";
+     public static final String ACTION_ATTENDANCE_SELF_CHECK_IN = "ATTENDANCE_SELF_CHECK_IN";
+     public static final String ACTION_ATTENDANCE_SELF_CHECK_OUT = "ATTENDANCE_SELF_CHECK_OUT";
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/branch/service/BranchService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/branch/service/BranchService.java
+index d2df5d6..5373039 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/branch/service/BranchService.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/branch/service/BranchService.java
+@@ -84,8 +84,7 @@ public class BranchService {
+ 
+         User currentUser = requireCurrentUser();
+ 
+-        if (PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner()) {
++        if (PermissionGuard.isOwner()) {
+             return branchRepository.findActiveBranches();
+         }
+ 
+@@ -161,8 +160,7 @@ public class BranchService {
+ 
+     public boolean canSwitchActiveBranch() {
+ 
+-        return PermissionGuard.isDeveloper()
+-                || PermissionGuard.isOwner();
++        return PermissionGuard.isOwner();
+     }
+ 
+     public Branch findBranchById(
+@@ -300,8 +298,7 @@ public class BranchService {
+ 
+     private void validateBranchTransferAccess() {
+ 
+-        if (!PermissionGuard.isDeveloper()
+-                && !PermissionGuard.isOwner()) {
++        if (!PermissionGuard.isOwner()) {
+             traceBranchAccessDenied();
+             auditService.recordPermissionDenied(
+                     AuditService.ACTION_PERMISSION_DENIED,
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardAnalyticsSnapshot.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardAnalyticsSnapshot.java
+index ea84bc8..89c3560 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardAnalyticsSnapshot.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardAnalyticsSnapshot.java
+@@ -30,8 +30,6 @@ public class DashboardAnalyticsSnapshot {
+ 
+     private String ownAttendanceSummary;
+ 
+-    private String ownPayrollSummary;
+-
+     private String ownBranchesSummary;
+ 
+     private List<DashboardBranchSummary> branchSummaries =
+@@ -40,9 +38,6 @@ public class DashboardAnalyticsSnapshot {
+     private List<DashboardEmployeeLocationRow> employeeLocations =
+             new ArrayList<>();
+ 
+-    private List<DashboardPayrollSummary> payrollSummaries =
+-            new ArrayList<>();
+-
+     private List<DashboardCashFlowSummary> cashFlowSummaries =
+             new ArrayList<>();
+ 
+@@ -137,14 +132,6 @@ public class DashboardAnalyticsSnapshot {
+         this.ownAttendanceSummary = ownAttendanceSummary;
+     }
+ 
+-    public String getOwnPayrollSummary() {
+-        return ownPayrollSummary;
+-    }
+-
+-    public void setOwnPayrollSummary(String ownPayrollSummary) {
+-        this.ownPayrollSummary = ownPayrollSummary;
+-    }
+-
+     public String getOwnBranchesSummary() {
+         return ownBranchesSummary;
+     }
+@@ -169,14 +156,6 @@ public class DashboardAnalyticsSnapshot {
+         this.employeeLocations = employeeLocations;
+     }
+ 
+-    public List<DashboardPayrollSummary> getPayrollSummaries() {
+-        return payrollSummaries;
+-    }
+-
+-    public void setPayrollSummaries(List<DashboardPayrollSummary> payrollSummaries) {
+-        this.payrollSummaries = payrollSummaries;
+-    }
+-
+     public List<DashboardCashFlowSummary> getCashFlowSummaries() {
+         return cashFlowSummaries;
+     }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardCashFlowSummary.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardCashFlowSummary.java
+index f110dbf..5de78c2 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardCashFlowSummary.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardCashFlowSummary.java
+@@ -12,10 +12,6 @@ public class DashboardCashFlowSummary {
+ 
+     private BigDecimal productBusinessCashFlow;
+ 
+-    private BigDecimal payrollCashFlow;
+-
+-    private BigDecimal finalCashFlow;
+-
+     public DashboardCashFlowSummary() {
+     }
+ 
+@@ -51,19 +47,4 @@ public class DashboardCashFlowSummary {
+         this.productBusinessCashFlow = productBusinessCashFlow;
+     }
+ 
+-    public BigDecimal getPayrollCashFlow() {
+-        return payrollCashFlow;
+-    }
+-
+-    public void setPayrollCashFlow(BigDecimal payrollCashFlow) {
+-        this.payrollCashFlow = payrollCashFlow;
+-    }
+-
+-    public BigDecimal getFinalCashFlow() {
+-        return finalCashFlow;
+-    }
+-
+-    public void setFinalCashFlow(BigDecimal finalCashFlow) {
+-        this.finalCashFlow = finalCashFlow;
+-    }
+ }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuItem.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuItem.java
+index e7df075..a672da6 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuItem.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuItem.java
+@@ -20,8 +20,7 @@ public record DashboardMenuItem(
+             return false;
+         }
+ 
+-        if (role == RoleType.DEVELOPER
+-                || role == RoleType.OWNER) {
++        if (role == RoleType.OWNER) {
+             return true;
+         }
+ 
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuRegistry.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuRegistry.java
+index 8b2dd40..add1096 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuRegistry.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardMenuRegistry.java
+@@ -10,7 +10,6 @@ public final class DashboardMenuRegistry {
+     public static final String DASHBOARD = "dashboard";
+     public static final String EMPLOYEE = "employee";
+     public static final String ATTENDANCE = "attendance";
+-    public static final String PAYROLL = "payroll";
+     public static final String BRANCH = "branch";
+     public static final String ATTENDANCE_ANOMALIES = "attendance_anomalies";
+     public static final String USER_MANAGEMENT = "user_management";
+@@ -27,7 +26,6 @@ public final class DashboardMenuRegistry {
+ 
+     private static final Set<RoleType> ALL_ROLES =
+             Set.of(
+-                    RoleType.DEVELOPER,
+                     RoleType.OWNER,
+                     RoleType.MANAGER,
+                     RoleType.STAFF,
+@@ -37,14 +35,12 @@ public final class DashboardMenuRegistry {
+ 
+     private static final Set<RoleType> MANAGER_WORKFLOW_ROLES =
+             Set.of(
+-                    RoleType.DEVELOPER,
+                     RoleType.OWNER,
+                     RoleType.MANAGER
+             );
+ 
+     private static final Set<RoleType> STAFF_WORKFLOW_ROLES =
+             Set.of(
+-                    RoleType.DEVELOPER,
+                     RoleType.OWNER,
+                     RoleType.MANAGER,
+                     RoleType.STAFF,
+@@ -53,7 +49,6 @@ public final class DashboardMenuRegistry {
+ 
+     private static final Set<RoleType> PRODUCT_VIEW_ROLES =
+             Set.of(
+-                    RoleType.DEVELOPER,
+                     RoleType.OWNER,
+                     RoleType.MANAGER,
+                     RoleType.STAFF,
+@@ -63,7 +58,6 @@ public final class DashboardMenuRegistry {
+ 
+     private static final Set<RoleType> VIEWER_REPORT_ROLES =
+             Set.of(
+-                    RoleType.DEVELOPER,
+                     RoleType.OWNER,
+                     RoleType.MANAGER,
+                     RoleType.VIEWER
+@@ -71,7 +65,6 @@ public final class DashboardMenuRegistry {
+ 
+     private static final Set<RoleType> ADMIN_ROLES =
+             Set.of(
+-                    RoleType.DEVELOPER,
+                     RoleType.OWNER
+             );
+ 
+@@ -105,13 +98,6 @@ public final class DashboardMenuRegistry {
+                             true,
+                             MANAGER_WORKFLOW_ROLES
+                     ),
+-                    new DashboardMenuItem(
+-                            PAYROLL,
+-                            "Payroll",
+-                            "/fxml/payroll/payroll.fxml",
+-                            true,
+-                            STAFF_WORKFLOW_ROLES
+-                    ),
+                     new DashboardMenuItem(
+                             BRANCH,
+                             "Branch",
+@@ -142,7 +128,7 @@ public final class DashboardMenuRegistry {
+                     ),
+                     new DashboardMenuItem(
+                             INVENTORY,
+-                            "Inventory",
++                            "View Inventory",
+                             "/fxml/inventory/inventory-list.fxml",
+                             true,
+                             STAFF_WORKFLOW_ROLES
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardPayrollSummary.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardPayrollSummary.java
+deleted file mode 100644
+index 5709c2a..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/DashboardPayrollSummary.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.storemanager.domain.dashboard.model;
+-
+-import java.math.BigDecimal;
+-
+-public class DashboardPayrollSummary {
+-
+-    private String employeeName;
+-
+-    private BigDecimal totalHours;
+-
+-    private BigDecimal totalSalary;
+-
+-    public DashboardPayrollSummary() {
+-    }
+-
+-    public String getEmployeeName() {
+-        return employeeName;
+-    }
+-
+-    public void setEmployeeName(String employeeName) {
+-        this.employeeName = employeeName;
+-    }
+-
+-    public BigDecimal getTotalHours() {
+-        return totalHours;
+-    }
+-
+-    public void setTotalHours(BigDecimal totalHours) {
+-        this.totalHours = totalHours;
+-    }
+-
+-    public BigDecimal getTotalSalary() {
+-        return totalSalary;
+-    }
+-
+-    public void setTotalSalary(BigDecimal totalSalary) {
+-        this.totalSalary = totalSalary;
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/EmployeeDashboardDto.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/EmployeeDashboardDto.java
+index f273675..a4ade35 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/EmployeeDashboardDto.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/EmployeeDashboardDto.java
+@@ -18,8 +18,6 @@ public class EmployeeDashboardDto {
+ 
+     private String assignedBranches;
+ 
+-    private String latestPayrollSummary;
+-
+     private List<DashboardAttendanceHistoryRow> recentAttendanceHistory =
+             new ArrayList<>();
+ 
+@@ -74,14 +72,6 @@ public class EmployeeDashboardDto {
+         this.assignedBranches = assignedBranches;
+     }
+ 
+-    public String getLatestPayrollSummary() {
+-        return latestPayrollSummary;
+-    }
+-
+-    public void setLatestPayrollSummary(String latestPayrollSummary) {
+-        this.latestPayrollSummary = latestPayrollSummary;
+-    }
+-
+     public List<DashboardAttendanceHistoryRow> getRecentAttendanceHistory() {
+         return recentAttendanceHistory;
+     }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/OwnerDashboardDto.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/OwnerDashboardDto.java
+index 0b50455..95b93b9 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/OwnerDashboardDto.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/model/OwnerDashboardDto.java
+@@ -18,8 +18,6 @@ public class OwnerDashboardDto {
+ 
+     private long employeesCurrentlyWorking;
+ 
+-    private String payrollTotals;
+-
+     private String revenueTotals;
+ 
+     private String inventoryAlertsSummary;
+@@ -32,9 +30,6 @@ public class OwnerDashboardDto {
+     private List<DashboardEmployeeLocationRow> employeeLocations =
+             new ArrayList<>();
+ 
+-    private List<DashboardPayrollSummary> payrollSummaries =
+-            new ArrayList<>();
+-
+     private List<DashboardCashFlowSummary> cashFlowSummaries =
+             new ArrayList<>();
+ 
+@@ -92,14 +87,6 @@ public class OwnerDashboardDto {
+         this.employeesCurrentlyWorking = employeesCurrentlyWorking;
+     }
+ 
+-    public String getPayrollTotals() {
+-        return payrollTotals;
+-    }
+-
+-    public void setPayrollTotals(String payrollTotals) {
+-        this.payrollTotals = payrollTotals;
+-    }
+-
+     public String getRevenueTotals() {
+         return revenueTotals;
+     }
+@@ -140,14 +127,6 @@ public class OwnerDashboardDto {
+         this.employeeLocations = employeeLocations;
+     }
+ 
+-    public List<DashboardPayrollSummary> getPayrollSummaries() {
+-        return payrollSummaries;
+-    }
+-
+-    public void setPayrollSummaries(List<DashboardPayrollSummary> payrollSummaries) {
+-        this.payrollSummaries = payrollSummaries;
+-    }
+-
+     public List<DashboardCashFlowSummary> getCashFlowSummaries() {
+         return cashFlowSummaries;
+     }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/presenter/DashboardShellPresenter.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/presenter/DashboardShellPresenter.java
+index f224974..f0edd79 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/presenter/DashboardShellPresenter.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/presenter/DashboardShellPresenter.java
+@@ -78,8 +78,7 @@ public class DashboardShellPresenter {
+             );
+         }
+ 
+-        if (role == RoleType.DEVELOPER
+-                || role == RoleType.OWNER) {
++        if (role == RoleType.OWNER) {
+             List<Branch> branches =
+                     branchService.findBranches()
+                             .stream()
+@@ -128,8 +127,7 @@ public class DashboardShellPresenter {
+         RoleType role =
+                 getCurrentRole();
+ 
+-        if (role != RoleType.DEVELOPER
+-                && role != RoleType.OWNER) {
++        if (role != RoleType.OWNER) {
+             return false;
+         }
+ 
+@@ -206,8 +204,7 @@ public class DashboardShellPresenter {
+         RoleType role =
+                 getCurrentRole();
+ 
+-        if (role == RoleType.DEVELOPER
+-                || role == RoleType.OWNER) {
++        if (role == RoleType.OWNER) {
+             List<Branch> activeBranches =
+                     branchService.findBranches()
+                             .stream()
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/service/DashboardAnalyticsService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/service/DashboardAnalyticsService.java
+index 007a1e1..3e0f51a 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/service/DashboardAnalyticsService.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/service/DashboardAnalyticsService.java
+@@ -15,7 +15,6 @@ import com.storemanager.domain.dashboard.model.DashboardEmployeeLocationRow;
+ import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
+ import com.storemanager.domain.dashboard.model.DashboardMetricCard;
+ import com.storemanager.domain.dashboard.model.DashboardOnlineOrderSnapshot;
+-import com.storemanager.domain.dashboard.model.DashboardPayrollSummary;
+ import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
+ import com.storemanager.domain.dashboard.model.ManagerDashboardDto;
+ import com.storemanager.domain.dashboard.model.OwnerDashboardDto;
+@@ -23,8 +22,6 @@ import com.storemanager.domain.employee.model.Employee;
+ import com.storemanager.domain.employee.service.EmployeeService;
+ import com.storemanager.domain.importing.service.ImportService;
+ import com.storemanager.domain.inventory.service.InventoryService;
+-import com.storemanager.domain.payroll.model.PayrollRecord;
+-import com.storemanager.domain.payroll.service.PayrollService;
+ import com.storemanager.domain.sale.service.SaleService;
+ import com.storemanager.domain.user.model.RoleType;
+ import com.storemanager.domain.user.model.User;
+@@ -38,7 +35,6 @@ import java.time.LocalTime;
+ import java.util.Comparator;
+ import java.util.List;
+ import java.util.Map;
+-import java.util.function.Function;
+ import java.util.stream.Collectors;
+ 
+ public class DashboardAnalyticsService {
+@@ -52,9 +48,6 @@ public class DashboardAnalyticsService {
+     private final BranchService branchService =
+             new BranchService();
+ 
+-    private final PayrollService payrollService =
+-            new PayrollService();
+-
+     private final SaleService saleService =
+             new SaleService();
+ 
+@@ -178,7 +171,7 @@ public class DashboardAnalyticsService {
+                 new EmployeeDashboardDto();
+ 
+         dto.setTitle("My Work");
+-        dto.setSubtitle("Your attendance, payroll, and assigned branches");
++        dto.setSubtitle("Your attendance and assigned branches");
+         dto.setMetrics(buildEmployeeMetrics(employee));
+         dto.setTodayWorkedHours(
+                 formatHours(sumAttendanceHoursForEmployeeToday(employee))
+@@ -187,7 +180,6 @@ public class DashboardAnalyticsService {
+                 formatHours(sumAttendanceHoursForEmployeeCurrentMonth(employee))
+         );
+         dto.setAssignedBranches(buildOwnBranchesSummary(employee));
+-        dto.setLatestPayrollSummary(buildLatestPayrollSummary(employee));
+         dto.setRecentAttendanceHistory(
+                 buildRecentAttendanceHistory(employee, 5)
+         );
+@@ -226,18 +218,16 @@ public class DashboardAnalyticsService {
+ 
+         dto.setTitle("Business Control");
+         dto.setSubtitle(
+-                "Full business analytics, payroll totals, revenue totals, and cash flow"
++                "Full business analytics, revenue totals, and business cash flow"
+         );
+         dto.setMetrics(buildOwnerMetrics());
+         dto.setTotalEmployees(countTotalEmployees());
+         dto.setActiveEmployees(countActiveEmployees());
+         dto.setEmployeesCurrentlyWorking(countEmployeesCurrentlyCheckedIn());
+-        dto.setPayrollTotals(buildPayrollTotalsSummary());
+         dto.setRevenueTotals(buildRevenueTotalsSummary());
+         dto.setInventoryAlertsSummary(buildInventoryAlertsSummary());
+         dto.setBranchOperationalSummaries(buildBranchSummaries());
+         dto.setEmployeeLocations(buildEmployeeLocationRows());
+-        dto.setPayrollSummaries(buildPayrollSummaries());
+         dto.setCashFlowSummaries(buildCashFlowSummaries());
+         dto.setInventoryAlerts(buildInventoryAlertRows());
+         dto.setOnlineOrderDashboard(
+@@ -343,9 +333,6 @@ public class DashboardAnalyticsService {
+         BigDecimal importAllTime =
+                 importService.findTotalImportCost();
+ 
+-        BigDecimal payrollAllTime =
+-                payrollService.findTotalPayrollCost();
+-
+         long totalEmployees =
+                 countTotalEmployees();
+ 
+@@ -379,11 +366,6 @@ public class DashboardAnalyticsService {
+                         formatMoney(revenueAllTime),
+                         "All-time sales revenue"
+                 ),
+-                new DashboardMetricCard(
+-                        "Payroll total",
+-                        formatMoney(payrollAllTime),
+-                        "All-time HR cash flow"
+-                ),
+                 new DashboardMetricCard(
+                         "Inventory alerts",
+                         String.valueOf(inventoryAlerts),
+@@ -413,17 +395,6 @@ public class DashboardAnalyticsService {
+                 + " sessions";
+     }
+ 
+-    private String buildOwnPayrollSummary(
+-            Employee employee
+-    ) {
+-
+-        if (employee == null) {
+-            return "No payroll profile available";
+-        }
+-
+-        return buildLatestPayrollSummary(employee);
+-    }
+-
+     private String buildOwnBranchesSummary(
+             Employee employee
+     ) {
+@@ -581,69 +552,6 @@ public class DashboardAnalyticsService {
+                 .toList();
+     }
+ 
+-    private List<DashboardPayrollSummary> buildPayrollSummaries() {
+-
+-        Map<Long, Employee> employeesById =
+-                employeeService.findAll()
+-                        .stream()
+-                        .collect(
+-                                Collectors.toMap(
+-                                        Employee::getId,
+-                                        Function.identity()
+-                                )
+-                        );
+-
+-        return payrollService.findPayrollRecords()
+-                .stream()
+-                .collect(
+-                        Collectors.groupingBy(
+-                                PayrollRecord::getEmployeeId
+-                        )
+-                )
+-                .entrySet()
+-                .stream()
+-                .map(entry -> {
+-                    DashboardPayrollSummary summary =
+-                            new DashboardPayrollSummary();
+-
+-                    Employee employee =
+-                            employeesById.get(entry.getKey());
+-
+-                    summary.setEmployeeName(
+-                            employee == null
+-                                    ? "Unknown employee"
+-                                    : employee.getFullName()
+-                    );
+-                    summary.setTotalHours(
+-                            entry.getValue()
+-                                    .stream()
+-                                    .map(PayrollRecord::getTotalHours)
+-                                    .reduce(
+-                                            BigDecimal.ZERO,
+-                                            BigDecimal::add
+-                                    )
+-                    );
+-                    summary.setTotalSalary(
+-                            entry.getValue()
+-                                    .stream()
+-                                    .map(PayrollRecord::getTotalSalary)
+-                                    .reduce(
+-                                            BigDecimal.ZERO,
+-                                            BigDecimal::add
+-                                    )
+-                    );
+-
+-                    return summary;
+-                })
+-                .sorted(
+-                        Comparator.comparing(
+-                                DashboardPayrollSummary::getEmployeeName,
+-                                Comparator.nullsLast(String::compareToIgnoreCase)
+-                        )
+-                )
+-                .toList();
+-    }
+-
+     private List<DashboardCashFlowSummary> buildCashFlowSummaries() {
+ 
+         BigDecimal revenueMonth =
+@@ -658,12 +566,6 @@ public class DashboardAnalyticsService {
+         BigDecimal importAllTime =
+                 importService.findTotalImportCost();
+ 
+-        BigDecimal payrollMonth =
+-                payrollService.findPayrollCostForCurrentMonth();
+-
+-        BigDecimal payrollAllTime =
+-                payrollService.findTotalPayrollCost();
+-
+         DashboardCashFlowSummary monthSummary =
+                 new DashboardCashFlowSummary();
+         monthSummary.setLabel("Current month");
+@@ -672,10 +574,6 @@ public class DashboardAnalyticsService {
+         monthSummary.setProductBusinessCashFlow(
+                 revenueMonth.subtract(importMonth)
+         );
+-        monthSummary.setPayrollCashFlow(payrollMonth);
+-        monthSummary.setFinalCashFlow(
+-                revenueMonth.subtract(importMonth).subtract(payrollMonth)
+-        );
+ 
+         DashboardCashFlowSummary totalSummary =
+                 new DashboardCashFlowSummary();
+@@ -685,10 +583,6 @@ public class DashboardAnalyticsService {
+         totalSummary.setProductBusinessCashFlow(
+                 revenueAllTime.subtract(importAllTime)
+         );
+-        totalSummary.setPayrollCashFlow(payrollAllTime);
+-        totalSummary.setFinalCashFlow(
+-                revenueAllTime.subtract(importAllTime).subtract(payrollAllTime)
+-        );
+ 
+         return List.of(monthSummary, totalSummary);
+     }
+@@ -730,26 +624,6 @@ public class DashboardAnalyticsService {
+                 .count();
+     }
+ 
+-    private BigDecimal sumPayrollForEmployee(
+-            Employee employee
+-    ) {
+-
+-        if (employee == null) {
+-            return BigDecimal.ZERO;
+-        }
+-
+-        return payrollService.findPayrollRecordsByEmployeeId(
+-                        employee.getId()
+-                )
+-                .stream()
+-                .filter(this::isCurrentMonthPayrollRecord)
+-                .map(PayrollRecord::getTotalSalary)
+-                .reduce(
+-                        BigDecimal.ZERO,
+-                        BigDecimal::add
+-                );
+-    }
+-
+     private long countAssignedBranchesForEmployee(
+             Employee employee
+     ) {
+@@ -831,41 +705,6 @@ public class DashboardAnalyticsService {
+                 .count();
+     }
+ 
+-    private String buildLatestPayrollSummary(
+-            Employee employee
+-    ) {
+-
+-        if (employee == null) {
+-            return "No payroll profile available";
+-        }
+-
+-        PayrollRecord latestRecord =
+-                payrollService.findPayrollRecordsByEmployeeId(
+-                                employee.getId()
+-                        )
+-                        .stream()
+-                        .sorted(
+-                                Comparator.comparingInt(PayrollRecord::getYear)
+-                                        .thenComparingInt(PayrollRecord::getMonth)
+-                                        .reversed()
+-                        )
+-                        .findFirst()
+-                        .orElse(null);
+-
+-        if (latestRecord == null) {
+-            return "No payroll records available";
+-        }
+-
+-        return "Latest payroll: "
+-                + latestRecord.getYear()
+-                + "-"
+-                + String.format("%02d", latestRecord.getMonth())
+-                + " | hours "
+-                + formatHours(latestRecord.getTotalHours())
+-                + " | salary "
+-                + formatMoney(latestRecord.getTotalSalary());
+-    }
+-
+     private long countTotalEmployees() {
+ 
+         return employeeService.findAll().size();
+@@ -934,14 +773,6 @@ public class DashboardAnalyticsService {
+                 + " orders";
+     }
+ 
+-    private String buildPayrollTotalsSummary() {
+-
+-        return "Current month "
+-                + formatMoney(payrollService.findPayrollCostForCurrentMonth())
+-                + " | total "
+-                + formatMoney(payrollService.findTotalPayrollCost());
+-    }
+-
+     private String buildRevenueTotalsSummary() {
+ 
+         return "Current month "
+@@ -1194,17 +1025,4 @@ public class DashboardAnalyticsService {
+                 && session.getCheckInTime().getMonthValue() == today.getMonthValue();
+     }
+ 
+-    private boolean isCurrentMonthPayrollRecord(
+-            PayrollRecord record
+-    ) {
+-
+-        if (record == null) {
+-            return false;
+-        }
+-
+-        LocalDate today = LocalDate.now();
+-
+-        return record.getYear() == today.getYear()
+-                && record.getMonth() == today.getMonthValue();
+-    }
+ }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardHomeController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardHomeController.java
+index d1670c0..91ea0d0 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardHomeController.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardHomeController.java
+@@ -11,7 +11,6 @@ import com.storemanager.domain.dashboard.model.DashboardInventoryAlertRow;
+ import com.storemanager.domain.dashboard.model.DashboardMetricCard;
+ import com.storemanager.domain.dashboard.model.DashboardOnlineOrderRow;
+ import com.storemanager.domain.dashboard.model.DashboardOnlineOrderSnapshot;
+-import com.storemanager.domain.dashboard.model.DashboardPayrollSummary;
+ import com.storemanager.domain.dashboard.model.EmployeeDashboardDto;
+ import com.storemanager.domain.dashboard.model.ManagerDashboardDto;
+ import com.storemanager.domain.dashboard.model.OwnerDashboardDto;
+@@ -85,9 +84,6 @@ public class DashboardHomeController {
+     @FXML
+     private Label assignedBranchesLabel;
+ 
+-    @FXML
+-    private Label latestPayrollLabel;
+-
+     @FXML
+     private TableView<DashboardAttendanceHistoryRow> attendanceHistoryTable;
+ 
+@@ -187,27 +183,12 @@ public class DashboardHomeController {
+     @FXML
+     private Label workingEmployeesLabel;
+ 
+-    @FXML
+-    private Label payrollTotalsLabel;
+-
+     @FXML
+     private Label revenueTotalsLabel;
+ 
+     @FXML
+     private Label inventoryAlertsLabel;
+ 
+-    @FXML
+-    private TableView<DashboardPayrollSummary> payrollTable;
+-
+-    @FXML
+-    private TableColumn<DashboardPayrollSummary, String> payrollEmployeeColumn;
+-
+-    @FXML
+-    private TableColumn<DashboardPayrollSummary, BigDecimal> payrollHoursColumn;
+-
+-    @FXML
+-    private TableColumn<DashboardPayrollSummary, BigDecimal> payrollSalaryColumn;
+-
+     @FXML
+     private TableView<DashboardCashFlowSummary> cashFlowTable;
+ 
+@@ -223,12 +204,6 @@ public class DashboardHomeController {
+     @FXML
+     private TableColumn<DashboardCashFlowSummary, BigDecimal> cashFlowProductColumn;
+ 
+-    @FXML
+-    private TableColumn<DashboardCashFlowSummary, BigDecimal> cashFlowPayrollColumn;
+-
+-    @FXML
+-    private TableColumn<DashboardCashFlowSummary, BigDecimal> cashFlowFinalColumn;
+-
+     @FXML
+     private TableView<DashboardInventoryAlertRow> inventoryAlertTable;
+ 
+@@ -387,7 +362,6 @@ public class DashboardHomeController {
+         setLabel(todayHoursLabel);
+         setLabel(monthHoursLabel);
+         setLabel(assignedBranchesLabel);
+-        setLabel(latestPayrollLabel);
+         setLabel(branchEmployeeCountLabel);
+         setLabel(checkedInLabel);
+         setLabel(attendanceOverviewLabel);
+@@ -396,14 +370,12 @@ public class DashboardHomeController {
+         setLabel(totalEmployeesLabel);
+         setLabel(activeEmployeesLabel);
+         setLabel(workingEmployeesLabel);
+-        setLabel(payrollTotalsLabel);
+         setLabel(revenueTotalsLabel);
+         setLabel(inventoryAlertsLabel);
+ 
+         attendanceHistoryTable.setItems(FXCollections.observableArrayList());
+         branchSummaryTable.setItems(FXCollections.observableArrayList());
+         locationTable.setItems(FXCollections.observableArrayList());
+-        payrollTable.setItems(FXCollections.observableArrayList());
+         cashFlowTable.setItems(FXCollections.observableArrayList());
+         inventoryAlertTable.setItems(FXCollections.observableArrayList());
+         if (onlineOrderTable != null) {
+@@ -563,7 +535,6 @@ public class DashboardHomeController {
+         todayHoursLabel.setText("Today's worked hours: " + valueOrDefault(dto.getTodayWorkedHours()));
+         monthHoursLabel.setText("Current month worked hours: " + valueOrDefault(dto.getCurrentMonthWorkedHours()));
+         assignedBranchesLabel.setText("Assigned branches: " + valueOrDefault(dto.getAssignedBranches()));
+-        latestPayrollLabel.setText(valueOrDefault(dto.getLatestPayrollSummary()));
+ 
+         attendanceHistoryTable.setItems(
+                 FXCollections.observableArrayList(
+@@ -636,15 +607,9 @@ public class DashboardHomeController {
+         totalEmployeesLabel.setText("Total employees: " + dto.getTotalEmployees());
+         activeEmployeesLabel.setText("Active employees: " + dto.getActiveEmployees());
+         workingEmployeesLabel.setText("Employees currently working: " + dto.getEmployeesCurrentlyWorking());
+-        payrollTotalsLabel.setText("Payroll totals: " + valueOrDefault(dto.getPayrollTotals()));
+         revenueTotalsLabel.setText("Revenue totals: " + valueOrDefault(dto.getRevenueTotals()));
+         inventoryAlertsLabel.setText("Inventory alerts: " + valueOrDefault(dto.getInventoryAlertsSummary()));
+ 
+-        payrollTable.setItems(
+-                FXCollections.observableArrayList(
+-                        dto.getPayrollSummaries()
+-                )
+-        );
+         cashFlowTable.setItems(
+                 FXCollections.observableArrayList(
+                         dto.getCashFlowSummaries()
+@@ -792,9 +757,6 @@ public class DashboardHomeController {
+         locationTable.setColumnResizePolicy(
+                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+         );
+-        payrollTable.setColumnResizePolicy(
+-                TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+-        );
+         cashFlowTable.setColumnResizePolicy(
+                 TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+         );
+@@ -868,21 +830,6 @@ public class DashboardHomeController {
+                 )
+         );
+ 
+-        payrollEmployeeColumn.setCellValueFactory(
+-                cellData -> new SimpleStringProperty(
+-                        cellData.getValue().getEmployeeName()
+-                )
+-        );
+-        payrollHoursColumn.setCellValueFactory(
+-                cellData -> new SimpleObjectProperty<>(
+-                        cellData.getValue().getTotalHours()
+-                )
+-        );
+-        payrollSalaryColumn.setCellValueFactory(
+-                cellData -> new SimpleObjectProperty<>(
+-                        cellData.getValue().getTotalSalary()
+-                )
+-        );
+ 
+         cashFlowLabelColumn.setCellValueFactory(
+                 cellData -> new SimpleStringProperty(
+@@ -904,16 +851,6 @@ public class DashboardHomeController {
+                         cellData.getValue().getProductBusinessCashFlow()
+                 )
+         );
+-        cashFlowPayrollColumn.setCellValueFactory(
+-                cellData -> new SimpleObjectProperty<>(
+-                        cellData.getValue().getPayrollCashFlow()
+-                )
+-        );
+-        cashFlowFinalColumn.setCellValueFactory(
+-                cellData -> new SimpleObjectProperty<>(
+-                        cellData.getValue().getFinalCashFlow()
+-                )
+-        );
+ 
+         inventoryProductColumn.setCellValueFactory(
+                 cellData -> new SimpleStringProperty(
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardShellController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardShellController.java
+index fcf592b..428a096 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardShellController.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/dashboard/view/DashboardShellController.java
+@@ -130,12 +130,6 @@ public class DashboardShellController {
+         navigateTo(DashboardMenuRegistry.ATTENDANCE);
+     }
+ 
+-    @FXML
+-    public void onPayroll() {
+-
+-        navigateTo(DashboardMenuRegistry.PAYROLL);
+-    }
+-
+     @FXML
+     public void onBranch() {
+ 
+@@ -434,7 +428,6 @@ public class DashboardShellController {
+             case DashboardMenuRegistry.EMPLOYEE -> "👥";
+             case DashboardMenuRegistry.ATTENDANCE -> "◷";
+             case DashboardMenuRegistry.ATTENDANCE_ANOMALIES -> "!";
+-            case DashboardMenuRegistry.PAYROLL -> "$";
+             case DashboardMenuRegistry.BRANCH -> "⌂";
+             case DashboardMenuRegistry.USER_MANAGEMENT -> "⚙";
+             case DashboardMenuRegistry.PRODUCT -> "▣";
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/presenter/InventoryPresenter.java b/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/presenter/InventoryPresenter.java
+index 4e698e9..da20f45 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/presenter/InventoryPresenter.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/presenter/InventoryPresenter.java
+@@ -1,6 +1,6 @@
+ package com.storemanager.domain.inventory.presenter;
+ 
+-import com.storemanager.core.runtime.BaseCrudPresenter;
++import com.storemanager.core.runtime.BaseModulePresenter;
+ import com.storemanager.core.runtime.async.AsyncTaskRunner;
+ import com.storemanager.core.runtime.async.LoadingState;
+ import com.storemanager.domain.inventory.model.InventoryItem;
+@@ -12,7 +12,7 @@ import com.storemanager.domain.product.model.Product;
+ import java.util.List;
+ import java.util.Map;
+ 
+-public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
++public class InventoryPresenter extends BaseModulePresenter {
+ 
+     private final InventoryListController view;
+ 
+@@ -35,7 +35,6 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
+     @Override
+     public void initialize() {
+ 
+-        enterCreateMode();
+         loadInventory();
+     }
+ 
+@@ -55,15 +54,11 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
+                 () -> new InventoryData(
+                         inventoryService.findAllItems(),
+                         inventoryService.findAllTransactions(),
+-                        inventoryService.findProducts(),
+-                        inventoryService.findProductsById(),
+-                        inventoryService.findQuickPickProducts(20)
++                        inventoryService.findProductsById()
+                 ),
+                 data -> {
+                     productsById =
+                             data.productsById();
+-                    view.setProducts(data.products());
+-                    view.setQuickPickProducts(data.quickPickProducts());
+                     view.setInventoryItems(data.items());
+                     view.setTransactions(data.transactions());
+                     loadingState =
+@@ -80,45 +75,6 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
+         );
+     }
+ 
+-    public void adjustStock(
+-            InventoryTransaction transaction
+-    ) {
+-
+-        loadingState =
+-                LoadingState.LOADING;
+-        view.setBusy(true);
+-        view.setStatus("Applying stock transaction...");
+-
+-        AsyncTaskRunner.run(
+-                () -> inventoryService.adjustStock(transaction),
+-                success -> {
+-                    if (!success) {
+-                        view.showError("Cannot apply stock transaction");
+-                        view.setStatus("Cannot apply stock transaction");
+-                        view.setBusy(false);
+-                        return;
+-                    }
+-
+-                    view.clearAdjustmentForm();
+-                    refresh();
+-                },
+-                throwable -> {
+-                    loadingState =
+-                            LoadingState.ERROR;
+-                    view.setStatus("Cannot apply stock transaction");
+-                    view.showError(throwable.getMessage());
+-                    view.setBusy(false);
+-                },
+-                null
+-        );
+-    }
+-
+-    public void clearForm() {
+-
+-        enterCreateMode();
+-        view.clearAdjustmentForm();
+-    }
+-
+     public String getProductName(
+             Long productId
+     ) {
+@@ -162,9 +118,7 @@ public class InventoryPresenter extends BaseCrudPresenter<InventoryItem> {
+     private record InventoryData(
+             List<InventoryItem> items,
+             List<InventoryTransaction> transactions,
+-            List<Product> products,
+-            Map<Long, Product> productsById,
+-            List<Product> quickPickProducts
++            Map<Long, Product> productsById
+     ) {
+     }
+ }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryAdjustmentFormController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryAdjustmentFormController.java
+deleted file mode 100644
+index 550d8b6..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryAdjustmentFormController.java
++++ /dev/null
+@@ -1,119 +0,0 @@
+-package com.storemanager.domain.inventory.view;
+-
+-import com.storemanager.domain.inventory.model.InventoryTransaction;
+-import com.storemanager.domain.inventory.model.InventoryTransactionType;
+-import com.storemanager.domain.product.model.Product;
+-import com.storemanager.domain.product.view.ProductSelectionWorkflowController;
+-import javafx.collections.FXCollections;
+-import javafx.fxml.FXML;
+-import javafx.scene.control.ComboBox;
+-import javafx.scene.control.TextField;
+-
+-import java.util.List;
+-
+-public class InventoryAdjustmentFormController {
+-
+-    @FXML
+-    private ProductSelectionWorkflowController productSelectionWorkflowController;
+-
+-    @FXML
+-    private ComboBox<InventoryTransactionType> typeComboBox;
+-
+-    @FXML
+-    private TextField quantityField;
+-
+-    @FXML
+-    private TextField reasonField;
+-
+-    @FXML
+-    public void initialize() {
+-
+-        typeComboBox.setItems(
+-                FXCollections.observableArrayList(
+-                        InventoryTransactionType.values()
+-                )
+-        );
+-
+-        typeComboBox.setValue(
+-                InventoryTransactionType.IMPORT
+-        );
+-
+-    }
+-
+-    public InventoryTransaction readTransaction() {
+-
+-        InventoryTransaction transaction =
+-                new InventoryTransaction();
+-
+-        Product product =
+-                productSelectionWorkflowController.resolveSelectedProduct();
+-
+-        transaction.setProductId(
+-                product == null
+-                        ? null
+-                        : product.getId()
+-        );
+-
+-        transaction.setType(
+-                typeComboBox.getValue()
+-        );
+-
+-        transaction.setQuantity(
+-                parseQuantity()
+-        );
+-
+-        transaction.setReason(
+-                reasonField.getText()
+-        );
+-
+-        return transaction;
+-    }
+-
+-    public void setProducts(
+-            List<Product> products
+-    ) {
+-
+-        productSelectionWorkflowController.setProducts(products);
+-    }
+-
+-    public void setQuickPickProducts(
+-            List<Product> products
+-    ) {
+-
+-        productSelectionWorkflowController.setQuickPickProducts(products);
+-    }
+-
+-    public void clear() {
+-
+-        productSelectionWorkflowController.clearSelection();
+-        typeComboBox.setValue(
+-                InventoryTransactionType.IMPORT
+-        );
+-        quantityField.clear();
+-        reasonField.clear();
+-    }
+-
+-    public void setBusy(
+-            boolean busy
+-    ) {
+-
+-        productSelectionWorkflowController.setBusy(busy);
+-        typeComboBox.setDisable(busy);
+-        quantityField.setDisable(busy);
+-        reasonField.setDisable(busy);
+-    }
+-
+-    private int parseQuantity() {
+-
+-        String value =
+-                quantityField.getText();
+-
+-        if (value == null || value.trim().isEmpty()) {
+-            return 0;
+-        }
+-
+-        return Integer.parseInt(
+-                value.trim()
+-        );
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryListController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryListController.java
+index 5d6d3b5..8a33e9d 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryListController.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/inventory/view/InventoryListController.java
+@@ -1,29 +1,22 @@
+ package com.storemanager.domain.inventory.view;
+ 
+-import com.storemanager.core.security.PermissionGuard;
+ import com.storemanager.domain.inventory.model.InventoryItem;
+ import com.storemanager.domain.inventory.model.InventoryTransaction;
+ import com.storemanager.domain.inventory.presenter.InventoryPresenter;
+-import com.storemanager.domain.product.model.Product;
+ import com.storemanager.core.util.TimeFormatUtil;
+ import javafx.beans.property.SimpleStringProperty;
+ import javafx.collections.FXCollections;
+ import javafx.fxml.FXML;
+ import javafx.scene.control.Alert;
+-import javafx.scene.control.Button;
+ import javafx.scene.control.Label;
+ import javafx.scene.control.TableColumn;
+ import javafx.scene.control.TableView;
+ import javafx.scene.control.cell.PropertyValueFactory;
+ 
+-import java.time.LocalDateTime;
+ import java.util.List;
+ 
+ public class InventoryListController {
+ 
+-    @FXML
+-    private InventoryAdjustmentFormController adjustmentFormController;
+-
+     @FXML
+     private TableView<InventoryItem> inventoryTable;
+ 
+@@ -66,12 +59,6 @@ public class InventoryListController {
+     @FXML
+     private TableColumn<InventoryTransaction, String> transactionCreatedAtColumn;
+ 
+-    @FXML
+-    private Button applyButton;
+-
+-    @FXML
+-    private Button clearButton;
+-
+     @FXML
+     private Label statusLabel;
+ 
+@@ -91,44 +78,12 @@ public class InventoryListController {
+         presenter.initialize();
+     }
+ 
+-    @FXML
+-    public void onApplyAdjustment() {
+-
+-        presenter.adjustStock(
+-                adjustmentFormController.readTransaction()
+-        );
+-    }
+-
+-    @FXML
+-    public void onClear() {
+-
+-        presenter.clearForm();
+-    }
+-
+     @FXML
+     public void onRefresh() {
+ 
+         presenter.refresh();
+     }
+ 
+-    public void setProducts(
+-            List<Product> products
+-    ) {
+-
+-        adjustmentFormController.setProducts(
+-                products
+-        );
+-    }
+-
+-    public void setQuickPickProducts(
+-            List<Product> products
+-    ) {
+-
+-        adjustmentFormController.setQuickPickProducts(
+-                products
+-        );
+-    }
+-
+     public void setInventoryItems(
+             List<InventoryItem> items
+     ) {
+@@ -151,24 +106,12 @@ public class InventoryListController {
+         );
+     }
+ 
+-    public void clearAdjustmentForm() {
+-
+-        adjustmentFormController.clear();
+-    }
+-
+     public void setBusy(
+             boolean busy
+     ) {
+ 
+-        adjustmentFormController.setBusy(busy);
+         inventoryTable.setDisable(busy);
+         transactionTable.setDisable(busy);
+-
+-        boolean canAdjust =
+-                PermissionGuard.canAdjustInventory();
+-        adjustmentFormController.setBusy(busy || !canAdjust);
+-        applyButton.setDisable(busy || !canAdjust);
+-        clearButton.setDisable(busy || !canAdjust);
+     }
+ 
+     public void setStatus(
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/notification/model/NotificationType.java b/StoreManagerFX/src/main/java/com/storemanager/domain/notification/model/NotificationType.java
+index d079161..102587a 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/notification/model/NotificationType.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/notification/model/NotificationType.java
+@@ -1,6 +1,8 @@
+ package com.storemanager.domain.notification.model;
+ 
+ public enum NotificationType {
++    // Persistence compatibility for historical notifications only.
++    @Deprecated
+     PAYROLL,
+     INVENTORY,
+     ATTENDANCE,
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/OfflineExportSpecV1.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/OfflineExportSpecV1.java
+index 9efe9bf..096b509 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/OfflineExportSpecV1.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/OfflineExportSpecV1.java
+@@ -32,9 +32,6 @@ public final class OfflineExportSpecV1 {
+     public static final String ATTENDANCE_FILE =
+             "attendance.json";
+ 
+-    public static final String PAYROLL_FILE =
+-            "payroll.json";
+-
+     public static final String SALES_FILE =
+             "sales.json";
+ 
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportBundle.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportBundle.java
+index 4ec9368..0fcb0c2 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportBundle.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportBundle.java
+@@ -10,7 +10,6 @@ public record OfflineExportBundle(
+         List<ProductSnapshot> products,
+         List<InventorySnapshot> inventory,
+         List<AttendanceSnapshot> attendance,
+-        List<PayrollSnapshot> payroll,
+         List<SaleSnapshot> sales,
+         List<SaleItemSnapshot> saleItems,
+         List<AuditLogSnapshot> auditLogs,
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportSelection.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportSelection.java
+index cd1a700..601d2fa 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportSelection.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/OfflineExportSelection.java
+@@ -5,7 +5,6 @@ public record OfflineExportSelection(
+         boolean employees,
+         boolean sales,
+         boolean attendance,
+-        boolean payroll,
+         boolean images,
+         boolean auditLogs
+ ) {
+@@ -18,7 +17,6 @@ public record OfflineExportSelection(
+                 true,
+                 true,
+                 true,
+-                true,
+                 true
+         );
+     }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/PayrollSnapshot.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/PayrollSnapshot.java
+deleted file mode 100644
+index 3e63efe..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/dto/PayrollSnapshot.java
++++ /dev/null
+@@ -1,17 +0,0 @@
+-package com.storemanager.domain.offline_export.dto;
+-
+-import java.math.BigDecimal;
+-import java.time.LocalDateTime;
+-
+-public record PayrollSnapshot(
+-        Long sourceId,
+-        Long sourceEmployeeId,
+-        int month,
+-        int year,
+-        BigDecimal totalHours,
+-        BigDecimal hourlyRateSnapshot,
+-        BigDecimal totalSalary,
+-        LocalDateTime generatedAt,
+-        Long sourceGeneratedByUserId
+-) {
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportJsonSerializer.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportJsonSerializer.java
+index 7228813..7048698 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportJsonSerializer.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportJsonSerializer.java
+@@ -71,10 +71,6 @@ public class OfflineExportJsonSerializer {
+                 exportRoot.resolve(OfflineExportSpecV1.ATTENDANCE_FILE),
+                 bundle.attendance()
+         );
+-        writeJson(
+-                exportRoot.resolve(OfflineExportSpecV1.PAYROLL_FILE),
+-                bundle.payroll()
+-        );
+         writeJson(
+                 exportRoot.resolve(OfflineExportSpecV1.SALES_FILE),
+                 bundle.sales()
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportManifestGenerator.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportManifestGenerator.java
+index bb6b4e6..d03e12b 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportManifestGenerator.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportManifestGenerator.java
+@@ -61,10 +61,6 @@ public class OfflineExportManifestGenerator {
+                 OfflineExportSpecV1.ATTENDANCE_FILE,
+                 size(bundle.attendance())
+         );
+-        recordCounts.put(
+-                OfflineExportSpecV1.PAYROLL_FILE,
+-                size(bundle.payroll())
+-        );
+         recordCounts.put(
+                 OfflineExportSpecV1.SALES_FILE,
+                 size(bundle.sales())
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportSnapshotCollector.java b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportSnapshotCollector.java
+index 57137b0..bbbbdab 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportSnapshotCollector.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/offline_export/service/OfflineExportSnapshotCollector.java
+@@ -23,13 +23,10 @@ import com.storemanager.domain.offline_export.dto.ExportImageAsset;
+ import com.storemanager.domain.offline_export.dto.InventorySnapshot;
+ import com.storemanager.domain.offline_export.dto.OfflineExportBundle;
+ import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
+-import com.storemanager.domain.offline_export.dto.PayrollSnapshot;
+ import com.storemanager.domain.offline_export.dto.ProductSnapshot;
+ import com.storemanager.domain.offline_export.dto.SaleItemSnapshot;
+ import com.storemanager.domain.offline_export.dto.SaleSnapshot;
+ import com.storemanager.domain.offline_export.dto.UserSnapshot;
+-import com.storemanager.domain.payroll.model.PayrollRecord;
+-import com.storemanager.domain.payroll.repository.PayrollRepository;
+ import com.storemanager.domain.product.model.Product;
+ import com.storemanager.domain.product.repository.ProductRepository;
+ import com.storemanager.domain.sale.model.SaleOrder;
+@@ -65,9 +62,6 @@ public class OfflineExportSnapshotCollector {
+     private final AttendanceRepository attendanceRepository =
+             new AttendanceRepository();
+ 
+-    private final PayrollRepository payrollRepository =
+-            new PayrollRepository();
+-
+     private final SaleRepository saleRepository =
+             new SaleRepository();
+ 
+@@ -161,14 +155,6 @@ public class OfflineExportSnapshotCollector {
+                                 .toList()
+                         : List.of();
+ 
+-        List<PayrollSnapshot> payroll =
+-                selection != null && selection.payroll()
+-                        ? payrollRepository.findPayrollRecords()
+-                                .stream()
+-                                .map(this::toPayrollSnapshot)
+-                                .toList()
+-                        : List.of();
+-
+         List<SaleSnapshot> sales =
+                 selection != null && selection.sales()
+                         ? saleRepository.findAllOrders()
+@@ -205,7 +191,6 @@ public class OfflineExportSnapshotCollector {
+                 products,
+                 inventory,
+                 attendance,
+-                payroll,
+                 sales,
+                 saleItems,
+                 auditLogs,
+@@ -347,23 +332,6 @@ public class OfflineExportSnapshotCollector {
+         );
+     }
+ 
+-    private PayrollSnapshot toPayrollSnapshot(
+-            PayrollRecord record
+-    ) {
+-
+-        return new PayrollSnapshot(
+-                record.getId(),
+-                record.getEmployeeId(),
+-                record.getMonth(),
+-                record.getYear(),
+-                record.getTotalHours(),
+-                record.getHourlyRateSnapshot(),
+-                record.getTotalSalary(),
+-                record.getGeneratedAt(),
+-                record.getGeneratedByUserId()
+-        );
+-    }
+-
+     private SaleSnapshot toSaleSnapshot(
+             SaleOrder order
+     ) {
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/model/EmployeeSalaryConfig.java b/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/model/EmployeeSalaryConfig.java
+deleted file mode 100644
+index 07330de..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/model/EmployeeSalaryConfig.java
++++ /dev/null
+@@ -1,60 +0,0 @@
+-package com.storemanager.domain.payroll.model;
+-
+-import java.math.BigDecimal;
+-import java.time.LocalDateTime;
+-
+-public class EmployeeSalaryConfig {
+-
+-    private Long id;
+-
+-    private Long employeeId;
+-
+-    private BigDecimal hourlyRate;
+-
+-    private boolean active;
+-
+-    private LocalDateTime updatedAt;
+-
+-    public EmployeeSalaryConfig() {
+-    }
+-
+-    public Long getId() {
+-        return id;
+-    }
+-
+-    public void setId(Long id) {
+-        this.id = id;
+-    }
+-
+-    public Long getEmployeeId() {
+-        return employeeId;
+-    }
+-
+-    public void setEmployeeId(Long employeeId) {
+-        this.employeeId = employeeId;
+-    }
+-
+-    public BigDecimal getHourlyRate() {
+-        return hourlyRate;
+-    }
+-
+-    public void setHourlyRate(BigDecimal hourlyRate) {
+-        this.hourlyRate = hourlyRate;
+-    }
+-
+-    public boolean isActive() {
+-        return active;
+-    }
+-
+-    public void setActive(boolean active) {
+-        this.active = active;
+-    }
+-
+-    public LocalDateTime getUpdatedAt() {
+-        return updatedAt;
+-    }
+-
+-    public void setUpdatedAt(LocalDateTime updatedAt) {
+-        this.updatedAt = updatedAt;
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/model/PayrollRecord.java b/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/model/PayrollRecord.java
+deleted file mode 100644
+index 81d13ef..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/model/PayrollRecord.java
++++ /dev/null
+@@ -1,100 +0,0 @@
+-package com.storemanager.domain.payroll.model;
+-
+-import java.math.BigDecimal;
+-import java.time.LocalDateTime;
+-
+-public class PayrollRecord {
+-
+-    private Long id;
+-
+-    private Long employeeId;
+-
+-    private int month;
+-
+-    private int year;
+-
+-    private BigDecimal totalHours;
+-
+-    private BigDecimal hourlyRateSnapshot;
+-
+-    private BigDecimal totalSalary;
+-
+-    private LocalDateTime generatedAt;
+-
+-    private Long generatedByUserId;
+-
+-    public PayrollRecord() {
+-    }
+-
+-    public Long getId() {
+-        return id;
+-    }
+-
+-    public void setId(Long id) {
+-        this.id = id;
+-    }
+-
+-    public Long getEmployeeId() {
+-        return employeeId;
+-    }
+-
+-    public void setEmployeeId(Long employeeId) {
+-        this.employeeId = employeeId;
+-    }
+-
+-    public int getMonth() {
+-        return month;
+-    }
+-
+-    public void setMonth(int month) {
+-        this.month = month;
+-    }
+-
+-    public int getYear() {
+-        return year;
+-    }
+-
+-    public void setYear(int year) {
+-        this.year = year;
+-    }
+-
+-    public BigDecimal getTotalHours() {
+-        return totalHours;
+-    }
+-
+-    public void setTotalHours(BigDecimal totalHours) {
+-        this.totalHours = totalHours;
+-    }
+-
+-    public BigDecimal getHourlyRateSnapshot() {
+-        return hourlyRateSnapshot;
+-    }
+-
+-    public void setHourlyRateSnapshot(BigDecimal hourlyRateSnapshot) {
+-        this.hourlyRateSnapshot = hourlyRateSnapshot;
+-    }
+-
+-    public BigDecimal getTotalSalary() {
+-        return totalSalary;
+-    }
+-
+-    public void setTotalSalary(BigDecimal totalSalary) {
+-        this.totalSalary = totalSalary;
+-    }
+-
+-    public LocalDateTime getGeneratedAt() {
+-        return generatedAt;
+-    }
+-
+-    public void setGeneratedAt(LocalDateTime generatedAt) {
+-        this.generatedAt = generatedAt;
+-    }
+-
+-    public Long getGeneratedByUserId() {
+-        return generatedByUserId;
+-    }
+-
+-    public void setGeneratedByUserId(Long generatedByUserId) {
+-        this.generatedByUserId = generatedByUserId;
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/presenter/PayrollPresenter.java b/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/presenter/PayrollPresenter.java
+deleted file mode 100644
+index d7b4e37..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/presenter/PayrollPresenter.java
++++ /dev/null
+@@ -1,201 +0,0 @@
+-package com.storemanager.domain.payroll.presenter;
+-
+-import com.storemanager.core.runtime.BaseModulePresenter;
+-import com.storemanager.core.runtime.async.AsyncTaskRunner;
+-import com.storemanager.core.runtime.async.LoadingState;
+-import com.storemanager.domain.employee.model.Employee;
+-import com.storemanager.domain.payroll.model.EmployeeSalaryConfig;
+-import com.storemanager.domain.payroll.model.PayrollRecord;
+-import com.storemanager.domain.payroll.service.PayrollService;
+-import com.storemanager.domain.payroll.view.PayrollController;
+-
+-import java.math.BigDecimal;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.stream.Collectors;
+-
+-public class PayrollPresenter extends BaseModulePresenter {
+-
+-    private final PayrollController view;
+-
+-    private final PayrollService payrollService =
+-            new PayrollService();
+-
+-    private Map<Long, Employee> employeesById =
+-            Map.of();
+-
+-    private LoadingState loadingState =
+-            LoadingState.IDLE;
+-
+-    public PayrollPresenter(
+-            PayrollController view
+-    ) {
+-
+-        this.view = view;
+-    }
+-
+-    @Override
+-    public void initialize() {
+-
+-        view.setPayrollAdministrationVisible(
+-                payrollService.canManagePayroll()
+-        );
+-
+-        view.setPeriod(
+-                payrollService.getCurrentYear(),
+-                payrollService.getCurrentMonth()
+-        );
+-
+-        loadPayrollData();
+-    }
+-
+-    public void loadPayrollData() {
+-
+-        loadingState =
+-                LoadingState.LOADING;
+-        view.setBusy(true);
+-        view.setStatus("Loading payroll...");
+-
+-        AsyncTaskRunner.run(
+-                () -> new PayrollData(
+-                        payrollService.findEmployees(),
+-                        payrollService.findSalaryConfigs(),
+-                        payrollService.findPayrollRecords()
+-                ),
+-                data -> {
+-                    employeesById =
+-                            data.employees()
+-                                    .stream()
+-                                    .collect(
+-                                            Collectors.toMap(
+-                                                    Employee::getId,
+-                                                    employee -> employee
+-                                            )
+-                                    );
+-                    view.setEmployees(data.employees());
+-                    view.setSalaryConfigs(data.salaryConfigs());
+-                    view.setPayrollRecords(data.records());
+-                    loadingState =
+-                            LoadingState.SUCCESS;
+-                    view.setStatus("Ready");
+-                },
+-                throwable -> {
+-                    loadingState =
+-                            LoadingState.ERROR;
+-                    view.setStatus("Cannot load payroll");
+-                    view.showError(throwable.getMessage());
+-                },
+-                () -> view.setBusy(false)
+-        );
+-    }
+-
+-    public void saveSalaryConfig(
+-            Employee employee,
+-            BigDecimal hourlyRate,
+-            boolean active
+-    ) {
+-
+-        if (!payrollService.canManagePayroll()) {
+-            view.showError("Payroll management access denied");
+-            return;
+-        }
+-
+-        loadingState =
+-                LoadingState.LOADING;
+-        view.setBusy(true);
+-        view.setStatus("Saving salary config...");
+-
+-        AsyncTaskRunner.run(
+-                () -> payrollService.saveSalaryConfig(
+-                        employee,
+-                        hourlyRate,
+-                        active
+-                ),
+-                success -> {
+-                    if (!success) {
+-                        view.showError("Cannot save salary config");
+-                        view.setStatus("Cannot save salary config");
+-                        view.setBusy(false);
+-                        return;
+-                    }
+-
+-                    view.clearSalaryForm();
+-                    loadPayrollData();
+-                },
+-                throwable -> {
+-                    loadingState =
+-                            LoadingState.ERROR;
+-                    view.setStatus("Cannot save salary config");
+-                    view.showError(throwable.getMessage());
+-                    view.setBusy(false);
+-                },
+-                null
+-        );
+-    }
+-
+-    public void generatePayroll(
+-            int year,
+-            int month
+-    ) {
+-
+-        if (!payrollService.canManagePayroll()) {
+-            view.showError("Payroll generation access denied");
+-            return;
+-        }
+-
+-        loadingState =
+-                LoadingState.LOADING;
+-        view.setBusy(true);
+-        view.setStatus("Generating payroll...");
+-
+-        AsyncTaskRunner.run(
+-                () -> payrollService.generatePayroll(
+-                        year,
+-                        month
+-                ),
+-                generatedCount -> {
+-                    view.setStatus(
+-                            "Generated payroll records: " + generatedCount
+-                    );
+-                    loadPayrollData();
+-                },
+-                throwable -> {
+-                    loadingState =
+-                            LoadingState.ERROR;
+-                    view.setStatus("Cannot generate payroll");
+-                    view.showError(throwable.getMessage());
+-                    view.setBusy(false);
+-                },
+-                null
+-        );
+-    }
+-
+-    public String getEmployeeName(
+-            Long employeeId
+-    ) {
+-
+-        if (employeeId == null) {
+-            return "";
+-        }
+-
+-        Employee employee =
+-                employeesById.get(employeeId);
+-
+-        if (employee == null) {
+-            return "";
+-        }
+-
+-        return employee.getFullName();
+-    }
+-
+-    public LoadingState getLoadingState() {
+-        return loadingState;
+-    }
+-
+-    private record PayrollData(
+-            List<Employee> employees,
+-            List<EmployeeSalaryConfig> salaryConfigs,
+-            List<PayrollRecord> records
+-    ) {
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/repository/PayrollRepository.java b/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/repository/PayrollRepository.java
+deleted file mode 100644
+index eb2c926..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/repository/PayrollRepository.java
++++ /dev/null
+@@ -1,467 +0,0 @@
+-package com.storemanager.domain.payroll.repository;
+-
+-import com.storemanager.core.database.ConnectionFactory;
+-import com.storemanager.domain.payroll.model.EmployeeSalaryConfig;
+-import com.storemanager.domain.payroll.model.PayrollRecord;
+-
+-import java.sql.Connection;
+-import java.sql.PreparedStatement;
+-import java.sql.ResultSet;
+-import java.sql.Statement;
+-import java.sql.Timestamp;
+-import java.math.BigDecimal;
+-import java.time.LocalDate;
+-import java.util.ArrayList;
+-import java.util.List;
+-
+-public class PayrollRepository {
+-
+-    public PayrollRepository() {
+-
+-        initializeTables();
+-    }
+-
+-    public List<EmployeeSalaryConfig> findAllSalaryConfigs() {
+-
+-        List<EmployeeSalaryConfig> configs =
+-                new ArrayList<>();
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                Statement statement =
+-                        connection.createStatement();
+-                ResultSet resultSet =
+-                        statement.executeQuery(
+-                                """
+-                                SELECT *
+-                                FROM employee_salary_configs
+-                                ORDER BY employee_id
+-                                """
+-                        )
+-        ) {
+-
+-            while (resultSet.next()) {
+-                configs.add(mapSalaryConfig(resultSet));
+-            }
+-
+-            return configs;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return configs;
+-        }
+-    }
+-
+-    public EmployeeSalaryConfig findActiveConfigByEmployeeId(
+-            Long employeeId
+-    ) {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                PreparedStatement statement =
+-                        connection.prepareStatement(
+-                                """
+-                                SELECT *
+-                                FROM employee_salary_configs
+-                                WHERE employee_id = ?
+-                                  AND active = TRUE
+-                                LIMIT 1
+-                                """
+-                        )
+-        ) {
+-
+-            statement.setLong(1, employeeId);
+-
+-            ResultSet resultSet =
+-                    statement.executeQuery();
+-
+-            if (resultSet.next()) {
+-                return mapSalaryConfig(resultSet);
+-            }
+-
+-            return null;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return null;
+-        }
+-    }
+-
+-    public boolean saveOrUpdateSalaryConfig(
+-            EmployeeSalaryConfig config
+-    ) {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                PreparedStatement statement =
+-                        connection.prepareStatement(
+-                                """
+-                                INSERT INTO employee_salary_configs (
+-                                    employee_id,
+-                                    hourly_rate,
+-                                    active,
+-                                    updated_at
+-                                )
+-                                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+-                                ON DUPLICATE KEY UPDATE
+-                                    hourly_rate = VALUES(hourly_rate),
+-                                    active = VALUES(active),
+-                                    updated_at = CURRENT_TIMESTAMP
+-                                """
+-                        )
+-        ) {
+-
+-            statement.setLong(1, config.getEmployeeId());
+-            statement.setBigDecimal(2, config.getHourlyRate());
+-            statement.setBoolean(3, config.isActive());
+-
+-            return statement.executeUpdate() > 0;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return false;
+-        }
+-    }
+-
+-    public List<PayrollRecord> findPayrollRecords() {
+-
+-        List<PayrollRecord> records =
+-                new ArrayList<>();
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                Statement statement =
+-                        connection.createStatement();
+-                ResultSet resultSet =
+-                        statement.executeQuery(
+-                                """
+-                                SELECT *
+-                                FROM payroll_records
+-                                ORDER BY year DESC, month DESC, employee_id
+-                                """
+-                        )
+-        ) {
+-
+-            while (resultSet.next()) {
+-                records.add(mapPayrollRecord(resultSet));
+-            }
+-
+-            return records;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return records;
+-        }
+-    }
+-
+-    public List<PayrollRecord> findPayrollRecordsByEmployeeId(
+-            Long employeeId
+-    ) {
+-
+-        List<PayrollRecord> records = new ArrayList<>();
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                PreparedStatement statement =
+-                        connection.prepareStatement(
+-                                """
+-                                SELECT *
+-                                FROM payroll_records
+-                                WHERE employee_id = ?
+-                                ORDER BY year DESC, month DESC
+-                                """
+-                        )
+-        ) {
+-
+-            statement.setLong(1, employeeId);
+-
+-            ResultSet resultSet = statement.executeQuery();
+-
+-            while (resultSet.next()) {
+-                records.add(mapPayrollRecord(resultSet));
+-            }
+-
+-            return records;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return records;
+-        }
+-    }
+-
+-    public BigDecimal findTotalPayrollCost() {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                Statement statement =
+-                        connection.createStatement();
+-                ResultSet resultSet =
+-                        statement.executeQuery(
+-                                """
+-                                SELECT COALESCE(SUM(total_salary), 0) AS total_payroll_cost
+-                                FROM payroll_records
+-                                """
+-                        )
+-        ) {
+-
+-            if (resultSet.next()) {
+-                return resultSet.getBigDecimal("total_payroll_cost");
+-            }
+-
+-            return BigDecimal.ZERO;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            throw new RuntimeException(
+-                    "Cannot load total payroll cost",
+-                    e
+-            );
+-        }
+-    }
+-
+-    public BigDecimal findPayrollCostForPeriod(
+-            LocalDate startDate,
+-            LocalDate endDate
+-    ) {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                PreparedStatement statement =
+-                        connection.prepareStatement(
+-                                """
+-                                SELECT COALESCE(SUM(total_salary), 0) AS total_payroll_cost
+-                                FROM payroll_records
+-                                WHERE generated_at >= ?
+-                                  AND generated_at < ?
+-                                """
+-                        )
+-        ) {
+-
+-            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+-            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+-
+-            ResultSet resultSet = statement.executeQuery();
+-
+-            if (resultSet.next()) {
+-                return resultSet.getBigDecimal("total_payroll_cost");
+-            }
+-
+-            return BigDecimal.ZERO;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            throw new RuntimeException(
+-                    "Cannot load payroll cost for period",
+-                    e
+-            );
+-        }
+-    }
+-
+-    public long countPayrollRecordsForPeriod(
+-            LocalDate startDate,
+-            LocalDate endDate
+-    ) {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                PreparedStatement statement =
+-                        connection.prepareStatement(
+-                                """
+-                                SELECT COUNT(*) AS payroll_count
+-                                FROM payroll_records
+-                                WHERE generated_at >= ?
+-                                  AND generated_at < ?
+-                                """
+-                        )
+-        ) {
+-
+-            statement.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+-            statement.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+-
+-            ResultSet resultSet = statement.executeQuery();
+-
+-            if (resultSet.next()) {
+-                return resultSet.getLong("payroll_count");
+-            }
+-
+-            return 0L;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            throw new RuntimeException(
+-                    "Cannot load payroll record count for period",
+-                    e
+-            );
+-        }
+-    }
+-
+-    public boolean savePayrollRecord(
+-            PayrollRecord record
+-    ) {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                PreparedStatement statement =
+-                        connection.prepareStatement(
+-                                """
+-                                INSERT INTO payroll_records (
+-                                    employee_id,
+-                                    month,
+-                                    year,
+-                                    total_hours,
+-                                    hourly_rate_snapshot,
+-                                    total_salary,
+-                                    generated_at,
+-                                    generated_by_user_id
+-                                )
+-                                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+-                                ON DUPLICATE KEY UPDATE
+-                                    total_hours = VALUES(total_hours),
+-                                    hourly_rate_snapshot = VALUES(hourly_rate_snapshot),
+-                                    total_salary = VALUES(total_salary),
+-                                    generated_at = CURRENT_TIMESTAMP,
+-                                    generated_by_user_id = VALUES(generated_by_user_id)
+-                                """
+-                        )
+-        ) {
+-
+-            statement.setLong(1, record.getEmployeeId());
+-            statement.setInt(2, record.getMonth());
+-            statement.setInt(3, record.getYear());
+-            statement.setBigDecimal(4, record.getTotalHours());
+-            statement.setBigDecimal(5, record.getHourlyRateSnapshot());
+-            statement.setBigDecimal(6, record.getTotalSalary());
+-
+-            if (record.getGeneratedByUserId() == null) {
+-                statement.setObject(7, null);
+-            } else {
+-                statement.setLong(7, record.getGeneratedByUserId());
+-            }
+-
+-            return statement.executeUpdate() > 0;
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return false;
+-        }
+-    }
+-
+-    private void initializeTables() {
+-
+-        try (
+-                Connection connection =
+-                        ConnectionFactory.getConnection();
+-                Statement statement =
+-                        connection.createStatement()
+-        ) {
+-
+-            statement.execute(
+-                    """
+-                    CREATE TABLE IF NOT EXISTS employee_salary_configs (
+-                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+-                        employee_id BIGINT NOT NULL UNIQUE,
+-                        hourly_rate DECIMAL(18, 2) NOT NULL,
+-                        active BOOLEAN NOT NULL DEFAULT TRUE,
+-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-                            ON UPDATE CURRENT_TIMESTAMP
+-                    )
+-                    """
+-            );
+-
+-            statement.execute(
+-                    """
+-                    CREATE TABLE IF NOT EXISTS payroll_records (
+-                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+-                        employee_id BIGINT NOT NULL,
+-                        month INT NOT NULL,
+-                        year INT NOT NULL,
+-                        total_hours DECIMAL(10, 2) NOT NULL DEFAULT 0,
+-                        hourly_rate_snapshot DECIMAL(18, 2) NOT NULL,
+-                        total_salary DECIMAL(18, 2) NOT NULL,
+-                        generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+-                        generated_by_user_id BIGINT,
+-                        UNIQUE KEY uk_payroll_employee_month_year (
+-                            employee_id,
+-                            month,
+-                            year
+-                        )
+-                    )
+-                    """
+-            );
+-
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            throw new RuntimeException(
+-                    "Payroll table initialization failed",
+-                    e
+-            );
+-        }
+-    }
+-
+-    private EmployeeSalaryConfig mapSalaryConfig(
+-            ResultSet resultSet
+-    ) throws Exception {
+-
+-        EmployeeSalaryConfig config =
+-                new EmployeeSalaryConfig();
+-
+-        config.setId(resultSet.getLong("id"));
+-        config.setEmployeeId(resultSet.getLong("employee_id"));
+-        config.setHourlyRate(resultSet.getBigDecimal("hourly_rate"));
+-        config.setActive(resultSet.getBoolean("active"));
+-
+-        Timestamp updatedAt =
+-                resultSet.getTimestamp("updated_at");
+-
+-        if (updatedAt != null) {
+-            config.setUpdatedAt(updatedAt.toLocalDateTime());
+-        }
+-
+-        return config;
+-    }
+-
+-    private PayrollRecord mapPayrollRecord(
+-            ResultSet resultSet
+-    ) throws Exception {
+-
+-        PayrollRecord record =
+-                new PayrollRecord();
+-
+-        record.setId(resultSet.getLong("id"));
+-        record.setEmployeeId(resultSet.getLong("employee_id"));
+-        record.setMonth(resultSet.getInt("month"));
+-        record.setYear(resultSet.getInt("year"));
+-        record.setTotalHours(resultSet.getBigDecimal("total_hours"));
+-        record.setHourlyRateSnapshot(
+-                resultSet.getBigDecimal("hourly_rate_snapshot")
+-        );
+-        record.setTotalSalary(resultSet.getBigDecimal("total_salary"));
+-
+-        Timestamp generatedAt =
+-                resultSet.getTimestamp("generated_at");
+-
+-        if (generatedAt != null) {
+-            record.setGeneratedAt(generatedAt.toLocalDateTime());
+-        }
+-
+-        long generatedByUserId =
+-                resultSet.getLong("generated_by_user_id");
+-
+-        if (resultSet.wasNull()) {
+-            record.setGeneratedByUserId(null);
+-        } else {
+-            record.setGeneratedByUserId(generatedByUserId);
+-        }
+-
+-        return record;
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/service/PayrollService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/service/PayrollService.java
+deleted file mode 100644
+index 24e984e..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/service/PayrollService.java
++++ /dev/null
+@@ -1,458 +0,0 @@
+-package com.storemanager.domain.payroll.service;
+-
+-import com.storemanager.core.security.PermissionGuard;
+-import com.storemanager.core.session.AppSession;
+-import com.storemanager.domain.audit.service.AuditService;
+-import com.storemanager.domain.attendance.model.AttendanceMonthlyTotal;
+-import com.storemanager.domain.attendance.service.AttendanceService;
+-import com.storemanager.domain.employee.model.Employee;
+-import com.storemanager.domain.employee.service.EmployeeService;
+-import com.storemanager.domain.payroll.model.EmployeeSalaryConfig;
+-import com.storemanager.domain.payroll.model.PayrollRecord;
+-import com.storemanager.domain.payroll.repository.PayrollRepository;
+-import com.storemanager.domain.notification.model.NotificationType;
+-import com.storemanager.domain.notification.service.NotificationService;
+-import com.storemanager.domain.user.model.RoleType;
+-import com.storemanager.domain.user.model.User;
+-
+-import java.math.BigDecimal;
+-import java.time.LocalDate;
+-import java.util.List;
+-
+-public class PayrollService {
+-
+-    private final PayrollRepository payrollRepository =
+-            new PayrollRepository();
+-
+-    private final AttendanceService attendanceService =
+-            new AttendanceService();
+-
+-    private final EmployeeService employeeService =
+-            new EmployeeService();
+-
+-    private final NotificationService notificationService =
+-            new NotificationService();
+-
+-    private final AuditService auditService =
+-            new AuditService();
+-
+-    public List<Employee> findEmployees() {
+-
+-        validatePayrollViewAccess();
+-
+-        if (isEmployeeSelfService()) {
+-            Employee currentEmployee =
+-                    getCurrentEmployee();
+-
+-            if (currentEmployee == null) {
+-                return List.of();
+-            }
+-
+-            return List.of(currentEmployee);
+-        }
+-
+-        return attendanceService.findEmployees();
+-    }
+-
+-    public List<EmployeeSalaryConfig> findSalaryConfigs() {
+-
+-        validatePayrollViewAccess();
+-
+-        if (isEmployeeSelfService()) {
+-            Employee currentEmployee =
+-                    getCurrentEmployee();
+-
+-            if (currentEmployee == null) {
+-                return List.of();
+-            }
+-
+-            EmployeeSalaryConfig config =
+-                    payrollRepository.findActiveConfigByEmployeeId(
+-                            currentEmployee.getId()
+-                    );
+-
+-            return config == null
+-                    ? List.of()
+-                    : List.of(config);
+-        }
+-
+-        return payrollRepository.findAllSalaryConfigs();
+-    }
+-
+-    public List<PayrollRecord> findPayrollRecords() {
+-
+-        validatePayrollViewAccess();
+-
+-        if (isEmployeeSelfService()) {
+-            Employee currentEmployee =
+-                    getCurrentEmployee();
+-
+-            if (currentEmployee == null) {
+-                return List.of();
+-            }
+-
+-            return payrollRepository.findPayrollRecordsByEmployeeId(
+-                    currentEmployee.getId()
+-            );
+-        }
+-
+-        return payrollRepository.findPayrollRecords();
+-    }
+-
+-    public List<PayrollRecord> findPayrollRecordsByEmployeeId(
+-            Long employeeId
+-    ) {
+-
+-        validatePayrollViewAccess();
+-
+-        if (isEmployeeSelfService()) {
+-            Employee currentEmployee =
+-                    getCurrentEmployee();
+-
+-            if (currentEmployee == null
+-                    || !currentEmployee.getId().equals(employeeId)) {
+-                auditService.recordPermissionDenied(
+-                        AuditService.ACTION_PERMISSION_DENIED,
+-                        "PAYROLL",
+-                        employeeId,
+-                        "Payroll access denied",
+-                        null
+-                );
+-                throw new RuntimeException(
+-                        "Employees can only view their own payroll"
+-                );
+-            }
+-        }
+-
+-        return payrollRepository.findPayrollRecordsByEmployeeId(employeeId);
+-    }
+-
+-    public BigDecimal findTotalPayrollCost() {
+-
+-        validatePayrollViewAccess();
+-
+-        if (isEmployeeSelfService()) {
+-            return findPayrollRecords()
+-                    .stream()
+-                    .map(PayrollRecord::getTotalSalary)
+-                    .filter(value -> value != null)
+-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+-        }
+-
+-        return payrollRepository.findTotalPayrollCost();
+-    }
+-
+-    public BigDecimal findPayrollCostForCurrentMonth() {
+-
+-        validatePayrollViewAccess();
+-
+-        LocalDate today = LocalDate.now();
+-        LocalDate startDate = today.withDayOfMonth(1);
+-        LocalDate endDate = startDate.plusMonths(1);
+-
+-        if (isEmployeeSelfService()) {
+-            return findPayrollRecords()
+-                    .stream()
+-                    .filter(record ->
+-                            record.getYear() == today.getYear()
+-                                    && record.getMonth() == today.getMonthValue()
+-                    )
+-                    .map(PayrollRecord::getTotalSalary)
+-                    .filter(value -> value != null)
+-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+-        }
+-
+-        return payrollRepository.findPayrollCostForPeriod(startDate, endDate);
+-    }
+-
+-    public boolean saveSalaryConfig(
+-            Employee employee,
+-            BigDecimal hourlyRate,
+-            boolean active
+-    ) {
+-
+-        validatePayrollManageAccess();
+-        validateSalaryConfig(employee, hourlyRate);
+-
+-        EmployeeSalaryConfig config =
+-                new EmployeeSalaryConfig();
+-
+-        config.setEmployeeId(employee.getId());
+-        config.setHourlyRate(hourlyRate);
+-        config.setActive(active);
+-
+-        boolean updated =
+-                payrollRepository.saveOrUpdateSalaryConfig(config);
+-
+-        if (updated) {
+-            auditService.record(
+-                    AuditService.ACTION_SALARY_CONFIG_UPDATED,
+-                    "SALARY_CONFIG",
+-                    employee.getId(),
+-                    "Salary configuration updated",
+-                    null
+-            );
+-            notifyEmployee(
+-                    employee,
+-                    "Salary updated",
+-                    "Your hourly rate was updated to "
+-                            + hourlyRate.toPlainString(),
+-                    NotificationType.PAYROLL
+-            );
+-        }
+-
+-        return updated;
+-    }
+-
+-    public int generatePayroll(
+-            int year,
+-            int month
+-    ) {
+-
+-        validatePayrollManageAccess();
+-        validateMonth(year, month);
+-
+-        List<AttendanceMonthlyTotal> monthlyTotals =
+-                attendanceService.findMonthlyTotals(
+-                        year,
+-                        month
+-                );
+-
+-        int generatedCount =
+-                0;
+-
+-        for (AttendanceMonthlyTotal monthlyTotal : monthlyTotals) {
+-            EmployeeSalaryConfig config =
+-                    payrollRepository.findActiveConfigByEmployeeId(
+-                            monthlyTotal.getEmployeeId()
+-                    );
+-
+-            if (config == null) {
+-                continue;
+-            }
+-
+-            PayrollRecord record =
+-                    buildPayrollRecord(
+-                            monthlyTotal,
+-                            config,
+-                            year,
+-                            month
+-                    );
+-
+-            if (payrollRepository.savePayrollRecord(record)) {
+-                generatedCount++;
+-                notifyPayrollGenerated(monthlyTotal.getEmployeeId(), year, month, record);
+-            }
+-        }
+-
+-        if (generatedCount > 0) {
+-            auditService.record(
+-                    AuditService.ACTION_PAYROLL_GENERATED,
+-                    "PAYROLL",
+-                    null,
+-                    "Generated payroll records: "
+-                            + generatedCount
+-                            + " for "
+-                            + year
+-                            + "-"
+-                            + String.format("%02d", month),
+-                    null
+-            );
+-        }
+-
+-        return generatedCount;
+-    }
+-
+-    public int getCurrentYear() {
+-
+-        return LocalDate.now().getYear();
+-    }
+-
+-    public int getCurrentMonth() {
+-
+-        return LocalDate.now().getMonthValue();
+-    }
+-
+-    private PayrollRecord buildPayrollRecord(
+-            AttendanceMonthlyTotal monthlyTotal,
+-            EmployeeSalaryConfig config,
+-            int year,
+-            int month
+-    ) {
+-
+-        PayrollRecord record =
+-                new PayrollRecord();
+-
+-        BigDecimal totalHours =
+-                monthlyTotal.getTotalWorkedHours() == null
+-                        ? BigDecimal.ZERO
+-                        : monthlyTotal.getTotalWorkedHours();
+-
+-        BigDecimal hourlyRate =
+-                config.getHourlyRate();
+-
+-        record.setEmployeeId(monthlyTotal.getEmployeeId());
+-        record.setYear(year);
+-        record.setMonth(month);
+-        record.setTotalHours(totalHours);
+-        record.setHourlyRateSnapshot(hourlyRate);
+-        record.setTotalSalary(
+-                totalHours.multiply(hourlyRate)
+-        );
+-        record.setGeneratedByUserId(getCurrentUserId());
+-
+-        return record;
+-    }
+-
+-    public boolean canManagePayroll() {
+-
+-        return PermissionGuard.canViewEmployee();
+-    }
+-
+-    public boolean isEmployeeSelfService() {
+-
+-        User currentUser =
+-                AppSession.getCurrentUser();
+-
+-        return currentUser != null
+-                && currentUser.getRole() == RoleType.EMPLOYEE;
+-    }
+-
+-    private void validatePayrollViewAccess() {
+-
+-        User currentUser =
+-                AppSession.getCurrentUser();
+-
+-        if (currentUser == null) {
+-            auditService.recordPermissionDenied(
+-                    AuditService.ACTION_PERMISSION_DENIED,
+-                    "PAYROLL",
+-                    null,
+-                    "Payroll access denied",
+-                    null
+-            );
+-            throw new RuntimeException(
+-                    "Payroll access denied"
+-            );
+-        }
+-    }
+-
+-    private void validatePayrollManageAccess() {
+-
+-        if (!PermissionGuard.canViewEmployee()) {
+-            auditService.recordPermissionDenied(
+-                    AuditService.ACTION_PERMISSION_DENIED,
+-                    "PAYROLL",
+-                    null,
+-                    "Payroll access denied",
+-                    null
+-            );
+-            throw new RuntimeException(
+-                    "Payroll access denied"
+-            );
+-        }
+-    }
+-
+-    private Employee getCurrentEmployee() {
+-
+-        User currentUser =
+-                AppSession.getCurrentUser();
+-
+-        if (currentUser == null) {
+-            return null;
+-        }
+-
+-        return employeeService.findByUserId(currentUser.getId());
+-    }
+-
+-    private void validateSalaryConfig(
+-            Employee employee,
+-            BigDecimal hourlyRate
+-    ) {
+-
+-        if (employee == null || employee.getId() == null) {
+-            throw new RuntimeException(
+-                    "Employee is required"
+-            );
+-        }
+-
+-        if (hourlyRate == null
+-                || hourlyRate.compareTo(BigDecimal.ZERO) < 0) {
+-            throw new RuntimeException(
+-                    "Hourly rate cannot be negative"
+-            );
+-        }
+-    }
+-
+-    private void validateMonth(
+-            int year,
+-            int month
+-    ) {
+-
+-        if (year < 2000 || year > 2100) {
+-            throw new RuntimeException(
+-                    "Year is invalid"
+-            );
+-        }
+-
+-        if (month < 1 || month > 12) {
+-            throw new RuntimeException(
+-                    "Month is invalid"
+-            );
+-        }
+-    }
+-
+-    private Long getCurrentUserId() {
+-
+-        User currentUser =
+-                AppSession.getCurrentUser();
+-
+-        return currentUser == null
+-                ? null
+-                : currentUser.getId();
+-    }
+-
+-    private void notifyPayrollGenerated(
+-            Long employeeId,
+-            int year,
+-            int month,
+-            PayrollRecord record
+-    ) {
+-
+-        Employee employee = employeeService.findById(employeeId);
+-        if (employee == null) {
+-            return;
+-        }
+-
+-        notifyEmployee(
+-                employee,
+-                "Payroll generated",
+-                "Payroll for "
+-                        + year
+-                        + "-"
+-                        + String.format("%02d", month)
+-                        + " was generated: "
+-                        + record.getTotalSalary().toPlainString(),
+-                NotificationType.PAYROLL
+-        );
+-    }
+-
+-    private void notifyEmployee(
+-            Employee employee,
+-            String title,
+-            String content,
+-            NotificationType type
+-    ) {
+-
+-        if (employee == null || employee.getUserId() == null) {
+-            return;
+-        }
+-
+-        notificationService.notifyUser(
+-                employee.getUserId(),
+-                title,
+-                content,
+-                type
+-        );
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/view/PayrollController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/view/PayrollController.java
+deleted file mode 100644
+index de22443..0000000
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/payroll/view/PayrollController.java
++++ /dev/null
+@@ -1,342 +0,0 @@
+-package com.storemanager.domain.payroll.view;
+-
+-import com.storemanager.domain.employee.model.Employee;
+-import com.storemanager.domain.payroll.model.EmployeeSalaryConfig;
+-import com.storemanager.domain.payroll.model.PayrollRecord;
+-import com.storemanager.domain.payroll.presenter.PayrollPresenter;
+-import com.storemanager.core.util.TimeFormatUtil;
+-import javafx.beans.property.SimpleStringProperty;
+-import javafx.collections.FXCollections;
+-import javafx.fxml.FXML;
+-import javafx.scene.control.Alert;
+-import javafx.scene.control.CheckBox;
+-import javafx.scene.control.ComboBox;
+-import javafx.scene.control.Label;
+-import javafx.scene.control.TableColumn;
+-import javafx.scene.control.TableView;
+-import javafx.scene.control.TextField;
+-import javafx.scene.control.cell.PropertyValueFactory;
+-import javafx.scene.layout.HBox;
+-import javafx.scene.layout.VBox;
+-import javafx.util.StringConverter;
+-
+-import java.math.BigDecimal;
+-import java.time.LocalDateTime;
+-import java.util.List;
+-
+-public class PayrollController {
+-
+-    @FXML
+-    private ComboBox<Employee> employeeComboBox;
+-
+-    @FXML
+-    private TextField hourlyRateField;
+-
+-    @FXML
+-    private CheckBox activeCheckBox;
+-
+-    @FXML
+-    private HBox salaryConfigControls;
+-
+-    @FXML
+-    private HBox payrollGenerationControls;
+-
+-    @FXML
+-    private VBox salaryConfigSection;
+-
+-    @FXML
+-    private TextField yearField;
+-
+-    @FXML
+-    private TextField monthField;
+-
+-    @FXML
+-    private TableView<EmployeeSalaryConfig> salaryConfigTable;
+-
+-    @FXML
+-    private TableColumn<EmployeeSalaryConfig, String> configEmployeeColumn;
+-
+-    @FXML
+-    private TableColumn<EmployeeSalaryConfig, BigDecimal> configRateColumn;
+-
+-    @FXML
+-    private TableColumn<EmployeeSalaryConfig, Boolean> configActiveColumn;
+-
+-    @FXML
+-    private TableColumn<EmployeeSalaryConfig, String> configUpdatedAtColumn;
+-
+-    @FXML
+-    private TableView<PayrollRecord> payrollTable;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, String> payrollEmployeeColumn;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, Integer> payrollMonthColumn;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, Integer> payrollYearColumn;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, String> payrollHoursColumn;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, BigDecimal> payrollRateColumn;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, BigDecimal> payrollSalaryColumn;
+-
+-    @FXML
+-    private TableColumn<PayrollRecord, String> payrollGeneratedAtColumn;
+-
+-    @FXML
+-    private Label statusLabel;
+-
+-    private PayrollPresenter presenter;
+-
+-    @FXML
+-    public void initialize() {
+-
+-        presenter =
+-                new PayrollPresenter(
+-                        this
+-                );
+-
+-        activeCheckBox.setSelected(true);
+-        configureEmployeeComboBox();
+-        configureSalaryConfigTable();
+-        configurePayrollTable();
+-
+-        presenter.initialize();
+-    }
+-
+-    @FXML
+-    public void onSaveSalaryConfig() {
+-
+-        presenter.saveSalaryConfig(
+-                employeeComboBox.getValue(),
+-                parseHourlyRate(),
+-                activeCheckBox.isSelected()
+-        );
+-    }
+-
+-    @FXML
+-    public void onGeneratePayroll() {
+-
+-        presenter.generatePayroll(
+-                parseYear(),
+-                parseMonth()
+-        );
+-    }
+-
+-    @FXML
+-    public void onRefresh() {
+-
+-        presenter.loadPayrollData();
+-    }
+-
+-    public void setEmployees(
+-            List<Employee> employees
+-    ) {
+-
+-        employeeComboBox.setItems(
+-                FXCollections.observableArrayList(
+-                        employees
+-                )
+-        );
+-    }
+-
+-    public void setSalaryConfigs(
+-            List<EmployeeSalaryConfig> configs
+-    ) {
+-
+-        salaryConfigTable.setItems(
+-                FXCollections.observableArrayList(
+-                        configs
+-                )
+-        );
+-    }
+-
+-    public void setPayrollRecords(
+-            List<PayrollRecord> records
+-    ) {
+-
+-        payrollTable.setItems(
+-                FXCollections.observableArrayList(
+-                        records
+-                )
+-        );
+-    }
+-
+-    public void setPeriod(
+-            int year,
+-            int month
+-    ) {
+-
+-        yearField.setText(String.valueOf(year));
+-        monthField.setText(String.valueOf(month));
+-    }
+-
+-    public void clearSalaryForm() {
+-
+-        employeeComboBox.setValue(null);
+-        hourlyRateField.clear();
+-        activeCheckBox.setSelected(true);
+-    }
+-
+-    public void setBusy(
+-            boolean busy
+-    ) {
+-
+-        employeeComboBox.setDisable(busy);
+-        hourlyRateField.setDisable(busy);
+-        activeCheckBox.setDisable(busy);
+-        yearField.setDisable(busy);
+-        monthField.setDisable(busy);
+-        salaryConfigTable.setDisable(busy);
+-        payrollTable.setDisable(busy);
+-    }
+-
+-    public void setStatus(
+-            String status
+-    ) {
+-
+-        statusLabel.setText(status);
+-    }
+-
+-    public void setPayrollAdministrationVisible(
+-            boolean visible
+-    ) {
+-
+-        salaryConfigControls.setVisible(visible);
+-        salaryConfigControls.setManaged(visible);
+-        payrollGenerationControls.setVisible(visible);
+-        payrollGenerationControls.setManaged(visible);
+-        salaryConfigSection.setVisible(visible);
+-        salaryConfigSection.setManaged(visible);
+-    }
+-
+-    public void showError(
+-            String message
+-    ) {
+-
+-        Alert alert =
+-                new Alert(Alert.AlertType.ERROR);
+-
+-        alert.setHeaderText(null);
+-        alert.setContentText(message);
+-        alert.showAndWait();
+-    }
+-
+-    private void configureEmployeeComboBox() {
+-
+-        employeeComboBox.setConverter(
+-                new StringConverter<>() {
+-                    @Override
+-                    public String toString(Employee employee) {
+-                        return employee == null ? "" : employee.toString();
+-                    }
+-
+-                    @Override
+-                    public Employee fromString(String value) {
+-                        return null;
+-                    }
+-                }
+-        );
+-    }
+-
+-    private void configureSalaryConfigTable() {
+-
+-        configEmployeeColumn.setCellValueFactory(
+-                cellData ->
+-                        new SimpleStringProperty(
+-                                presenter.getEmployeeName(
+-                                        cellData.getValue().getEmployeeId()
+-                                )
+-                        )
+-        );
+-        configRateColumn.setCellValueFactory(
+-                new PropertyValueFactory<>("hourlyRate")
+-        );
+-        configActiveColumn.setCellValueFactory(
+-                new PropertyValueFactory<>("active")
+-        );
+-        configUpdatedAtColumn.setCellValueFactory(
+-                cellData -> new SimpleStringProperty(
+-                        TimeFormatUtil.formatDateTime(
+-                                cellData.getValue().getUpdatedAt()
+-                        )
+-                )
+-        );
+-    }
+-
+-    private void configurePayrollTable() {
+-
+-        payrollEmployeeColumn.setCellValueFactory(
+-                cellData ->
+-                        new SimpleStringProperty(
+-                                presenter.getEmployeeName(
+-                                        cellData.getValue().getEmployeeId()
+-                                )
+-                        )
+-        );
+-        payrollMonthColumn.setCellValueFactory(
+-                new PropertyValueFactory<>("month")
+-        );
+-        payrollYearColumn.setCellValueFactory(
+-                new PropertyValueFactory<>("year")
+-        );
+-        payrollHoursColumn.setCellValueFactory(
+-                cellData -> new SimpleStringProperty(
+-                        formatPayrollHours(
+-                                cellData.getValue().getTotalHours()
+-                        )
+-                )
+-        );
+-        payrollRateColumn.setCellValueFactory(
+-                new PropertyValueFactory<>("hourlyRateSnapshot")
+-        );
+-        payrollSalaryColumn.setCellValueFactory(
+-                new PropertyValueFactory<>("totalSalary")
+-        );
+-        payrollGeneratedAtColumn.setCellValueFactory(
+-                cellData -> new SimpleStringProperty(
+-                        TimeFormatUtil.formatDateTime(
+-                                cellData.getValue().getGeneratedAt()
+-                        )
+-                )
+-        );
+-    }
+-
+-    private String formatPayrollHours(
+-            BigDecimal value
+-    ) {
+-
+-        return value == null
+-                ? "0.00"
+-                : value.setScale(2, java.math.RoundingMode.HALF_UP)
+-                        .toPlainString();
+-    }
+-
+-    private BigDecimal parseHourlyRate() {
+-
+-        String value =
+-                hourlyRateField.getText();
+-
+-        if (value == null || value.trim().isEmpty()) {
+-            return BigDecimal.ZERO;
+-        }
+-
+-        return new BigDecimal(value.trim());
+-    }
+-
+-    private int parseYear() {
+-
+-        return Integer.parseInt(yearField.getText().trim());
+-    }
+-
+-    private int parseMonth() {
+-
+-        return Integer.parseInt(monthField.getText().trim());
+-    }
+-}
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/service/MigrationPackagePreviewService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/service/MigrationPackagePreviewService.java
+index 8e1a38b..886ba4a 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/service/MigrationPackagePreviewService.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/service/MigrationPackagePreviewService.java
+@@ -147,7 +147,6 @@ public class MigrationPackagePreviewService {
+         checkEntry(zipFile, OfflineExportSpecV1.PRODUCTS_FILE, result, false);
+         checkEntry(zipFile, OfflineExportSpecV1.INVENTORY_FILE, result, false);
+         checkEntry(zipFile, OfflineExportSpecV1.ATTENDANCE_FILE, result, false);
+-        checkEntry(zipFile, OfflineExportSpecV1.PAYROLL_FILE, result, false);
+         checkEntry(zipFile, OfflineExportSpecV1.SALES_FILE, result, false);
+         checkEntry(zipFile, OfflineExportSpecV1.SALE_ITEMS_FILE, result, false);
+         checkEntry(zipFile, OfflineExportSpecV1.AUDIT_LOGS_FILE, result, false);
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/view/MigrationExportController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/view/MigrationExportController.java
+index 161028e..d59893c 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/view/MigrationExportController.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/system_tool/migration_export/view/MigrationExportController.java
+@@ -37,9 +37,6 @@ public class MigrationExportController {
+     @FXML
+     private CheckBox attendanceCheckBox;
+ 
+-    @FXML
+-    private CheckBox payrollCheckBox;
+-
+     @FXML
+     private CheckBox imagesCheckBox;
+ 
+@@ -145,7 +142,6 @@ public class MigrationExportController {
+         employeesCheckBox.setSelected(true);
+         salesCheckBox.setSelected(true);
+         attendanceCheckBox.setSelected(true);
+-        payrollCheckBox.setSelected(true);
+         imagesCheckBox.setSelected(true);
+         auditLogsCheckBox.setSelected(true);
+ 
+@@ -254,7 +250,6 @@ public class MigrationExportController {
+                 employeesCheckBox.isSelected(),
+                 salesCheckBox.isSelected(),
+                 attendanceCheckBox.isSelected(),
+-                payrollCheckBox.isSelected(),
+                 imagesCheckBox.isSelected(),
+                 auditLogsCheckBox.isSelected()
+         );
+@@ -273,7 +268,6 @@ public class MigrationExportController {
+         employeesCheckBox.setDisable(busy);
+         salesCheckBox.setDisable(busy);
+         attendanceCheckBox.setDisable(busy);
+-        payrollCheckBox.setDisable(busy);
+         imagesCheckBox.setDisable(busy);
+         auditLogsCheckBox.setDisable(busy);
+     }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/user/model/RoleType.java b/StoreManagerFX/src/main/java/com/storemanager/domain/user/model/RoleType.java
+index 8e9e9c3..0840f76 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/user/model/RoleType.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/user/model/RoleType.java
+@@ -2,7 +2,7 @@ package com.storemanager.domain.user.model;
+ 
+ public enum RoleType {
+ 
+-    DEVELOPER,
++    CUSTOMER,
+ 
+     OWNER,
+ 
+@@ -25,10 +25,10 @@ public enum RoleType {
+         }
+ 
+         String normalizedValue =
+-                value.trim().toUpperCase();
++                value.trim().toUpperCase(java.util.Locale.ROOT);
+ 
+-        if ("ADMIN".equals(normalizedValue)) {
+-            return DEVELOPER;
++        if ("USER".equals(normalizedValue)) {
++            return CUSTOMER;
+         }
+ 
+         if ("EMPLOYEE".equals(normalizedValue)) {
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/user/repository/UserRepository.java b/StoreManagerFX/src/main/java/com/storemanager/domain/user/repository/UserRepository.java
+index 99f7bf3..d1568ee 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/user/repository/UserRepository.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/user/repository/UserRepository.java
+@@ -15,6 +15,29 @@ import java.util.Optional;
+ 
+ public class UserRepository {
+ 
++    public void migrateLegacyRoles() {
++
++        try (
++                Connection connection = ConnectionFactory.getConnection();
++                PreparedStatement statement = connection.prepareStatement(
++                        "UPDATE users SET role = ? WHERE UPPER(TRIM(role)) = ?"
++                )
++        ) {
++            statement.setString(1, RoleType.CUSTOMER.name());
++            statement.setString(2, "USER");
++            statement.executeUpdate();
++
++            // Retired administrative accounts now follow ordinary owner permissions.
++            statement.setString(1, RoleType.OWNER.name());
++            statement.setString(2, "DEVELOPER");
++            statement.executeUpdate();
++            statement.setString(2, "ADMIN");
++            statement.executeUpdate();
++        } catch (Exception e) {
++            throw new RuntimeException("Cannot migrate legacy user roles", e);
++        }
++    }
++
+     public Optional<User> findByUsername(
+             String username
+     ) {
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/user/service/UserManagementService.java b/StoreManagerFX/src/main/java/com/storemanager/domain/user/service/UserManagementService.java
+index d6cb9a4..c462406 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/user/service/UserManagementService.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/user/service/UserManagementService.java
+@@ -88,18 +88,6 @@ public class UserManagementService {
+             );
+         }
+ 
+-        if (role == RoleType.DEVELOPER) {
+-            if (countDevelopers() >= 1) {
+-                throw new RuntimeException(
+-                        "Only one developer account can exist"
+-                );
+-            }
+-
+-            throw new RuntimeException(
+-                    "Cannot create developer users from UI"
+-            );
+-        }
+-
+         if (username == null || username.trim().isEmpty()) {
+             auditService.recordEvent(
+                     "USER_MANAGEMENT",
+@@ -230,18 +218,6 @@ public class UserManagementService {
+         }
+ 
+         if (!PermissionGuard.canModifyRole(target, role)) {
+-            if (PermissionGuard.isRootDeveloper(target)) {
+-                throw new RuntimeException(
+-                        "Cannot change developer role"
+-                );
+-            }
+-
+-            if (role == RoleType.DEVELOPER) {
+-                throw new RuntimeException(
+-                        "Cannot promote users to developer from UI"
+-                );
+-            }
+-
+             throw new RuntimeException(
+                     "Current user cannot modify this role"
+             );
+@@ -318,14 +294,6 @@ public class UserManagementService {
+         User currentUser =
+                 AppSession.getCurrentUser();
+ 
+-        if (currentUser != null
+-                && PermissionGuard.isRootDeveloper(currentUser)
+-                && currentUser.getId().equals(target.getId())) {
+-            throw new RuntimeException(
+-                    "Developer cannot delete their own account"
+-            );
+-        }
+-
+         if (!PermissionGuard.canDeleteUser(target)) {
+             auditService.recordPermissionDenied(
+                     "USER_DELETE",
+@@ -347,13 +315,6 @@ public class UserManagementService {
+             );
+         }
+ 
+-        if (target.getRole() == RoleType.DEVELOPER
+-                && countDevelopers() <= 1) {
+-            throw new RuntimeException(
+-                    "Cannot delete the last developer account"
+-            );
+-        }
+-
+         employeeRepository.clearUserLink(
+                 target.getId()
+         );
+@@ -386,13 +347,6 @@ public class UserManagementService {
+             );
+         }
+ 
+-        if (user.getRole() == RoleType.DEVELOPER
+-                && linkedEmployee != null) {
+-            throw new RuntimeException(
+-                    "Developer account cannot link to employee"
+-            );
+-        }
+-
+         if (linkedEmployee == null) {
+             employeeRepository.clearUserLink(
+                     user.getId()
+@@ -449,12 +403,4 @@ public class UserManagementService {
+                 .replace("\"", "\\\"");
+     }
+ 
+-    private long countDevelopers() {
+-
+-        return userRepository
+-                .findAll()
+-                .stream()
+-                .filter(user -> user.getRole() == RoleType.DEVELOPER)
+-                .count();
+-    }
+ }
+diff --git a/StoreManagerFX/src/main/java/com/storemanager/domain/user/view/UserManagementController.java b/StoreManagerFX/src/main/java/com/storemanager/domain/user/view/UserManagementController.java
+index 3a0ebdb..73608e6 100644
+--- a/StoreManagerFX/src/main/java/com/storemanager/domain/user/view/UserManagementController.java
++++ b/StoreManagerFX/src/main/java/com/storemanager/domain/user/view/UserManagementController.java
+@@ -85,7 +85,8 @@ public class UserManagementController {
+                         RoleType.OWNER,
+                         RoleType.MANAGER,
+                         RoleType.STAFF,
+-                        RoleType.VIEWER
++                        RoleType.VIEWER,
++                        RoleType.CUSTOMER
+                 )
+         );
+ 
+@@ -267,8 +268,7 @@ public class UserManagementController {
+         );
+ 
+         roleComboBox.setDisable(
+-                PermissionGuard.isRootDeveloper(selectedUser)
+-                        || !PermissionGuard.canModifyRole(
++                !PermissionGuard.canModifyRole(
+                         selectedUser,
+                         selectedUser.getRole()
+                 )
+@@ -283,11 +283,11 @@ public class UserManagementController {
+         );
+ 
+         employeeComboBox.setDisable(
+-                PermissionGuard.isRootDeveloper(selectedUser)
++                !PermissionGuard.canEditUser(selectedUser)
+         );
+ 
+         clearLinkButton.setDisable(
+-                PermissionGuard.isRootDeveloper(selectedUser)
++                !PermissionGuard.canEditUser(selectedUser)
+         );
+ 
+         updateActionState();
+diff --git a/StoreManagerFX/src/main/resources/fxml/attendance/attendance.fxml b/StoreManagerFX/src/main/resources/fxml/attendance/attendance.fxml
+index 50c7685..7b8c4bb 100644
+--- a/StoreManagerFX/src/main/resources/fxml/attendance/attendance.fxml
++++ b/StoreManagerFX/src/main/resources/fxml/attendance/attendance.fxml
+@@ -18,7 +18,7 @@
+         <Label text="Attendance"
+                styleClass="content-title"/>
+ 
+-        <Label text="Track employee work sessions before payroll."
++        <Label text="Track employee work sessions."
+                styleClass="content-description"/>
+ 
+         <Label fx:id="branchContextLabel"
+diff --git a/StoreManagerFX/src/main/resources/fxml/dashboard/dashboard-home.fxml b/StoreManagerFX/src/main/resources/fxml/dashboard/dashboard-home.fxml
+index 1bfbe45..1364cef 100644
+--- a/StoreManagerFX/src/main/resources/fxml/dashboard/dashboard-home.fxml
++++ b/StoreManagerFX/src/main/resources/fxml/dashboard/dashboard-home.fxml
+@@ -112,7 +112,6 @@
+         <Label fx:id="todayHoursLabel" text="Today's worked hours: -" styleClass="analytics-section-text"/>
+         <Label fx:id="monthHoursLabel" text="Current month worked hours: -" styleClass="analytics-section-text"/>
+         <Label fx:id="assignedBranchesLabel" text="Assigned branches: -" styleClass="analytics-section-text"/>
+-        <Label fx:id="latestPayrollLabel" text="Latest payroll: -" styleClass="analytics-section-text"/>
+ 
+         <TableView fx:id="attendanceHistoryTable" prefHeight="240" styleClass="analytics-table">
+             <columns>
+@@ -177,26 +176,15 @@
+         <Label fx:id="totalEmployeesLabel" text="Total employees: -" styleClass="analytics-section-text"/>
+         <Label fx:id="activeEmployeesLabel" text="Active employees: -" styleClass="analytics-section-text"/>
+         <Label fx:id="workingEmployeesLabel" text="Employees currently working: -" styleClass="analytics-section-text"/>
+-        <Label fx:id="payrollTotalsLabel" text="Payroll totals: -" styleClass="analytics-section-text"/>
+         <Label fx:id="revenueTotalsLabel" text="Revenue totals: -" styleClass="analytics-section-text"/>
+         <Label fx:id="inventoryAlertsLabel" text="Inventory alerts: -" styleClass="analytics-section-text"/>
+ 
+-        <TableView fx:id="payrollTable" prefHeight="220" styleClass="analytics-table">
+-            <columns>
+-                <TableColumn fx:id="payrollEmployeeColumn" text="Employee"/>
+-                <TableColumn fx:id="payrollHoursColumn" text="Hours"/>
+-                <TableColumn fx:id="payrollSalaryColumn" text="Salary"/>
+-            </columns>
+-        </TableView>
+-
+         <TableView fx:id="cashFlowTable" prefHeight="220" styleClass="analytics-table">
+             <columns>
+                 <TableColumn fx:id="cashFlowLabelColumn" text="Period"/>
+                 <TableColumn fx:id="cashFlowRevenueColumn" text="Revenue"/>
+                 <TableColumn fx:id="cashFlowImportColumn" text="Import cost"/>
+                 <TableColumn fx:id="cashFlowProductColumn" text="Business cash flow"/>
+-                <TableColumn fx:id="cashFlowPayrollColumn" text="Payroll cash flow"/>
+-                <TableColumn fx:id="cashFlowFinalColumn" text="Final cash flow"/>
+             </columns>
+         </TableView>
+ 
+diff --git a/StoreManagerFX/src/main/resources/fxml/inventory/inventory-adjustment-form.fxml b/StoreManagerFX/src/main/resources/fxml/inventory/inventory-adjustment-form.fxml
+deleted file mode 100644
+index 008ca3a..0000000
+--- a/StoreManagerFX/src/main/resources/fxml/inventory/inventory-adjustment-form.fxml
++++ /dev/null
+@@ -1,33 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-
+-<?import javafx.scene.control.Button?>
+-<?import javafx.scene.control.ComboBox?>
+-<?import javafx.scene.control.Label?>
+-<?import javafx.scene.control.TextField?>
+-<?import javafx.scene.layout.VBox?>
+-
+-<VBox xmlns="http://javafx.com/javafx"
+-      xmlns:fx="http://javafx.com/fxml"
+-      fx:controller="com.storemanager.domain.inventory.view.InventoryAdjustmentFormController"
+-      spacing="10">
+-
+-    <fx:include fx:id="productSelectionWorkflow"
+-                source="../shared/product-selection-workflow.fxml"/>
+-
+-    <Label text="Transaction type"
+-           styleClass="analytics-section-title"/>
+-
+-    <ComboBox fx:id="typeComboBox"
+-              promptText="Transaction type"
+-              maxWidth="Infinity"/>
+-
+-    <TextField fx:id="quantityField"
+-               promptText="Quantity"
+-               maxWidth="Infinity"
+-               styleClass="module-input"/>
+-
+-    <TextField fx:id="reasonField"
+-               promptText="Reason"
+-               maxWidth="Infinity"
+-               styleClass="module-input"/>
+-</VBox>
+diff --git a/StoreManagerFX/src/main/resources/fxml/inventory/inventory-list.fxml b/StoreManagerFX/src/main/resources/fxml/inventory/inventory-list.fxml
+index 544897e..2b32566 100644
+--- a/StoreManagerFX/src/main/resources/fxml/inventory/inventory-list.fxml
++++ b/StoreManagerFX/src/main/resources/fxml/inventory/inventory-list.fxml
+@@ -5,7 +5,6 @@
+ <?import javafx.scene.control.Label?>
+ <?import javafx.scene.control.TableColumn?>
+ <?import javafx.scene.control.TableView?>
+-<?import javafx.scene.layout.HBox?>
+ <?import javafx.scene.layout.VBox?>
+ 
+ <VBox xmlns="http://javafx.com/javafx"
+@@ -14,36 +13,16 @@
+       spacing="18">
+ 
+     <VBox spacing="6">
+-        <Label text="Inventory"
++        <Label text="View Inventory"
+                styleClass="content-title"/>
+ 
+         <Label text="Track current stock and auditable stock movements."
+                styleClass="content-description"/>
+     </VBox>
+ 
+-    <HBox spacing="16">
+-        <fx:include fx:id="adjustmentForm"
+-                    source="inventory-adjustment-form.fxml"/>
+-
+-        <VBox spacing="10">
+-            <Button fx:id="applyButton"
+-                    text="Apply"
+-                    styleClass="module-button"
+-                    maxWidth="Infinity"
+-                    onAction="#onApplyAdjustment"/>
+-
+-            <Button fx:id="clearButton"
+-                    text="Clear"
+-                    styleClass="module-button"
+-                    maxWidth="Infinity"
+-                    onAction="#onClear"/>
+-
+-            <Button text="Refresh"
+-                    styleClass="module-button"
+-                    maxWidth="Infinity"
+-                    onAction="#onRefresh"/>
+-        </VBox>
+-    </HBox>
++    <Button text="Refresh"
++            styleClass="module-button"
++            onAction="#onRefresh"/>
+ 
+     <VBox spacing="8">
+         <Label text="Current stock"
+diff --git a/StoreManagerFX/src/main/resources/fxml/inventory/inventory-placeholder.fxml b/StoreManagerFX/src/main/resources/fxml/inventory/inventory-placeholder.fxml
+index 1f9c6af..d792075 100644
+--- a/StoreManagerFX/src/main/resources/fxml/inventory/inventory-placeholder.fxml
++++ b/StoreManagerFX/src/main/resources/fxml/inventory/inventory-placeholder.fxml
+@@ -8,9 +8,9 @@
+       alignment="CENTER"
+       spacing="10">
+ 
+-    <Label text="Inventory"
++    <Label text="View Inventory"
+            styleClass="content-title"/>
+ 
+-    <Label text="Inventory management"
++    <Label text="View current stock and stock movements."
+            styleClass="content-description"/>
+ </VBox>
+diff --git a/StoreManagerFX/src/main/resources/fxml/payroll/payroll.fxml b/StoreManagerFX/src/main/resources/fxml/payroll/payroll.fxml
+deleted file mode 100644
+index b9ab435..0000000
+--- a/StoreManagerFX/src/main/resources/fxml/payroll/payroll.fxml
++++ /dev/null
+@@ -1,142 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-
+-<?import javafx.geometry.Insets?>
+-<?import javafx.scene.control.Button?>
+-<?import javafx.scene.control.CheckBox?>
+-<?import javafx.scene.control.ComboBox?>
+-<?import javafx.scene.control.Label?>
+-<?import javafx.scene.control.TableColumn?>
+-<?import javafx.scene.control.TableView?>
+-<?import javafx.scene.control.TextField?>
+-<?import javafx.scene.layout.HBox?>
+-<?import javafx.scene.layout.VBox?>
+-
+-<VBox xmlns="http://javafx.com/javafx"
+-      xmlns:fx="http://javafx.com/fxml"
+-      fx:controller="com.storemanager.domain.payroll.view.PayrollController"
+-      spacing="18">
+-
+-    <VBox spacing="6">
+-        <Label text="Payroll"
+-               styleClass="content-title"/>
+-
+-        <Label text="Generate auditable payroll snapshots from attendance totals."
+-               styleClass="content-description"/>
+-    </VBox>
+-
+-    <HBox fx:id="salaryConfigControls"
+-          spacing="12">
+-        <ComboBox fx:id="employeeComboBox"
+-                  promptText="Employee"
+-                  prefWidth="300"/>
+-
+-        <TextField fx:id="hourlyRateField"
+-                   promptText="Hourly rate"
+-                   prefWidth="140"
+-                   styleClass="module-input"/>
+-
+-        <CheckBox fx:id="activeCheckBox"
+-                  text="Active"/>
+-
+-        <Button text="Save Salary"
+-                styleClass="module-button"
+-                onAction="#onSaveSalaryConfig"/>
+-    </HBox>
+-
+-    <HBox fx:id="payrollGenerationControls"
+-          spacing="12">
+-        <TextField fx:id="yearField"
+-                   promptText="Year"
+-                   prefWidth="100"
+-                   styleClass="module-input"/>
+-
+-        <TextField fx:id="monthField"
+-                   promptText="Month"
+-                   prefWidth="100"
+-                   styleClass="module-input"/>
+-
+-        <Button text="Generate Payroll"
+-                styleClass="module-button"
+-                onAction="#onGeneratePayroll"/>
+-
+-        <Button text="Refresh"
+-                styleClass="module-button"
+-                onAction="#onRefresh"/>
+-    </HBox>
+-
+-    <VBox fx:id="salaryConfigSection"
+-          spacing="8">
+-        <Label text="Salary configuration"
+-               styleClass="content-description"/>
+-
+-        <TableView fx:id="salaryConfigTable"
+-                   prefHeight="220">
+-            <columns>
+-                <TableColumn fx:id="configEmployeeColumn"
+-                             text="Employee"
+-                             prefWidth="240"/>
+-
+-                <TableColumn fx:id="configRateColumn"
+-                             text="Hourly rate"
+-                             prefWidth="130"/>
+-
+-                <TableColumn fx:id="configActiveColumn"
+-                             text="Active"
+-                             prefWidth="90"/>
+-
+-                <TableColumn fx:id="configUpdatedAtColumn"
+-                             text="Updated at"
+-                             prefWidth="190"/>
+-            </columns>
+-        </TableView>
+-    </VBox>
+-
+-    <VBox spacing="8">
+-        <Label text="Payroll history"
+-               styleClass="content-description"/>
+-
+-        <TableView fx:id="payrollTable"
+-                   prefHeight="300">
+-            <columns>
+-                <TableColumn fx:id="payrollEmployeeColumn"
+-                             text="Employee"
+-                             prefWidth="220"/>
+-
+-                <TableColumn fx:id="payrollMonthColumn"
+-                             text="Month"
+-                             prefWidth="80"/>
+-
+-                <TableColumn fx:id="payrollYearColumn"
+-                             text="Year"
+-                             prefWidth="90"/>
+-
+-                <TableColumn fx:id="payrollHoursColumn"
+-                             text="Hours"
+-                             prefWidth="90"/>
+-
+-                <TableColumn fx:id="payrollRateColumn"
+-                             text="Rate snapshot"
+-                             prefWidth="130"/>
+-
+-                <TableColumn fx:id="payrollSalaryColumn"
+-                             text="Total salary"
+-                             prefWidth="140"/>
+-
+-                <TableColumn fx:id="payrollGeneratedAtColumn"
+-                             text="Generated at"
+-                             prefWidth="190"/>
+-            </columns>
+-        </TableView>
+-    </VBox>
+-
+-    <Label fx:id="statusLabel"
+-           text="Ready"
+-           styleClass="content-description"/>
+-
+-    <padding>
+-        <Insets top="0"
+-                right="0"
+-                bottom="0"
+-                left="0"/>
+-    </padding>
+-</VBox>
+diff --git a/StoreManagerFX/src/main/resources/fxml/system_tool/migration-export.fxml b/StoreManagerFX/src/main/resources/fxml/system_tool/migration-export.fxml
+index e2054cb..59561e0 100644
+--- a/StoreManagerFX/src/main/resources/fxml/system_tool/migration-export.fxml
++++ b/StoreManagerFX/src/main/resources/fxml/system_tool/migration-export.fxml
+@@ -38,7 +38,6 @@
+             <CheckBox fx:id="employeesCheckBox" text="Employees"/>
+             <CheckBox fx:id="salesCheckBox" text="Sales"/>
+             <CheckBox fx:id="attendanceCheckBox" text="Attendance"/>
+-            <CheckBox fx:id="payrollCheckBox" text="Payroll"/>
+             <CheckBox fx:id="imagesCheckBox" text="Images"/>
+             <CheckBox fx:id="auditLogsCheckBox" text="Audit Logs"/>
+ 
+diff --git a/StoreManagerFX/src/test/java/com/storemanager/refactor/InventoryAndFxmlTest.java b/StoreManagerFX/src/test/java/com/storemanager/refactor/InventoryAndFxmlTest.java
+new file mode 100644
+--- /dev/null
++++ b/StoreManagerFX/src/test/java/com/storemanager/refactor/InventoryAndFxmlTest.java
+@@ -0,0 +1,204 @@
++package com.storemanager.refactor;
++
++import com.storemanager.config.DatabaseSettings;
++import com.storemanager.core.database.ConnectionFactory;
++import com.storemanager.core.database.DatabaseInitializer;
++import com.storemanager.core.session.AppSession;
++import com.storemanager.domain.dashboard.view.DashboardHomeController;
++import com.storemanager.domain.inventory.model.InventoryTransaction;
++import com.storemanager.domain.inventory.model.InventoryTransactionType;
++import com.storemanager.domain.inventory.service.InventoryService;
++import com.storemanager.domain.inventory.view.InventoryListController;
++import com.storemanager.domain.offline_export.dto.OfflineExportSelection;
++import com.storemanager.domain.offline_export.service.OfflineExportJsonSerializer;
++import com.storemanager.domain.offline_export.service.OfflineExportManifestGenerator;
++import com.storemanager.domain.offline_export.service.OfflineExportSnapshotCollector;
++import com.storemanager.domain.user.model.RoleType;
++import javafx.application.Platform;
++import javafx.fxml.FXMLLoader;
++import javafx.scene.control.Button;
++import javafx.scene.control.Label;
++import javafx.scene.control.TableView;
++import org.junit.AfterClass;
++import org.junit.BeforeClass;
++import org.junit.Rule;
++import org.junit.Test;
++import org.junit.rules.TemporaryFolder;
++
++import java.nio.file.Files;
++import java.util.List;
++import java.util.concurrent.Callable;
++import java.util.concurrent.CopyOnWriteArrayList;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.FutureTask;
++import java.util.concurrent.TimeUnit;
++
++import static org.junit.Assert.*;
++
++public class InventoryAndFxmlTest {
++
++    private static final List<String> errors = new CopyOnWriteArrayList<>();
++
++    @Rule
++    public TemporaryFolder temporary = new TemporaryFolder();
++
++    @BeforeClass
++    public static void initializeIsolatedApplication() throws Exception {
++        ConnectionFactory.setSettings(new DatabaseSettings() {
++            @Override public String buildDatabaseUrl() {
++                return "jdbc:h2:mem:refactor-fxml;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
++            }
++            @Override public String getUsername() { return "sa"; }
++            @Override public String getPassword() { return ""; }
++        });
++        DatabaseInitializer.initialize();
++        AppSession.setCurrentUser(RoleAndNavigationTest.user(1, RoleType.OWNER));
++        System.setProperty("javafx.cachedir", "target/test-javafx-native");
++        CountDownLatch started = new CountDownLatch(1);
++        Platform.startup(() -> {
++            Platform.setImplicitExit(false);
++            Thread.currentThread().setUncaughtExceptionHandler((thread, error) -> errors.add(error.toString()));
++            started.countDown();
++        });
++        assertTrue(started.await(10, TimeUnit.SECONDS));
++    }
++
++    @AfterClass
++    public static void shutdown() throws Exception {
++        Platform.exit();
++        try (var connection = ConnectionFactory.getConnection(); var statement = connection.createStatement()) {
++            statement.execute("SHUTDOWN");
++        } finally {
++            AppSession.clear();
++            ConnectionFactory.setSettings(null);
++        }
++    }
++
++    @Test
++    public void inventoryLoadsAndRefreshesWithOnlyReadControls() throws Exception {
++        FXMLLoader loader = onFx(() -> {
++            FXMLLoader fxml = new FXMLLoader(getClass().getResource("/fxml/inventory/inventory-list.fxml"));
++            fxml.setControllerFactory(type -> new InventoryListController() {
++                @Override public void showError(String message) { errors.add(message); }
++            });
++            fxml.load();
++            return fxml;
++        });
++        waitForReady(loader);
++        onFx(() -> {
++            assertNull(loader.getNamespace().get("adjustmentForm"));
++            assertNull(loader.getNamespace().get("applyButton"));
++            assertNull(loader.getNamespace().get("clearButton"));
++            assertFalse(((TableView<?>) loader.getNamespace().get("inventoryTable")).isEditable());
++            assertFalse(((TableView<?>) loader.getNamespace().get("transactionTable")).isEditable());
++            var root = (javafx.scene.Parent) loader.getRoot();
++            var buttons = root.lookupAll(".button");
++            assertEquals(1, buttons.size());
++            assertEquals("Refresh", ((Button) buttons.iterator().next()).getText());
++            ((InventoryListController) loader.getController()).onRefresh();
++            return null;
++        });
++        waitForReady(loader);
++        assertTrue(errors.toString(), errors.isEmpty());
++    }
++
++    @Test
++    public void sharedStockWorkflowsStillWriteAndRollback() throws Exception {
++        InventoryService service = new InventoryService();
++        InventoryTransaction imported = transaction(InventoryTransactionType.IMPORT, 10);
++        assertTrue(service.adjustStock(imported));
++        assertEquals(10, quantity(service));
++        AppSession.setCurrentUser(RoleAndNavigationTest.user(2, RoleType.STAFF));
++        try (var connection = ConnectionFactory.getConnection()) {
++            connection.setAutoCommit(false);
++            assertTrue(service.adjustStock(connection, transaction(InventoryTransactionType.SALE, 3)));
++            connection.rollback();
++        }
++        assertEquals(10, quantity(service));
++        try (var connection = ConnectionFactory.getConnection()) {
++            connection.setAutoCommit(false);
++            assertTrue(service.adjustStock(connection, transaction(InventoryTransactionType.SALE, 3)));
++            connection.commit();
++        }
++        assertEquals(7, quantity(service));
++        AppSession.setCurrentUser(RoleAndNavigationTest.user(1, RoleType.OWNER));
++        assertTrue(service.adjustStock(transaction(InventoryTransactionType.ADJUSTMENT, 3)));
++        assertEquals(10, quantity(service));
++    }
++
++    @Test
++    public void dashboardAndExportFxmlLoadWithoutRemovedBindings() throws Exception {
++        FXMLLoader dashboard = onFx(() -> {
++            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard/dashboard-home.fxml"));
++            loader.setControllerFactory(type -> new DashboardHomeController() {
++                @Override public void showError(String message) { errors.add(message); }
++            });
++            loader.load();
++            return loader;
++        });
++        waitForReady(dashboard);
++        onFx(() -> {
++            assertNull(dashboard.getNamespace().get("payrollTable"));
++            assertNull(dashboard.getNamespace().get("latestPayrollLabel"));
++            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/system_tool/migration-export.fxml"));
++            loader.load();
++            assertNull(loader.getNamespace().get("payrollCheckBox"));
++            assertNotNull(loader.getNamespace().get("productsCheckBox"));
++            return null;
++        });
++        assertTrue(errors.toString(), errors.isEmpty());
++    }
++
++    @Test
++    public void exportWorksWithoutSalaryTablesOrPayrollFiles() throws Exception {
++        try (var connection = ConnectionFactory.getConnection();
++             var tables = connection.getMetaData().getTables(null, null, "payroll_records", null)) {
++            assertFalse(tables.next());
++        }
++        var selection = OfflineExportSelection.all();
++        assertTrue(selection.products() && selection.employees() && selection.sales()
++                && selection.attendance() && selection.images() && selection.auditLogs());
++        var bundle = new OfflineExportSnapshotCollector().collect(selection);
++        var manifest = new OfflineExportManifestGenerator().generate("Test", "1", bundle);
++        var destination = temporary.newFolder().toPath();
++        new OfflineExportJsonSerializer().writePackage(destination, bundle, manifest);
++        assertFalse(Files.exists(destination.resolve("payroll.json")));
++        assertFalse(manifest.recordCounts().containsKey("payroll.json"));
++        assertTrue(Files.exists(destination.resolve("products.json")));
++        assertTrue(Files.exists(destination.resolve("attendance.json")));
++        assertTrue(Files.exists(destination.resolve("sales.json")));
++        assertTrue(Files.exists(destination.resolve("manifest.json")));
++    }
++
++    private static InventoryTransaction transaction(InventoryTransactionType type, int quantity) {
++        InventoryTransaction transaction = new InventoryTransaction();
++        transaction.setProductId(999L);
++        transaction.setType(type);
++        transaction.setQuantity(quantity);
++        transaction.setReason("Workflow regression test");
++        return transaction;
++    }
++
++    private static int quantity(InventoryService service) {
++        return service.findAllItems().stream().filter(item -> item.getProductId() == 999L)
++                .findFirst().orElseThrow().getQuantity();
++    }
++
++    private static void waitForReady(FXMLLoader loader) throws Exception {
++        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
++        while (System.nanoTime() < deadline) {
++            if (onFx(() -> "Ready".equals(((Label) loader.getNamespace().get("statusLabel")).getText()))) {
++                return;
++            }
++            assertTrue(errors.toString(), errors.isEmpty());
++            Thread.sleep(25);
++        }
++        fail("FXML data loading did not complete");
++    }
++
++    private static <T> T onFx(Callable<T> action) throws Exception {
++        FutureTask<T> task = new FutureTask<>(action);
++        Platform.runLater(task);
++        return task.get(15, TimeUnit.SECONDS);
++    }
++}
+diff --git a/StoreManagerFX/src/test/java/com/storemanager/refactor/RoleAndNavigationTest.java b/StoreManagerFX/src/test/java/com/storemanager/refactor/RoleAndNavigationTest.java
+new file mode 100644
+--- /dev/null
++++ b/StoreManagerFX/src/test/java/com/storemanager/refactor/RoleAndNavigationTest.java
+@@ -0,0 +1,98 @@
++package com.storemanager.refactor;
++
++import com.storemanager.core.security.PermissionGuard;
++import com.storemanager.core.session.AppSession;
++import com.storemanager.domain.dashboard.model.DashboardMenuRegistry;
++import com.storemanager.domain.user.model.RoleType;
++import com.storemanager.domain.user.model.User;
++import org.junit.After;
++import org.junit.Test;
++
++import java.util.Locale;
++import java.util.Set;
++
++import static org.junit.Assert.*;
++
++public class RoleAndNavigationTest {
++
++    @After
++    public void clearSession() {
++        AppSession.clear();
++    }
++
++    @Test
++    public void legacyCustomerRolesMapWithoutLocaleDependence() {
++        Locale previous = Locale.getDefault();
++        try {
++            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
++            assertEquals(RoleType.CUSTOMER, RoleType.fromDatabaseValue(" user "));
++            assertEquals(RoleType.CUSTOMER, RoleType.fromDatabaseValue("customer"));
++            assertEquals(RoleType.VIEWER, RoleType.fromDatabaseValue("viewer"));
++            assertEquals(RoleType.STAFF, RoleType.fromDatabaseValue("EMPLOYEE"));
++        } finally {
++            Locale.setDefault(previous);
++        }
++        assertThrows(IllegalArgumentException.class, () -> RoleType.valueOf("DEVELOPER"));
++        assertThrows(IllegalArgumentException.class, () -> RoleType.fromDatabaseValue(null));
++        assertThrows(IllegalArgumentException.class, () -> RoleType.fromDatabaseValue("unknown"));
++    }
++
++    @Test
++    public void survivingRolesKeepTheirBackOfficePermissions() {
++        for (RoleType role : RoleType.values()) {
++            User user = user(1L, role);
++            AppSession.setCurrentUser(user);
++            boolean administrative = Set.of(RoleType.OWNER, RoleType.MANAGER).contains(role);
++            boolean staff = Set.of(RoleType.STAFF, RoleType.EMPLOYEE).contains(role);
++            assertEquals(role.name(), role == RoleType.OWNER, PermissionGuard.canManageUsers());
++            assertEquals(role.name(), administrative, PermissionGuard.canModifyProduct());
++            assertEquals(role.name(), administrative || staff, PermissionGuard.canCreateSale());
++            assertEquals(role.name(), administrative || staff, PermissionGuard.canViewInventory());
++            assertEquals(role.name(), administrative, PermissionGuard.canCancelSale());
++            assertEquals(role.name(), administrative || role == RoleType.VIEWER, PermissionGuard.canViewReports());
++            assertEquals(role.name(), administrative, PermissionGuard.canAdjustInventory());
++            assertFalse(role.name(), PermissionGuard.canDeleteUser(user));
++        }
++    }
++
++    @Test
++    public void customerCannotAccessBackOfficeAndOwnerCanManageCustomer() {
++        User customer = user(2L, RoleType.fromDatabaseValue("USER"));
++        AppSession.setCurrentUser(customer);
++        assertTrue(AppSession.isLoggedIn());
++        assertFalse(PermissionGuard.canViewDashboard());
++        assertFalse(PermissionGuard.canAccessSystemTools());
++        assertTrue(DashboardMenuRegistry.all().stream().noneMatch(item -> item.isVisibleFor(customer.getRole())));
++        AppSession.setCurrentUser(user(1L, RoleType.OWNER));
++        assertTrue(PermissionGuard.canEditUser(customer));
++        assertTrue(PermissionGuard.canDeleteUser(customer));
++        assertTrue(PermissionGuard.canModifyRole(customer, RoleType.CUSTOMER));
++        AppSession.clear();
++        assertFalse(PermissionGuard.canViewInventory());
++        assertFalse(PermissionGuard.canManageUsers());
++    }
++
++    @Test
++    public void everySurvivingMenuHasAResourceAndNoPayrollRoute() {
++        for (var item : DashboardMenuRegistry.all()) {
++            assertNotNull(item.route(), getClass().getResource(item.route()));
++            assertFalse(item.route(), item.route().contains("payroll"));
++            assertFalse(item.route(), item.route().contains("salary"));
++        }
++        var inventory = DashboardMenuRegistry.all().stream()
++                .filter(item -> item.id().equals(DashboardMenuRegistry.INVENTORY))
++                .findFirst().orElseThrow();
++        assertEquals("View Inventory", inventory.label());
++        assertNull(getClass().getResource("/fxml/inventory/inventory-adjustment-form.fxml"));
++        assertNull(getClass().getResource("/fxml/payroll/payroll.fxml"));
++    }
++
++    static User user(long id, RoleType role) {
++        User user = new User();
++        user.setId(id);
++        user.setUsername("test-" + id);
++        user.setRole(role);
++        user.setActive(true);
++        return user;
++    }
++}
+diff --git a/StoreManagerFX/src/test/java/com/storemanager/refactor/RoleMigrationTest.java b/StoreManagerFX/src/test/java/com/storemanager/refactor/RoleMigrationTest.java
+new file mode 100644
+--- /dev/null
++++ b/StoreManagerFX/src/test/java/com/storemanager/refactor/RoleMigrationTest.java
+@@ -0,0 +1,96 @@
++package com.storemanager.refactor;
++
++import com.storemanager.config.DatabaseSettings;
++import com.storemanager.core.database.ConnectionFactory;
++import com.storemanager.core.security.PasswordHasher;
++import com.storemanager.core.session.AppSession;
++import com.storemanager.domain.auth.service.AuthService;
++import com.storemanager.domain.user.model.RoleType;
++import com.storemanager.domain.user.repository.UserRepository;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++
++import java.sql.DriverManager;
++import java.util.UUID;
++
++import static org.junit.Assert.*;
++
++public class RoleMigrationTest {
++
++    private String databaseUrl;
++
++    @Before
++    public void createIsolatedDatabase() throws Exception {
++        databaseUrl = "jdbc:h2:mem:" + UUID.randomUUID()
++                + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
++        ConnectionFactory.setSettings(new DatabaseSettings() {
++            @Override public String buildDatabaseUrl() { return databaseUrl; }
++            @Override public String getUsername() { return "sa"; }
++            @Override public String getPassword() { return ""; }
++        });
++        try (var connection = ConnectionFactory.getConnection(); var statement = connection.createStatement()) {
++            statement.execute("CREATE TABLE users (id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(100), password VARCHAR(255), role VARCHAR(50), active BOOLEAN, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
++            try (var insert = connection.prepareStatement("INSERT INTO users(username, password, role, active) VALUES (?, ?, ?, ?)")) {
++                for (String role : new String[]{"USER", " user ", "CUSTOMER", "DEVELOPER", "ADMIN", "MANAGER", "EMPLOYEE"}) {
++                    insert.setString(1, "account-" + role.trim());
++                    insert.setString(2, PasswordHasher.hash("test-password"));
++                    insert.setString(3, role);
++                    insert.setBoolean(4, !role.equals(" user "));
++                    insert.executeUpdate();
++                }
++            }
++        }
++    }
++
++    @After
++    public void closeDatabase() throws Exception {
++        AppSession.clear();
++        try (var connection = DriverManager.getConnection(databaseUrl, "sa", ""); var statement = connection.createStatement()) {
++            statement.execute("SHUTDOWN");
++        } finally {
++            ConnectionFactory.setSettings(null);
++        }
++    }
++
++    @Test
++    public void migrationIsIdempotentAndPreservesAccountIdentity() throws Exception {
++        UserRepository repository = new UserRepository();
++        repository.migrateLegacyRoles();
++        repository.migrateLegacyRoles();
++        var users = repository.findAll();
++        assertEquals(7, users.size());
++        assertEquals(RoleType.CUSTOMER, users.get(0).getRole());
++        assertEquals(RoleType.CUSTOMER, users.get(1).getRole());
++        assertFalse(users.get(1).isActive());
++        assertEquals(RoleType.OWNER, users.get(3).getRole());
++        assertEquals(RoleType.OWNER, users.get(4).getRole());
++        assertEquals(RoleType.MANAGER, users.get(5).getRole());
++        assertEquals(RoleType.STAFF, users.get(6).getRole());
++        for (int index = 0; index < users.size(); index++) {
++            assertEquals(Long.valueOf(index + 1), users.get(index).getId());
++            assertEquals(PasswordHasher.hash("test-password"), users.get(index).getPassword());
++        }
++        try (var connection = ConnectionFactory.getConnection(); var statement = connection.createStatement();
++             var results = statement.executeQuery("SELECT COUNT(*) FROM users WHERE UPPER(TRIM(role)) IN ('USER','DEVELOPER','ADMIN')")) {
++            assertTrue(results.next());
++            assertEquals(0, results.getInt(1));
++        }
++    }
++
++    @Test
++    public void unmigratedUserCanAuthenticateAndSaveAsCustomer() {
++        AuthService auth = new AuthService();
++        assertTrue(auth.login("account-USER", "test-password"));
++        var loggedIn = AppSession.getCurrentUser();
++        assertEquals(RoleType.CUSTOMER, loggedIn.getRole());
++        assertEquals(Long.valueOf(1), loggedIn.getId());
++        UserRepository repository = new UserRepository();
++        assertTrue(repository.updateUser(loggedIn));
++        assertEquals(RoleType.CUSTOMER, repository.findById(1L).orElseThrow().getRole());
++        auth.logout();
++        assertFalse(AppSession.isLoggedIn());
++        assertFalse(auth.login("account-user", "test-password"));
++        assertFalse(auth.login("account-USER", "wrong-password"));
++    }
++}

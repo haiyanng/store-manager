@@ -53,6 +53,9 @@ public class OfflineExportManifestGenerator {
                 OfflineExportSpecV1.INVENTORY_FILE,
                 size(bundle.inventory())
         );
+        recordCounts.put(OfflineExportSpecV1.IMPORT_RECEIPTS_FILE, size(bundle.importReceipts()));
+        recordCounts.put(OfflineExportSpecV1.IMPORT_ITEMS_FILE, size(bundle.importItems()));
+        recordCounts.put(OfflineExportSpecV1.INVENTORY_TRANSACTIONS_FILE, size(bundle.inventoryTransactions()));
         recordCounts.put(
                 OfflineExportSpecV1.ATTENDANCE_FILE,
                 size(bundle.attendance())

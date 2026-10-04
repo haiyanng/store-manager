@@ -30,8 +30,6 @@
         <Label text="Product details" styleClass="record-section-title"/>
         <fx:include fx:id="productForm" source="product-form.fxml"/>
         <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="record-actions">
-            <Button fx:id="deleteButton" text="Deactivate"
-                    styleClass="record-danger-button" onAction="#onDelete"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Button fx:id="clearButton" text="Clear form" styleClass="module-secondary-button" onAction="#onClear"/>
             <Button fx:id="updateButton" text="Save changes" styleClass="module-secondary-button" onAction="#onUpdate"/>
@@ -64,11 +62,6 @@
                          minWidth="80"
                          prefWidth="120"/>
 
-            <TableColumn fx:id="barcodeColumn"
-                         text="Barcode"
-                         minWidth="105"
-                         prefWidth="140"/>
-
             <TableColumn fx:id="categoryColumn"
                          text="Category"
                          minWidth="105"
@@ -92,7 +85,7 @@
     </TableView>
 
     <Label fx:id="statusLabel"
-           text="Ready"
+           text="Ready" visible="false" managed="false"
            styleClass="content-description"/>
 
     <padding>

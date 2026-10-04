@@ -15,11 +15,6 @@ import java.util.List;
 
 public class WorkShiftRuleRepository {
 
-    public WorkShiftRuleRepository() {
-
-        initializeTables();
-    }
-
     public List<WorkShiftRule> findAll() {
 
         List<WorkShiftRule> rules = new ArrayList<>();
@@ -138,10 +133,9 @@ public class WorkShiftRuleRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection = ConnectionFactory.getConnection();
                 Statement statement = connection.createStatement()
         ) {
 

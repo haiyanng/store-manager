@@ -66,12 +66,31 @@ public class InventoryListController {
     @FXML
     private Label statusLabel;
 
+    @FXML private javafx.scene.control.CheckBox lowStockOnly;
+    @FXML private javafx.scene.control.DatePicker fromDate;
+    @FXML private javafx.scene.control.DatePicker toDate;
+    @FXML private javafx.scene.control.ComboBox<com.storemanager.domain.product.model.Product> filterProduct;
+    public boolean isLowStockOnly() { return lowStockOnly.isSelected(); }
+    public java.time.LocalDate getFromDate() { return fromDate.getValue(); }
+    public java.time.LocalDate getToDate() { return toDate.getValue(); }
+    public Long getFilterProductId() { return filterProduct.getValue() == null ? null : filterProduct.getValue().getId(); }
+    public void setFilterProducts(List<com.storemanager.domain.product.model.Product> products) {
+        Long selected = getFilterProductId();
+        filterProduct.setItems(FXCollections.observableArrayList(products));
+        filterProduct.setValue(products.stream().filter(p -> p.getId().equals(selected)).findFirst().orElse(null));
+    }
+    @FXML public void onFilter() { presenter.applyFilters(); }
+    @FXML public void onClearFilters() {
+        fromDate.setValue(null); toDate.setValue(null); filterProduct.setValue(null);
+        presenter.applyFilters();
+    }
+
     private InventoryPresenter presenter;
 
     @FXML
     public void initialize() {
         UiFeedback.emptyTable(inventoryTable, "No stock records found.");
-        UiFeedback.emptyTable(transactionTable, "No inventory transactions found.");
+        UiFeedback.emptyTable(transactionTable, "No imports match the selected filters.");
 
 
         presenter =
@@ -79,6 +98,12 @@ public class InventoryListController {
                         this
                 );
 
+        filterProduct.setConverter(new javafx.util.StringConverter<>() {
+            public String toString(com.storemanager.domain.product.model.Product p) {
+                return p == null ? "All products" : p.getName() + " (" + p.getSku() + ")";
+            }
+            public com.storemanager.domain.product.model.Product fromString(String s) { return null; }
+        });
         configureInventoryTable();
         configureTransactionTable();
 
@@ -119,6 +144,10 @@ public class InventoryListController {
 
         inventoryTable.setDisable(busy);
         transactionTable.setDisable(busy);
+        lowStockOnly.setDisable(busy);
+        fromDate.setDisable(busy);
+        toDate.setDisable(busy);
+        filterProduct.setDisable(busy);
     }
 
     public void setStatus(

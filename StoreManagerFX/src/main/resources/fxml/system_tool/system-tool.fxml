@@ -35,6 +35,9 @@
             <Label text="Create Backup"
                    styleClass="analytics-card-title"/>
 
+            <Label text="Complete ZIP backup includes the database and all stored images."
+                   wrapText="true" styleClass="content-description"/>
+
             <Label fx:id="latestBackupTimeLabel"
                    text="No backup yet"
                    styleClass="analytics-card-value"/>
@@ -80,7 +83,8 @@
                    styleClass="analytics-card-title"/>
 
             <Label fx:id="restoreWarningLabel"
-                   text="Restore replaces current local database."
+                   text="ZIP restore replaces the database and images. Legacy SQL restores the database only."
+                   wrapText="true"
                    styleClass="logout-button"/>
 
             <Button fx:id="restoreButton"
@@ -96,7 +100,7 @@
     <fx:include source="migration-export.fxml"/>
 
     <Label fx:id="statusLabel"
-           text="Ready"
+           text="Ready" visible="false" managed="false"
            styleClass="content-description"/>
 
     <padding>

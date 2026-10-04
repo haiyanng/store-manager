@@ -22,6 +22,9 @@ public class InventoryPresenter extends BaseModulePresenter {
     private Map<Long, Product> productsById =
             Map.of();
 
+    private List<InventoryItem> items = List.of();
+    private List<InventoryTransaction> transactions = List.of();
+
     private LoadingState loadingState =
             LoadingState.IDLE;
 
@@ -59,8 +62,11 @@ public class InventoryPresenter extends BaseModulePresenter {
                 data -> {
                     productsById =
                             data.productsById();
-                    view.setInventoryItems(data.items());
-                    view.setTransactions(data.transactions());
+                    items = data.items();
+                    transactions = data.transactions();
+                    view.setFilterProducts(productsById.values().stream()
+                            .sorted(java.util.Comparator.comparing(Product::getName)).toList());
+                    applyFilters();
                     loadingState =
                             LoadingState.SUCCESS;
                     view.setStatus("Ready");
@@ -73,6 +79,15 @@ public class InventoryPresenter extends BaseModulePresenter {
                 },
                 () -> view.setBusy(false)
         );
+    }
+
+    public void applyFilters() {
+        try {
+            view.setInventoryItems(items.stream()
+                    .filter(item -> !view.isLowStockOnly() || InventoryService.isLowStock(item)).toList());
+            view.setTransactions(InventoryService.filterImportHistory(transactions,
+                    view.getFromDate(), view.getToDate(), view.getFilterProductId()));
+        } catch (IllegalArgumentException e) { view.showError(e.getMessage()); }
     }
 
     public String getProductName(

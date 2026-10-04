@@ -18,11 +18,6 @@ import java.util.List;
 
 public class AttendanceRepository {
 
-    public AttendanceRepository() {
-
-        initializeTable();
-    }
-
     public List<AttendanceSession> findAllSessions() {
 
         List<AttendanceSession> sessions =
@@ -414,12 +409,9 @@ public class AttendanceRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {

@@ -46,7 +46,7 @@ public class DatabaseBackupService {
         return settings.getDatabaseName()
                 + "_backup_"
                 + LocalDateTime.now().format(FILE_TIMESTAMP)
-                + ".sql";
+                + ".zip";
     }
 
     public boolean backup(
@@ -71,6 +71,9 @@ public class DatabaseBackupService {
             throw new RuntimeException(
                     "Backup output file is required"
             );
+        }
+        if (!outputFile.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".zip")) {
+            throw new IllegalArgumentException("Save complete backups as a .zip file (database and images)");
         }
 
         DatabaseSettings settings =
@@ -99,7 +102,7 @@ public class DatabaseBackupService {
             try {
                 backupHistoryStore.append(summary);
             } catch (RuntimeException e) {
-                // The SQL file is already complete; history failure must not report backup failure.
+                // The complete backup is already saved; history failure must not report backup failure.
                 LOGGER.log(Level.WARNING, "Backup saved, but its history could not be updated", e);
             }
 
@@ -131,6 +134,7 @@ public class DatabaseBackupService {
 
     private boolean runBackup(String executable, File outputFile, DatabaseSettings settings) {
         Path temporarySql = null;
+        Path temporaryArchive = null;
         Path errorFile = null;
         Process process = null;
         try {
@@ -159,11 +163,13 @@ public class DatabaseBackupService {
             if (Files.size(temporarySql) == 0) {
                 throw new IOException("mysqldump produced an empty backup");
             }
-            // Keep an existing backup intact until mysqldump has completed successfully.
+            temporaryArchive = Files.createTempFile(destination.getParent(), "storemanager-backup-", ".zip.part");
+            new CompleteBackupArchive().write(temporarySql, Path.of("data", "images"), temporaryArchive);
+            // Keep an existing backup intact until the SQL and images have been packaged successfully.
             try {
-                Files.move(temporarySql, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(temporaryArchive, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } catch (AtomicMoveNotSupportedException e) {
-                Files.move(temporarySql, destination, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(temporaryArchive, destination, StandardCopyOption.REPLACE_EXISTING);
             }
             return true;
         } catch (InterruptedException e) {
@@ -176,6 +182,7 @@ public class DatabaseBackupService {
             throw new RuntimeException("Database backup failed: " + e.getMessage(), e);
         } finally {
             deleteTemporaryFile(temporarySql);
+            deleteTemporaryFile(temporaryArchive);
             deleteTemporaryFile(errorFile);
         }
     }

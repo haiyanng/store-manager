@@ -26,6 +26,7 @@ public class DatabaseSetupController {
 
     private final DatabaseSetupPresenter presenter =
             new DatabaseSetupPresenter();
+    private boolean busy;
 
     @FXML
     public void initialize() {
@@ -39,54 +40,41 @@ public class DatabaseSetupController {
 
     @FXML
     public void onTestConnection() {
-
-        DatabaseSettings settings =
-                buildSettingsFromForm();
-
-        boolean success =
-                presenter.testConnection(settings);
-
-        if (success) {
-
-            showInfo(
-                    "Connection successful",
-                    "Connected to MySQL successfully."
-            );
-
-        } else {
-
-            showError(
-                    "Connection failed",
-                    "Check the host, port, username and password, and make sure MySQL is running."
-            );
-        }
+        if (busy) return;
+        DatabaseSettings settings;
+        try { settings = buildSettingsFromForm(); }
+        catch (RuntimeException error) { showError("Invalid configuration", "Port must be a whole number from 1 to 65535."); return; }
+        setBusy(true);
+        presenter.testConnectionAsync(settings, success -> {
+            if (success) showInfo("Connection successful", "Connected to MySQL successfully.");
+            else showError("Connection failed", "Check the host, port, username and password, and make sure MySQL is running.");
+        }, error -> showError("Connection failed", error.getMessage()), () -> setBusy(false));
     }
 
     @FXML
     public void onSaveAndContinue() {
+        if (busy) return;
+        DatabaseSettings settings;
+        try { settings = buildSettingsFromForm(); }
+        catch (RuntimeException error) { showError("Invalid configuration", "Port must be a whole number from 1 to 65535."); return; }
+        setBusy(true);
+        presenter.saveAndContinueAsync(settings, success -> {
+            if (!success) showError("Unable to save configuration", "Unable to connect to MySQL or save the configuration file.");
+        }, error -> showError("Unable to save configuration", error.getMessage()), () -> setBusy(false));
+    }
 
-        DatabaseSettings settings =
-                buildSettingsFromForm();
-
-        boolean success =
-                presenter.saveAndContinue(settings);
-
-        if (!success) {
-
-            showError(
-                    "Unable to save configuration",
-                    "Unable to connect to MySQL or save the configuration file."
-            );
-        }
+    private void setBusy(boolean busy) {
+        this.busy = busy;
+        hostField.getParent().setDisable(busy);
     }
 
     private DatabaseSettings buildSettingsFromForm() {
 
+        int port = Integer.parseInt(portField.getText().trim());
+        if (port < 1 || port > 65535) throw new IllegalArgumentException("Invalid port");
         return new DatabaseSettings(
                 hostField.getText().trim(),
-                Integer.parseInt(
-                        portField.getText().trim()
-                ),
+                port,
                 databaseField.getText().trim(),
                 usernameField.getText().trim(),
                 passwordField.getText()

@@ -36,8 +36,6 @@ public class ProductFormController {
     @FXML
     private TextField skuField;
 
-    @FXML
-    private TextField barcodeField;
 
     @FXML
     private ComboBox<Category> categoryComboBox;
@@ -109,7 +107,6 @@ public class ProductFormController {
 
         product.setName(nameField.getText());
         product.setSku(skuField.getText());
-        product.setBarcode(barcodeField.getText());
 
         Category category =
                 categoryComboBox.getValue();
@@ -142,7 +139,6 @@ public class ProductFormController {
 
         nameField.setText(product.getName());
         skuField.setText(product.getSku());
-        barcodeField.setText(product.getBarcode());
         basePriceField.setText(
                 product.getBasePrice() == null
                         ? "0"
@@ -173,7 +169,6 @@ public class ProductFormController {
 
         nameField.clear();
         skuField.clear();
-        barcodeField.clear();
         categoryComboBox.setValue(null);
         basePriceField.setText("0");
         unitField.clear();
@@ -190,7 +185,6 @@ public class ProductFormController {
         removeImageButton.setDisable(busy);
         nameField.setDisable(busy);
         skuField.setDisable(busy);
-        barcodeField.setDisable(busy);
         categoryComboBox.setDisable(busy);
         basePriceField.setDisable(busy);
         unitField.setDisable(busy);

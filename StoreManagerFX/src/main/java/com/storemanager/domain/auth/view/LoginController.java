@@ -30,6 +30,7 @@ public class LoginController {
 
     private final LoginPresenter presenter =
             new LoginPresenter();
+    private boolean loginInProgress;
 
     @FXML
     public void initialize() {
@@ -50,24 +51,25 @@ public class LoginController {
     @FXML
     public void onLogin() {
 
-        LoginResponse response;
-        try {
-            response = presenter.login(usernameField.getText(), passwordField.getText());
-        } catch (RuntimeException e) {
-            showError(e.getMessage());
-            return;
-        }
+        if (loginInProgress) return;
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        loginInProgress = true;
+        setBusy(true);
+        presenter.loginAsync(username, password, response -> {
+            if (!response.success()) { showError(response.message()); return; }
+            SceneManager.switchScene("/fxml/dashboard/dashboard-shell.fxml");
+        }, error -> showError(error.getMessage()), () -> {
+            loginInProgress = false;
+            setBusy(false);
+        });
+    }
 
-        if (!response.success()) {
-            showError(
-                    response.message()
-            );
-            return;
-        }
-
-        SceneManager.switchScene(
-                "/fxml/dashboard/dashboard-shell.fxml"
-        );
+    private void setBusy(boolean busy) {
+        usernameField.setDisable(busy);
+        passwordField.setDisable(busy);
+        loginButton.setDisable(busy || presenter.getLicenseStatus().isBlocked());
+        loginButton.setText(busy ? "Signing in..." : "Login");
     }
 
     private void updateLicenseStatus(

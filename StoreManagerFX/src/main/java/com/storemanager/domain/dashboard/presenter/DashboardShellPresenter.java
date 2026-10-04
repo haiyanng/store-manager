@@ -48,6 +48,22 @@ public class DashboardShellPresenter {
                 .findFirst();
     }
 
+    public void changePassword(String current, String replacement, String confirmation,
+            Runnable success, java.util.function.Consumer<Throwable> failure) {
+        com.storemanager.core.runtime.async.AsyncTaskRunner.run(() -> {
+            new com.storemanager.domain.user.service.PasswordChangeService()
+                    .changePassword(current, replacement, confirmation);
+            return true;
+        }, result -> success.run(), failure, null);
+    }
+
+    public void logout(Runnable success, java.util.function.Consumer<Throwable> failure) {
+        com.storemanager.core.runtime.async.AsyncTaskRunner.run(() -> {
+            new com.storemanager.domain.auth.service.AuthService().logout();
+            return true;
+        }, result -> success.run(), failure, null);
+    }
+
     private RoleType getCurrentRole() {
 
         User currentUser =

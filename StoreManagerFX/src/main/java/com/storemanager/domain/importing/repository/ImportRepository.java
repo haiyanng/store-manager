@@ -17,11 +17,6 @@ import java.util.List;
 
 public class ImportRepository {
 
-    public ImportRepository() {
-
-        initializeTables();
-    }
-
     public Long saveReceipt(
             ImportReceipt receipt,
             List<ImportItem> items
@@ -289,12 +284,9 @@ public class ImportRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {

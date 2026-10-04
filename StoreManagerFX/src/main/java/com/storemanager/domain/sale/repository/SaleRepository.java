@@ -17,11 +17,6 @@ import java.util.List;
 
 public class SaleRepository {
 
-    public SaleRepository() {
-
-        initializeTables();
-    }
-
     public Long saveOrder(
             SaleOrder order,
             List<SaleOrderItem> items
@@ -95,6 +90,21 @@ public class SaleRepository {
                     "Cannot save order",
                     e
             );
+        }
+    }
+
+    public SaleOrder findOrderById(Long id) {
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM sale_orders WHERE id = ?")) {
+            statement.setLong(1, id);
+            try (ResultSet row = statement.executeQuery()) {
+                if (!row.next()) throw new IllegalArgumentException("Order no longer exists. Refresh the list and try again.");
+                return mapOrder(row);
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load invoice. Check the database connection and try again.", e);
         }
     }
 
@@ -397,12 +407,9 @@ public class SaleRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {

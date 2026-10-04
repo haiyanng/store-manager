@@ -16,11 +16,6 @@ import java.util.List;
 
 public class AuditLogRepository {
 
-    public AuditLogRepository() {
-
-        initializeTables();
-    }
-
     public boolean save(
             AuditLog log
     ) {
@@ -186,12 +181,9 @@ public class AuditLogRepository {
         }
     }
 
-    private void initializeTables() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -261,7 +253,7 @@ public class AuditLogRepository {
         return log;
     }
 
-    private void addColumnIfMissing(
+    private static void addColumnIfMissing(
             Connection connection,
             String column,
             String alterSql

@@ -154,3 +154,10 @@
 .login-button:disabled {
     -fx-opacity: 1.0;
 }
+
+/* Shared readable defaults for controls, tables, and dialogs. */
+.root { -fx-font-size: 15px; }
+.app-shell .table-view, .app-shell .table-cell, .app-shell .text-input,
+.app-shell .combo-box, .app-shell .date-picker, .app-shell .check-box,
+.app-shell .button, .dialog-pane { -fx-font-size: 15px; }
+.table-cell { -fx-padding: 10 12 10 12; }

@@ -49,7 +49,11 @@ public final class UiFeedback {
     }
 
     public static void status(Label label, String message, TableView<?>... tables) {
-        label.setText(message);
+        message = message == null ? "" : message.trim();
+        boolean idle = message.isEmpty() || message.equals("Ready");
+        label.setText(message.startsWith("Ready. ") ? message.substring(7) : message);
+        label.setVisible(!idle);
+        label.setManaged(!idle);
         boolean loading = message.startsWith("Loading ");
         boolean failed = message.startsWith("Unable to load ") || message.startsWith("Cannot load ");
         label.setStyle(failed ? "-fx-text-fill: #b42318;" : "");

@@ -45,9 +45,6 @@ public class EmployeeListController {
     @FXML
     private Button updateButton;
 
-    @FXML
-    private Button deleteButton;
-
     private boolean busy;
     @FXML private Button createButton;
     @FXML private Button clearButton;
@@ -135,13 +132,6 @@ public class EmployeeListController {
     }
 
     @FXML
-    public void onDelete() {
-        if (!UiFeedback.confirm("Delete employee?", "This permanently deletes the selected employee record.")) return;
-
-        presenter.deleteEmployee();
-    }
-
-    @FXML
     public void onRefresh() {
 
         presenter.refreshTable();
@@ -187,10 +177,6 @@ public class EmployeeListController {
         setBusy(busy);
     }
 
-    public void setDeleteEnabled(boolean enabled) {
-        setBusy(busy);
-    }
-
     public void setBusy(boolean busy) {
         this.busy = busy;
         boolean allowed = PermissionGuard.canViewEmployee();
@@ -201,7 +187,6 @@ public class EmployeeListController {
         clearButton.setDisable(busy);
         createButton.setDisable(busy || !allowed || selected);
         updateButton.setDisable(busy || !allowed || !selected);
-        deleteButton.setDisable(busy || !allowed || !selected);
     }
 
     public void setStatus(String status) {

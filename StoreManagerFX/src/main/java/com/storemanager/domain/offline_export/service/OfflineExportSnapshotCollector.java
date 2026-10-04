@@ -10,6 +10,7 @@ import com.storemanager.domain.category.repository.CategoryRepository;
 import com.storemanager.domain.employee.model.Employee;
 import com.storemanager.domain.employee.repository.EmployeeRepository;
 import com.storemanager.domain.inventory.model.InventoryItem;
+import com.storemanager.domain.inventory.model.InventoryTransaction;
 import com.storemanager.domain.inventory.repository.InventoryRepository;
 import com.storemanager.domain.offline_export.OfflineExportSpecV1;
 import com.storemanager.domain.offline_export.dto.AttendanceSnapshot;
@@ -24,6 +25,10 @@ import com.storemanager.domain.offline_export.dto.ProductSnapshot;
 import com.storemanager.domain.offline_export.dto.SaleItemSnapshot;
 import com.storemanager.domain.offline_export.dto.SaleSnapshot;
 import com.storemanager.domain.offline_export.dto.UserSnapshot;
+import com.storemanager.domain.offline_export.dto.ImportReceiptSnapshot;
+import com.storemanager.domain.offline_export.dto.ImportItemSnapshot;
+import com.storemanager.domain.offline_export.dto.InventoryTransactionSnapshot;
+import com.storemanager.domain.offline_export.repository.OfflineImportHistoryRepository;
 import com.storemanager.domain.product.model.Product;
 import com.storemanager.domain.product.repository.ProductRepository;
 import com.storemanager.domain.sale.model.SaleOrder;
@@ -64,6 +69,8 @@ public class OfflineExportSnapshotCollector {
 
     private final ImageStorageService imageStorageService =
             new ImageStorageService();
+
+    private final OfflineImportHistoryRepository importHistoryRepository = new OfflineImportHistoryRepository();
 
     public OfflineExportBundle collect() {
 
@@ -143,6 +150,14 @@ public class OfflineExportSnapshotCollector {
                                 .toList()
                         : List.of();
 
+        List<ImportReceiptSnapshot> importReceipts = selection != null && selection.products()
+                ? importHistoryRepository.findAllReceipts() : List.of();
+        List<ImportItemSnapshot> importItems = selection != null && selection.products()
+                ? importHistoryRepository.findAllItems() : List.of();
+        List<InventoryTransactionSnapshot> inventoryTransactions = selection != null && selection.products()
+                ? inventoryRepository.findAllTransactions().stream().map(this::toInventoryTransactionSnapshot).toList()
+                : List.of();
+
         List<SaleSnapshot> sales =
                 selection != null && selection.sales()
                         ? saleRepository.findAllOrders()
@@ -181,7 +196,10 @@ public class OfflineExportSnapshotCollector {
                 sales,
                 saleItems,
                 auditLogs,
-                imageAssets
+                imageAssets,
+                importReceipts,
+                importItems,
+                inventoryTransactions
         );
     }
 
@@ -270,7 +288,6 @@ public class OfflineExportSnapshotCollector {
                 product.getId(),
                 product.getName(),
                 product.getSku(),
-                product.getBarcode(),
                 product.getCategoryId(),
                 product.getBasePrice(),
                 product.getUnit(),
@@ -314,7 +331,9 @@ public class OfflineExportSnapshotCollector {
                 order.getId(),
                 order.getCreatedByUserId(),
                 order.getTotalAmount(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                order.getAmountReceived(),
+                order.getChangeAmount()
         );
     }
 
@@ -330,6 +349,12 @@ public class OfflineExportSnapshotCollector {
                 item.getUnitPrice(),
                 item.getSubtotal()
         );
+    }
+
+    private InventoryTransactionSnapshot toInventoryTransactionSnapshot(InventoryTransaction transaction) {
+        return new InventoryTransactionSnapshot(transaction.getId(), transaction.getProductId(), transaction.getType(),
+                transaction.getQuantity(), transaction.getReason(), transaction.getCreatedByUserId(),
+                transaction.getCreatedAt());
     }
 
     private AuditLogSnapshot toAuditLogSnapshot(

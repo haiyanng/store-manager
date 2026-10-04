@@ -26,6 +26,10 @@ public final class OfflineExportSpecV1 {
     public static final String INVENTORY_FILE =
             "inventory.json";
 
+    public static final String INVENTORY_TRANSACTIONS_FILE = "inventory_transactions.json";
+    public static final String IMPORT_RECEIPTS_FILE = "import_receipts.json";
+    public static final String IMPORT_ITEMS_FILE = "import_items.json";
+
     public static final String ATTENDANCE_FILE =
             "attendance.json";
 

@@ -67,6 +67,7 @@ public class SalePresenter extends BaseModulePresenter {
                 data -> {
                     stockByProductId =
                             data.stockByProductId();
+                    view.setStockByProductId(stockByProductId);
                     view.setProducts(data.products());
                     view.setQuickPickProducts(data.quickPickProducts());
                     view.setRecentOrders(data.orders());
@@ -142,6 +143,8 @@ public class SalePresenter extends BaseModulePresenter {
             SaleCartItem existingItem =
                     findCartItem(product);
 
+            int requested = existingItem == null ? quantity : Math.addExact(existingItem.getQuantity(), quantity);
+            SaleService.validateStock(product.getName(), stockByProductId.getOrDefault(product.getId(), 0), requested);
             if (existingItem == null) {
                 cartItems.add(
                         new SaleCartItem(
@@ -199,6 +202,10 @@ public class SalePresenter extends BaseModulePresenter {
             view.showError("Quantity must be positive");
             return;
         }
+        try {
+            SaleService.validateStock(item.getProduct().getName(),
+                    stockByProductId.getOrDefault(item.getProduct().getId(), 0), quantity);
+        } catch (IllegalArgumentException e) { view.showError(e.getMessage()); return; }
         item.setQuantity(quantity);
         updateCartView();
     }
@@ -263,6 +270,23 @@ public class SalePresenter extends BaseModulePresenter {
                 },
                 null
         );
+    }
+
+    public void exportInvoice(SaleOrder order, java.nio.file.Path destination) {
+        if (loadingState == LoadingState.LOADING) return;
+        if (order == null) { view.showError("Select a completed order to export its invoice."); return; }
+        if (destination == null) return;
+        loadingState = LoadingState.LOADING; view.setBusy(true);
+        AsyncTaskRunner.run(() -> {
+            new com.storemanager.domain.sale.service.InvoiceService().export(order, destination);
+            return destination;
+        }, path -> {
+            loadingState = LoadingState.SUCCESS;
+            view.setStatus("Invoice exported to " + path);
+        }, error -> {
+            loadingState = LoadingState.ERROR;
+            view.showError("Unable to export invoice: " + error.getMessage());
+        }, () -> view.setBusy(false));
     }
 
     public void onSelectedProductChanged(

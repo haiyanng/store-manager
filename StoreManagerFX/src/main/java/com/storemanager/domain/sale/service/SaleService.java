@@ -65,6 +65,12 @@ public class SaleService {
         );
     }
 
+    public SaleOrder findOrderById(Long id) {
+        validateSaleAccess();
+        if (id == null) throw new IllegalArgumentException("Select a completed order first.");
+        return saleRepository.findOrderById(id);
+    }
+
     public List<SaleOrder> findRecentOrders() {
 
         validateSaleAccess();
@@ -143,7 +149,6 @@ public class SaleService {
                 product.getId(),
                 product.getName(),
                 product.getSku(),
-                product.getBarcode(),
                 product.getImagePath(),
                 product.getBasePrice() == null
                         ? BigDecimal.ZERO
@@ -157,6 +162,22 @@ public class SaleService {
         validateSaleAccess();
 
         return saleRepository.findTotalRevenue();
+    }
+
+    public BigDecimal findRevenueToday() {
+        validateSaleAccess();
+        LocalDate today = LocalDate.now();
+        return saleRepository.findRevenueForPeriod(today, today.plusDays(1));
+    }
+    public long countOrdersToday() {
+        validateSaleAccess();
+        LocalDate today = LocalDate.now();
+        return saleRepository.countOrdersForPeriod(today, today.plusDays(1));
+    }
+    public static void validateStock(String name, int available, int requested) {
+        if (requested > available) throw new IllegalArgumentException("Insufficient stock for " + name
+                + ": available " + available + ", requested " + requested + ", short by "
+                + ((long) requested - available) + ".");
     }
 
     public BigDecimal findRevenueForCurrentMonth() {
@@ -327,7 +348,7 @@ public class SaleService {
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Cannot finalize order atomically",
+                    "Unable to complete sale: " + rootMessage(e),
                     e
             );
         }
@@ -609,12 +630,7 @@ public class SaleService {
                             0
                     );
 
-            if (currentQuantity < cartItem.getQuantity()) {
-                throw new RuntimeException(
-                        "Insufficient stock for "
-                                + cartItem.getProduct().getName()
-                );
-            }
+            validateStock(cartItem.getProduct().getName(), currentQuantity, cartItem.getQuantity());
         }
     }
 

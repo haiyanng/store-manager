@@ -162,7 +162,13 @@ public class ProductService {
 
         product.setName(product.getName().trim());
         product.setSku(product.getSku().trim());
-        product.setBarcode(cleanNullable(product.getBarcode()));
+        if (product.getSku().length() > 80) {
+            throw new IllegalArgumentException("SKU must contain at most 80 characters");
+        }
+        if (productRepository.existsSku(product.getSku(), product.getId())) {
+            throw new IllegalArgumentException("SKU '" + product.getSku()
+                    + "' is already assigned to another product. Use a different SKU.");
+        }
         product.setUnit(product.getUnit().trim());
         product.setImagePath(cleanNullable(product.getImagePath()));
     }

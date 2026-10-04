@@ -60,6 +60,20 @@ public class InventoryService {
         return "NORMAL";
     }
 
+    public static boolean isLowStock(InventoryItem item) { return item.getQuantity() < 10; }
+
+    public static List<InventoryTransaction> filterImportHistory(List<InventoryTransaction> rows,
+            LocalDate from, LocalDate to, Long productId) {
+        if (from != null && to != null && from.isAfter(to))
+            throw new IllegalArgumentException("Start date must be on or before end date.");
+        return rows.stream().filter(row -> row.getType() == InventoryTransactionType.IMPORT)
+                .filter(row -> productId == null || productId.equals(row.getProductId()))
+                .filter(row -> from == null || row.getCreatedAt() != null
+                        && !row.getCreatedAt().toLocalDate().isBefore(from))
+                .filter(row -> to == null || row.getCreatedAt() != null
+                        && !row.getCreatedAt().toLocalDate().isAfter(to)).toList();
+    }
+
     public List<InventoryTransaction> findAllTransactions() {
 
         validateInventoryAccess();
@@ -90,7 +104,7 @@ public class InventoryService {
         validateInventoryAccess();
 
         return productService
-                .findAll()
+                .findAllIncludingInactive()
                 .stream()
                 .collect(
                         Collectors.toMap(

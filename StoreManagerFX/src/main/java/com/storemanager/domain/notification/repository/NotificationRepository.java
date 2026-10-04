@@ -14,10 +14,6 @@ import java.util.List;
 
 public class NotificationRepository {
 
-    public NotificationRepository() {
-        initializeTable();
-    }
-
     public boolean save(
             Notification notification
     ) {
@@ -165,12 +161,9 @@ public class NotificationRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {

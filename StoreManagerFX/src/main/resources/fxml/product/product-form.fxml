@@ -46,14 +46,9 @@
             <ComboBox fx:id="categoryComboBox" promptText="Category" minWidth="0"
                        maxWidth="Infinity" styleClass="module-input"/>
         </VBox>
-        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="1">
+        <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2">
             <Label text="SKU" styleClass="record-field-label"/>
             <TextField fx:id="skuField" promptText="SKU" minWidth="0"
-                       maxWidth="Infinity" styleClass="module-input"/>
-        </VBox>
-        <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="1">
-            <Label text="Barcode" styleClass="record-field-label"/>
-            <TextField fx:id="barcodeField" promptText="Barcode" minWidth="0"
                        maxWidth="Infinity" styleClass="module-input"/>
         </VBox>
         <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="1">

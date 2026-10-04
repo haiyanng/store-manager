@@ -40,9 +40,6 @@ public class CategoryListController {
     private Button updateButton;
 
     @FXML
-    private Button deactivateButton;
-
-    @FXML
     private Label statusLabel;
 
     private boolean busy;
@@ -125,13 +122,6 @@ public class CategoryListController {
     }
 
     @FXML
-    public void onDeactivate() {
-        if (!UiFeedback.confirm("Deactivate category?", "The selected category will become inactive. Existing transaction history is retained.")) return;
-
-        presenter.deactivateCategory();
-    }
-
-    @FXML
     public void onClear() {
 
         presenter.clearForm();
@@ -177,10 +167,6 @@ public class CategoryListController {
         setBusy(busy);
     }
 
-    public void setDeactivateEnabled(boolean enabled) {
-        setBusy(busy);
-    }
-
     public void setBusy(boolean busy) {
         this.busy = busy;
         boolean allowed = PermissionGuard.canModifyProduct();
@@ -191,7 +177,6 @@ public class CategoryListController {
         clearButton.setDisable(busy);
         createButton.setDisable(busy || !allowed || selected);
         updateButton.setDisable(busy || !allowed || !selected);
-        deactivateButton.setDisable(busy || !allowed || !selected);
     }
 
     public void setStatus(

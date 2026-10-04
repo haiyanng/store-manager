@@ -73,6 +73,8 @@ public class MigrationPackagePreviewService {
                     zipFile,
                     result
             );
+            result.getWarnings().add("Catalog import restores categories, products, stock and their images only. "
+                    + "Other exported records require a complete database backup ZIP for full recovery.");
 
             if (!OfflineExportSpecV1.SOURCE_SYSTEM.equals(
                     manifest.sourceSystem()
@@ -141,9 +143,12 @@ public class MigrationPackagePreviewService {
 
         checkEntry(zipFile, OfflineExportSpecV1.USERS_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.EMPLOYEES_FILE, result, false);
-        checkEntry(zipFile, OfflineExportSpecV1.CATEGORIES_FILE, result, false);
-        checkEntry(zipFile, OfflineExportSpecV1.PRODUCTS_FILE, result, false);
-        checkEntry(zipFile, OfflineExportSpecV1.INVENTORY_FILE, result, false);
+        checkEntry(zipFile, OfflineExportSpecV1.CATEGORIES_FILE, result, true);
+        checkEntry(zipFile, OfflineExportSpecV1.PRODUCTS_FILE, result, true);
+        checkEntry(zipFile, OfflineExportSpecV1.INVENTORY_FILE, result, true);
+        checkEntry(zipFile, OfflineExportSpecV1.IMPORT_RECEIPTS_FILE, result, false);
+        checkEntry(zipFile, OfflineExportSpecV1.IMPORT_ITEMS_FILE, result, false);
+        checkEntry(zipFile, OfflineExportSpecV1.INVENTORY_TRANSACTIONS_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.ATTENDANCE_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.SALES_FILE, result, false);
         checkEntry(zipFile, OfflineExportSpecV1.SALE_ITEMS_FILE, result, false);

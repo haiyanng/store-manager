@@ -35,6 +35,7 @@ public class DatabaseInitializer {
             );
 
             initializeBusinessTables(connection, statement);
+            initializeDomainSchemas(connection);
             new UserRepository().migrateLegacyRoles();
             createDefaultAdmin();
             System.out.println("Database initialized successfully");
@@ -44,10 +45,26 @@ public class DatabaseInitializer {
             e.printStackTrace();
 
             throw new RuntimeException(
-                    "Database initialization failed",
+                    "Database initialization failed: " + e.getMessage(),
                     e
             );
         }
+    }
+
+    private static void initializeDomainSchemas(Connection connection) throws Exception {
+        // All schema creation and compatibility checks run once before opening application screens.
+        com.storemanager.domain.employee.repository.EmployeeRepository.initializeSchema(connection);
+        com.storemanager.domain.category.repository.CategoryRepository.initializeSchema(connection);
+        com.storemanager.domain.product.repository.ProductRepository.initializeSchema(connection);
+        com.storemanager.domain.importing.repository.ImportRepository.initializeSchema(connection);
+        com.storemanager.domain.inventory.repository.InventoryRepository.initializeSchema(connection);
+        com.storemanager.domain.sale.repository.SaleRepository.initializeSchema(connection);
+        com.storemanager.domain.attendance.repository.AttendanceRepository.initializeSchema(connection);
+        com.storemanager.domain.attendance_anomaly.repository.WorkShiftRuleRepository.initializeSchema(connection);
+        com.storemanager.domain.attendance_anomaly.repository.AttendanceAnomalyRepository.initializeSchema(connection);
+        com.storemanager.domain.notification.repository.NotificationRepository.initializeSchema(connection);
+        com.storemanager.domain.message.repository.MessageRepository.initializeSchema(connection);
+        com.storemanager.domain.audit.repository.AuditLogRepository.initializeSchema(connection);
     }
 
     private static void initializeBusinessTables(
@@ -89,7 +106,6 @@ public class DatabaseInitializer {
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     name VARCHAR(180) NOT NULL,
                     sku VARCHAR(80) NOT NULL,
-                    barcode VARCHAR(80),
                     category_id BIGINT NULL,
                     base_price DECIMAL(18, 2) NOT NULL DEFAULT 0,
                     unit VARCHAR(40) NOT NULL,

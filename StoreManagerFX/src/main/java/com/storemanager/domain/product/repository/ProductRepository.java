@@ -7,16 +7,12 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProductRepository {
-
-    public ProductRepository() {
-
-        initializeTable();
-    }
 
     public List<Product> findAll() {
 
@@ -90,6 +86,21 @@ public class ProductRepository {
         }
     }
 
+    public boolean existsSku(String sku, Long excludedProductId) {
+        String sql = "SELECT 1 FROM products WHERE UPPER(TRIM(sku)) = UPPER(TRIM(?))"
+                + (excludedProductId == null ? "" : " AND id <> ?") + " LIMIT 1";
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, sku);
+            if (excludedProductId != null) statement.setLong(2, excludedProductId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to check SKU availability. Check the database connection and try again.", e);
+        }
+    }
+
     public boolean save(
             Product product
     ) {
@@ -104,14 +115,13 @@ public class ProductRepository {
                                 INSERT INTO products (
                                     name,
                                     sku,
-                                    barcode,
                                     category_id,
                                     base_price,
                                     unit,
                                     image_path,
                                     active
                                 )
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
                                 """, Statement.RETURN_GENERATED_KEYS
                         )
         ) {
@@ -127,10 +137,7 @@ public class ProductRepository {
             return saved;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return false;
+            throw saveFailure(product, e);
         }
     }
 
@@ -148,7 +155,6 @@ public class ProductRepository {
                                 UPDATE products
                                 SET name = ?,
                                     sku = ?,
-                                    barcode = ?,
                                     category_id = ?,
                                     base_price = ?,
                                     unit = ?,
@@ -162,17 +168,14 @@ public class ProductRepository {
             fillStatement(statement, product);
 
             statement.setLong(
-                    9,
+                    8,
                     product.getId()
             );
 
             return statement.executeUpdate() > 0;
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return false;
+            throw saveFailure(product, e);
         }
     }
 
@@ -209,12 +212,9 @@ public class ProductRepository {
         }
     }
 
-    private void initializeTable() {
+    public static void initializeSchema(Connection connection) {
 
         try (
-                Connection connection =
-                        ConnectionFactory.getConnection();
-
                 Statement statement =
                         connection.createStatement()
         ) {
@@ -225,7 +225,6 @@ public class ProductRepository {
                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
                         name VARCHAR(180) NOT NULL,
                         sku VARCHAR(80) NOT NULL,
-                        barcode VARCHAR(80),
                         category_id BIGINT NULL,
                         base_price DECIMAL(18, 2) NOT NULL DEFAULT 0,
                         unit VARCHAR(40) NOT NULL,
@@ -249,19 +248,20 @@ public class ProductRepository {
                     "full_description",
                     "ALTER TABLE products ADD COLUMN full_description TEXT NULL"
             );
+            initializeSkuConstraint(connection);
 
         } catch (Exception e) {
 
             e.printStackTrace();
 
             throw new RuntimeException(
-                    "Product table initialization failed",
+                    "Product table initialization failed: " + e.getMessage(),
                     e
             );
         }
     }
 
-    private void addImagePathColumnIfMissing(
+    private static void addImagePathColumnIfMissing(
             Connection connection
     ) throws Exception {
 
@@ -297,7 +297,7 @@ public class ProductRepository {
         }
     }
 
-    private void addColumnIfMissing(
+    private static void addColumnIfMissing(
             Connection connection,
             String columnName,
             String alterSql
@@ -330,6 +330,61 @@ public class ProductRepository {
         }
     }
 
+    private static void initializeSkuConstraint(Connection connection) throws Exception {
+        try (ResultSet indexes = connection.getMetaData().getIndexInfo(
+                connection.getCatalog(), null, "products", true, false)) {
+            while (indexes.next()) {
+                if ("uk_products_sku_normalized".equalsIgnoreCase(indexes.getString("INDEX_NAME"))) return;
+            }
+        }
+
+        List<String> duplicates = new ArrayList<>();
+        try (Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery("""
+                     SELECT UPPER(TRIM(sku)) AS normalized_sku
+                     FROM products
+                     GROUP BY UPPER(TRIM(sku))
+                     HAVING COUNT(*) > 1
+                     ORDER BY normalized_sku
+                     """)) {
+            while (rows.next() && duplicates.size() < 5) {
+                String sku = rows.getString("normalized_sku");
+                List<Long> ids = new ArrayList<>();
+                try (PreparedStatement details = connection.prepareStatement(
+                        "SELECT id FROM products WHERE UPPER(TRIM(sku)) = ? ORDER BY id")) {
+                    details.setString(1, sku);
+                    try (ResultSet products = details.executeQuery()) {
+                        while (products.next()) ids.add(products.getLong("id"));
+                    }
+                }
+                duplicates.add("'" + sku + "' (product IDs " + ids + ")");
+            }
+        }
+        if (!duplicates.isEmpty()) {
+            throw new IllegalStateException("Cannot enforce unique SKUs because existing products share "
+                    + String.join(", ", duplicates)
+                    + ". Assign a distinct SKU to each listed product in the database, then restart. No product data was changed.");
+        }
+
+        // H2 tests use the same expression; MySQL/MariaDB store the generated value for the unique index.
+        boolean h2 = "H2".equalsIgnoreCase(connection.getMetaData().getDatabaseProductName());
+        addColumnIfMissing(connection, "sku_normalized",
+                "ALTER TABLE products ADD COLUMN sku_normalized VARCHAR(80) GENERATED ALWAYS AS (UPPER(TRIM(sku)))"
+                        + (h2 ? "" : " STORED"));
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE UNIQUE INDEX uk_products_sku_normalized ON products (sku_normalized)");
+        }
+    }
+
+    private static RuntimeException saveFailure(Product product, Exception error) {
+        if (error instanceof SQLException sql
+                && (sql.getErrorCode() == 1062 || "23505".equals(sql.getSQLState()))) {
+            return new IllegalArgumentException("SKU '" + product.getSku()
+                    + "' is already assigned to another product. Use a different SKU.", error);
+        }
+        return new IllegalStateException("Unable to save product changes. Check the database connection and try again.", error);
+    }
+
     private void fillStatement(
             PreparedStatement statement,
             Product product
@@ -337,18 +392,17 @@ public class ProductRepository {
 
         statement.setString(1, product.getName());
         statement.setString(2, product.getSku());
-        statement.setString(3, product.getBarcode());
 
         if (product.getCategoryId() == null) {
-            statement.setObject(4, null);
+            statement.setObject(3, null);
         } else {
-            statement.setLong(4, product.getCategoryId());
+            statement.setLong(3, product.getCategoryId());
         }
 
-        statement.setBigDecimal(5, product.getBasePrice());
-        statement.setString(6, product.getUnit());
-        statement.setString(7, product.getImagePath());
-        statement.setBoolean(8, product.isActive());
+        statement.setBigDecimal(4, product.getBasePrice());
+        statement.setString(5, product.getUnit());
+        statement.setString(6, product.getImagePath());
+        statement.setBoolean(7, product.isActive());
     }
 
     private Product mapProduct(
@@ -361,7 +415,6 @@ public class ProductRepository {
         product.setId(resultSet.getLong("id"));
         product.setName(resultSet.getString("name"));
         product.setSku(resultSet.getString("sku"));
-        product.setBarcode(resultSet.getString("barcode"));
 
         long categoryId =
                 resultSet.getLong("category_id");

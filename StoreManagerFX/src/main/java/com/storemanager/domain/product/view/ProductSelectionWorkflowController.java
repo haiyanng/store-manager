@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class ProductSelectionWorkflowController {
@@ -38,7 +39,7 @@ public class ProductSelectionWorkflowController {
     private TableColumn<Product, String> resultSkuColumn;
 
     @FXML
-    private TableColumn<Product, String> resultBarcodeColumn;
+    private TableColumn<Product, String> resultStockColumn;
 
     @FXML
     private Label resultCountLabel;
@@ -51,7 +52,15 @@ public class ProductSelectionWorkflowController {
 
     private Consumer<Product> selectedProductListener;
 
+    private Map<Long, Integer> stockByProductId = Map.of();
+
     private boolean internalSelectionChange;
+
+    public void setStockByProductId(Map<Long, Integer> stock) {
+        stockByProductId = stock == null ? Map.of() : Map.copyOf(stock);
+        resultStockColumn.setVisible(true);
+        resultTable.refresh();
+    }
 
     @FXML
     public void initialize() {
@@ -197,6 +206,8 @@ public class ProductSelectionWorkflowController {
     }
 
     private void configureResultTable() {
+        resultTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        resultStockColumn.setVisible(false);
 
         resultNameColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
@@ -210,9 +221,9 @@ public class ProductSelectionWorkflowController {
                 )
         );
 
-        resultBarcodeColumn.setCellValueFactory(
+        resultStockColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(
-                        cellData.getValue().getBarcode()
+                        Integer.toString(stockByProductId.getOrDefault(cellData.getValue().getId(), 0))
                 )
         );
 
@@ -352,13 +363,9 @@ public class ProductSelectionWorkflowController {
             return -1;
         }
 
-        String barcode = clean(product.getBarcode());
         String sku = clean(product.getSku());
         String name = clean(product.getName());
 
-        if (!barcode.isEmpty() && barcode.equalsIgnoreCase(query)) {
-            return 0;
-        }
 
         if (!sku.isEmpty() && sku.equalsIgnoreCase(query)) {
             return 1;
@@ -394,10 +401,6 @@ public class ProductSelectionWorkflowController {
             label.append(product.getSku().trim());
         }
 
-        if (product.getBarcode() != null
-                && !product.getBarcode().trim().isEmpty()) {
-            label.append(" [").append(product.getBarcode().trim()).append("]");
-        }
 
         return label.toString();
     }

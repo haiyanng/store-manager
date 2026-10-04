@@ -77,7 +77,7 @@ public final class DashboardMenuRegistry {
                     ),
                     new DashboardMenuItem(
                             ORDER,
-                            "Order",
+                            "Sale",
                             "/fxml/sale/sale.fxml",
                             true,
                             STAFF_WORKFLOW_ROLES

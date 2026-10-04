@@ -176,6 +176,15 @@ public class UserRepository {
         }
     }
 
+    public boolean changePassword(Long id, String previousHash, String newHash) {
+        try (Connection connection = ConnectionFactory.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "UPDATE users SET password = ? WHERE id = ? AND password = ? AND active = TRUE")) {
+            statement.setString(1, newHash); statement.setLong(2, id); statement.setString(3, previousHash);
+            return statement.executeUpdate() == 1;
+        } catch (Exception e) { throw new IllegalStateException("Unable to save password. Check the database connection and try again.", e); }
+    }
+
     public boolean updateUser(
             User user
     ) {
