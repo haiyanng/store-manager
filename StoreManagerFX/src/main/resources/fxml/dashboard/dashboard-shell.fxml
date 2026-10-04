@@ -5,6 +5,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -136,14 +137,36 @@
 
                     <VBox spacing="4"
                           styleClass="sidebar-account-actions">
-                        <Button text="Change password"
+                        <Button text="Password"
+                                accessibleText="Change password"
                                 styleClass="nav-button"
                                 maxWidth="Infinity"
-                                onAction="#onChangePassword"/>
+                                contentDisplay="LEFT"
+                                graphicTextGap="10"
+                                onAction="#onChangePassword">
+                            <graphic>
+                                <Label text="&#x1F511;"
+                                       styleClass="nav-button-icon"
+                                       minWidth="22"
+                                       maxWidth="22"/>
+                            </graphic>
+                            <tooltip>
+                                <Tooltip text="Change password"/>
+                            </tooltip>
+                        </Button>
                         <Button text="Logout"
                                 styleClass="logout-button"
                                 maxWidth="Infinity"
-                                onAction="#onLogout"/>
+                                contentDisplay="LEFT"
+                                graphicTextGap="10"
+                                onAction="#onLogout">
+                            <graphic>
+                                <Label text="&#x21AA;"
+                                       styleClass="nav-button-icon"
+                                       minWidth="22"
+                                       maxWidth="22"/>
+                            </graphic>
+                        </Button>
                     </VBox>
                 </VBox>
             </content>

@@ -168,7 +168,7 @@
         </TableView>
 
         <Label fx:id="migrationStatusLabel"
-               text="Ready"
+               text="Ready" visible="false" managed="false"
                styleClass="content-description"/>
     </VBox>
 

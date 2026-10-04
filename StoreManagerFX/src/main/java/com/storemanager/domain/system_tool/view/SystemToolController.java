@@ -161,7 +161,7 @@ public class SystemToolController {
             String status
     ) {
 
-        statusLabel.setText(status);
+        com.storemanager.core.util.UiFeedback.status(statusLabel, status);
     }
 
     public void setBackupSummary(

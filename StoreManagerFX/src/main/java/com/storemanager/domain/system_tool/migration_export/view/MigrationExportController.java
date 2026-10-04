@@ -286,7 +286,7 @@ public class MigrationExportController {
             String status
     ) {
 
-        migrationStatusLabel.setText(status);
+        UiFeedback.status(migrationStatusLabel, status);
     }
 
     public void setPreview(
@@ -352,7 +352,7 @@ public class MigrationExportController {
             String statusLabelText
     ) {
 
-        migrationStatusLabel.setText(statusLabelText);
+        UiFeedback.status(migrationStatusLabel, statusLabelText);
     }
 
     public void showInfo(

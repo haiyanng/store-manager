@@ -84,7 +84,7 @@
         </columns>
     </TableView>
 
-    <Label fx:id="statusLabel" text="Ready" styleClass="content-description"/>
+    <Label fx:id="statusLabel" text="Ready" visible="false" managed="false" styleClass="content-description"/>
 
     <padding>
         <Insets top="0"

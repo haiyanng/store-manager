@@ -63,17 +63,6 @@ public class ProductPresenter extends BaseCrudPresenter<Product> {
                 "Saving product...", "Unable to save product");
     }
 
-    public void deleteProduct() {
-        if (busy) return;
-        if (!hasSelection()) {
-            view.showError("Select a product to deactivate");
-            return;
-        }
-        Product selected = getSelectedEntity();
-        runMutation(() -> productService.delete(selected),
-                "Deactivating product...", "Unable to deactivate product");
-    }
-
     public void clearForm() {
         enterCreateMode();
         view.clearSelection();
@@ -160,7 +149,6 @@ public class ProductPresenter extends BaseCrudPresenter<Product> {
 
     private void updateActionState() {
         view.setUpdateEnabled(hasSelection());
-        view.setDeleteEnabled(hasSelection());
     }
 
     private record ProductData(List<Product> products, List<Category> categories, Map<Long, Category> categoriesById) {

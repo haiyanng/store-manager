@@ -27,7 +27,7 @@
                text="Unread: 0"
                styleClass="content-description"/>
         <Label fx:id="statusLabel"
-               text="Ready"
+               text="Ready" visible="false" managed="false"
                styleClass="content-description"/>
     </HBox>
 

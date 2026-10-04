@@ -137,6 +137,8 @@ public class DashboardShellController {
         dialog.setTitle("Change password");
         dialog.initOwner(contentArea.getScene().getWindow());
         dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/typography.css").toExternalForm());
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/css/password-dialog.css").toExternalForm());
+        dialog.getDialogPane().getStyleClass().add("password-dialog");
         var current = new javafx.scene.control.PasswordField();
         var replacement = new javafx.scene.control.PasswordField();
         var confirmation = new javafx.scene.control.PasswordField();
@@ -153,11 +155,25 @@ public class DashboardShellController {
             event.consume(); saveButton.setDisable(true); status.setText("Saving password...");
             presenter.changePassword(current.getText(), replacement.getText(), confirmation.getText(), () -> {
                 dialog.close();
-                Alert done = new Alert(Alert.AlertType.INFORMATION, "Your password has been changed.");
-                done.setHeaderText(null); done.showAndWait();
+                showPasswordChanged();
             }, error -> { saveButton.setDisable(false); status.setText(error.getMessage()); });
         });
         dialog.showAndWait();
+    }
+
+    private void showPasswordChanged() {
+        Alert done = new Alert(Alert.AlertType.INFORMATION);
+        done.initOwner(contentArea.getScene().getWindow());
+        done.setTitle("Store Manager");
+        done.setHeaderText("Password changed successfully");
+        done.setContentText("Your password has been updated.\nUse your new password the next time you sign in.");
+        done.getDialogPane().getStylesheets().add(getClass().getResource("/css/password-dialog.css").toExternalForm());
+        done.getDialogPane().getStyleClass().addAll("password-dialog", "password-success-dialog");
+        done.getDialogPane().setPrefWidth(460);
+        Label icon = new Label("\u2713");
+        icon.getStyleClass().add("password-success-icon");
+        done.setGraphic(icon);
+        done.showAndWait();
     }
 
     private void startBadgePolling() {

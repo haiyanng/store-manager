@@ -58,17 +58,6 @@ public class CategoryPresenter extends BaseCrudPresenter<Category> {
                 "Saving category...", "Unable to save category");
     }
 
-    public void deactivateCategory() {
-        if (busy) return;
-        if (!hasSelection()) {
-            view.showError("Select a category to deactivate");
-            return;
-        }
-        Category selected = getSelectedEntity();
-        runMutation(() -> categoryService.deactivate(selected),
-                "Deactivating category...", "Unable to deactivate category");
-    }
-
     public void clearForm() {
         enterCreateMode();
         view.clearSelection();
@@ -140,6 +129,5 @@ public class CategoryPresenter extends BaseCrudPresenter<Category> {
 
     private void updateActionState() {
         view.setUpdateEnabled(hasSelection());
-        view.setDeactivateEnabled(hasSelection());
     }
 }

@@ -100,7 +100,7 @@
     <fx:include source="migration-export.fxml"/>
 
     <Label fx:id="statusLabel"
-           text="Ready"
+           text="Ready" visible="false" managed="false"
            styleClass="content-description"/>
 
     <padding>
