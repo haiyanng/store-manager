@@ -12,14 +12,15 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.system_tool.view.SystemToolController"
-      spacing="24">
+      spacing="24"
+      styleClass="module-screen">
 
     <stylesheets>
         <URL value="@../dashboard/dashboard-shell.css"/>
         <URL value="@../../css/typography.css"/>
     </stylesheets>
 
-    <VBox spacing="6">
+    <VBox spacing="6" styleClass="module-header">
         <Label text="System Tools"
                styleClass="content-title"/>
 
@@ -70,7 +71,7 @@
 
             <Button fx:id="backupButton"
                     text="Create Backup"
-                    styleClass="module-button"
+                    styleClass="primary-button"
                     maxWidth="Infinity"
                     onAction="#onBackup"/>
         </VBox>

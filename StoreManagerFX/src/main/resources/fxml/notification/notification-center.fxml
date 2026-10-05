@@ -38,11 +38,11 @@
                    styleClass="analytics-section-title"/>
             <Button text="Refresh"
                     onAction="#onRefresh"
-                    styleClass="module-button"/>
+                    styleClass="ghost-button"/>
             <Button fx:id="markAsReadButton"
                     text="Mark as read"
                     onAction="#onMarkAsRead"
-                    styleClass="module-button"/>
+                    styleClass="primary-button"/>
         </HBox>
 
         <TableView fx:id="recentTable"

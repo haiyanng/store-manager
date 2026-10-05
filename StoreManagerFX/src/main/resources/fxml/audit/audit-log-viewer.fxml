@@ -47,11 +47,11 @@
     <HBox spacing="10">
         <Button fx:id="searchButton"
                 text="Search"
-                styleClass="module-button"
+                styleClass="primary-button"
                 onAction="#onSearch"/>
         <Button fx:id="clearButton"
                 text="Clear filters"
-                styleClass="module-button"
+                styleClass="ghost-button"
                 onAction="#onClear"/>
     </HBox>
 

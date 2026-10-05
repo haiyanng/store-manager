@@ -3,11 +3,11 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ToggleButton?>
-<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -17,13 +17,12 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.sale.view.SaleController"
-      spacing="18">
+      spacing="14"
+      styleClass="module-screen, sale-workspace">
 
-    <VBox spacing="6">
-        <Label text="Sale"
-               styleClass="content-title"/>
-
-        <Label text="Create in-store orders and track completed sales."
+    <VBox spacing="5" styleClass="module-header">
+        <Label text="Point of Sale" styleClass="content-title"/>
+        <Label text="Create in-store orders, manage the cart and review completed sales."
                styleClass="content-description"/>
     </VBox>
 
@@ -31,238 +30,193 @@
         <ToggleGroup fx:id="orderViewGroup"/>
     </fx:define>
 
-    <HBox spacing="12">
-        <ToggleButton fx:id="orderTabButton" text="Sale" selected="true"
+    <HBox spacing="8">
+        <ToggleButton fx:id="orderTabButton" text="New sale" selected="true"
                       toggleGroup="$orderViewGroup"
                       styleClass="module-button, order-tab-button"
                       onAction="#onShowOrder"/>
-        <ToggleButton fx:id="detailsTabButton" text="Order details"
+        <ToggleButton fx:id="detailsTabButton" text="Order history"
                       toggleGroup="$orderViewGroup"
                       styleClass="module-button, order-tab-button"
                       onAction="#onShowOrderDetails"/>
     </HBox>
 
-    <VBox spacing="18" visible="${orderTabButton.selected}" managed="${orderTabButton.selected}">
+    <VBox spacing="14" visible="${orderTabButton.selected}" managed="${orderTabButton.selected}">
 
-        <VBox spacing="14">
-            <fx:include fx:id="productSelectionWorkflow"
-                        source="../shared/product-selection-workflow.fxml"/>
+        <HBox spacing="14" alignment="TOP_LEFT" styleClass="sale-selection-row">
+            <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="product-picker-panel">
+                <VBox spacing="2">
+                    <Label text="Choose product" styleClass="section-label"/>
+                    <Label text="Search the catalog and select an item to add to this order."
+                           styleClass="muted-label"/>
+                </VBox>
+                <fx:include fx:id="productSelectionWorkflow"
+                            source="../shared/product-selection-workflow.fxml"/>
+            </VBox>
 
-            <VBox spacing="12"
-                  styleClass="analytics-card">
-                <Label text="Selected product"
-                       styleClass="analytics-card-title"/>
+            <VBox spacing="12" prefWidth="470" minWidth="450" maxWidth="520"
+                  styleClass="product-preview-card">
+                <VBox spacing="2">
+                    <Label text="Selected product" styleClass="section-label"/>
+                    <Label fx:id="selectedProductPreviewMessageLabel"
+                           text="Select a product to preview"
+                           styleClass="muted-label"/>
+                </VBox>
 
-                <HBox spacing="16">
-                    <StackPane prefWidth="160"
-                               prefHeight="160"
-                               minWidth="160"
-                               minHeight="160"
-                               maxWidth="160"
+                <HBox spacing="13" alignment="CENTER_LEFT">
+                    <StackPane prefWidth="100" prefHeight="100"
+                               minWidth="100" minHeight="100"
+                               maxWidth="100" maxHeight="100"
                                alignment="CENTER"
-                               maxHeight="160"
-                               style="-fx-background-color: rgba(255, 255, 255, 0.72);
-                                      -fx-background-radius: 12;
-                                      -fx-border-color: rgba(0, 0, 0, 0.08);
-                                      -fx-border-radius: 12;">
+                               styleClass="product-image-frame">
                         <ImageView fx:id="selectedProductImageView"
-                                   fitWidth="140"
-                                   fitHeight="140"
-                                   preserveRatio="true"
-                                   smooth="true"
-                                   pickOnBounds="true"/>
-
+                                   fitWidth="86" fitHeight="86"
+                                   preserveRatio="true" smooth="true" pickOnBounds="true"/>
                         <Label fx:id="selectedProductImagePlaceholderLabel"
-                               text="No image"
-                               visible="false"
-                               managed="false"
-                               styleClass="analytics-card-detail"/>
+                               text="No image" visible="false" managed="false"
+                               styleClass="muted-label"/>
                     </StackPane>
 
-                    <VBox spacing="4"
-                          HBox.hgrow="ALWAYS">
-                        <Label fx:id="selectedProductPreviewMessageLabel"
-                               text="Select a product to preview"
-                               styleClass="content-description"/>
-
+                    <VBox spacing="5" HBox.hgrow="ALWAYS">
                         <Label fx:id="selectedProductPreviewNameLabel"
-                               text="Name: -"
-                               styleClass="content-title"/>
-
+                               text="Name: -" wrapText="true" styleClass="product-name"/>
                         <Label fx:id="selectedProductPreviewSkuLabel"
-                               text="SKU: -"
-                               styleClass="analytics-card-detail"/>
-
+                               text="SKU: -" styleClass="analytics-card-detail"/>
                         <Label fx:id="selectedProductPreviewPriceLabel"
-                               text="Unit price: 0.00"
-                               styleClass="analytics-card-detail"/>
-
+                               text="Unit price: 0.00" styleClass="analytics-card-detail"/>
                         <Label fx:id="selectedProductPreviewStockLabel"
-                               text="Stock: N/A"
-                               styleClass="analytics-card-detail"/>
+                               text="Stock: N/A" styleClass="analytics-card-detail"/>
+                    </VBox>
+                </HBox>
+
+                <HBox fx:id="cartActions" alignment="CENTER_LEFT" styleClass="action-strip">
+                    <VBox spacing="8" HBox.hgrow="ALWAYS">
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <TextField fx:id="quantityField"
+                                       promptText="Quantity"
+                                       prefWidth="120"
+                                       minWidth="110"
+                                       styleClass="module-input"/>
+                            <Button text="Add to cart"
+                                    maxWidth="Infinity"
+                                    HBox.hgrow="ALWAYS"
+                                    styleClass="primary-button, cart-main-action"
+                                    onAction="#onAddToCart"/>
+                        </HBox>
+
+                        <Button text="Update quantity"
+                                maxWidth="Infinity"
+                                styleClass="module-button, cart-secondary-action, cart-block-action"
+                                onAction="#onUpdateQuantity"/>
+
+                        <Button text="Remove item"
+                                maxWidth="Infinity"
+                                styleClass="danger-button, cart-secondary-action, cart-block-action"
+                                onAction="#onRemoveItem"/>
+
+                        <Button text="Clear cart"
+                                maxWidth="Infinity"
+                                styleClass="ghost-button, cart-secondary-action, cart-block-action"
+                                onAction="#onClearCart"/>
                     </VBox>
                 </HBox>
             </VBox>
+        </HBox>
 
-            <HBox fx:id="cartActions" spacing="12">
-                <TextField fx:id="quantityField"
-                           promptText="Qty"
-                           prefWidth="90"
-                           styleClass="module-input"/>
-
-                <Button text="Add item"
-                        styleClass="module-button"
-                        onAction="#onAddToCart"/>
-
-                <Button text="Remove item"
-                        styleClass="module-button"
-                        onAction="#onRemoveItem"/>
-
-                <Button text="Update quantity"
-                        styleClass="module-button"
-                        onAction="#onUpdateQuantity"/>
-
-                <Button text="Clear items"
-                        styleClass="module-button"
-                        onAction="#onClearCart"/>
+        <VBox spacing="9" styleClass="module-panel, soft-blue">
+            <HBox alignment="CENTER_LEFT">
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Cart" styleClass="section-label"/>
+                    <Label text="Items currently included in this order." styleClass="muted-label"/>
+                </VBox>
+                <Label text="Review quantity and price before checkout" styleClass="muted-label"/>
             </HBox>
-        </VBox>
 
-        <VBox spacing="8">
-            <Label text="Cart"
-                   styleClass="content-description"/>
-
-            <TableView fx:id="cartTable"
-                       prefHeight="250">
+            <TableView fx:id="cartTable" prefHeight="215">
                 <columns>
-                    <TableColumn fx:id="cartProductColumn"
-                                 text="Product"
-                                 prefWidth="240"/>
-
-                    <TableColumn fx:id="cartSkuColumn"
-                                 text="SKU"
-                                 prefWidth="130"/>
-
-                    <TableColumn fx:id="cartQuantityColumn"
-                                 text="Quantity"
-                                 prefWidth="80"/>
-
-                    <TableColumn fx:id="cartUnitPriceColumn"
-                                 text="Unit price"
-                                 prefWidth="120"/>
-
-                    <TableColumn fx:id="cartSubtotalColumn"
-                                 text="Subtotal"
-                                 prefWidth="130"/>
+                    <TableColumn fx:id="cartProductColumn" text="Product" prefWidth="250"/>
+                    <TableColumn fx:id="cartSkuColumn" text="SKU" prefWidth="120"/>
+                    <TableColumn fx:id="cartQuantityColumn" text="Quantity" prefWidth="90"/>
+                    <TableColumn fx:id="cartUnitPriceColumn" text="Unit price" prefWidth="125"/>
+                    <TableColumn fx:id="cartSubtotalColumn" text="Subtotal" prefWidth="130"/>
                 </columns>
             </TableView>
         </VBox>
 
-        <HBox spacing="12" alignment="CENTER_LEFT">
-            <Label text="Amount received" styleClass="content-description"/>
-            <TextField fx:id="amountReceivedField" promptText="Customer gives, e.g. 1000.00"
-                       prefWidth="240" styleClass="module-input"/>
-            <Label text="Change" styleClass="content-description"/>
-            <Label fx:id="changeLabel" text="-" styleClass="content-title"/>
-        </HBox>
+        <HBox fx:id="orderActions" spacing="12" alignment="CENTER_LEFT" styleClass="payment-bar">
+            <VBox spacing="3">
+                <Label text="Amount received" styleClass="muted-label"/>
+                <TextField fx:id="amountReceivedField"
+                           promptText="Customer gives, e.g. 1000.00"
+                           prefWidth="220" styleClass="module-input"/>
+            </VBox>
 
-        <HBox fx:id="orderActions" alignment="CENTER_RIGHT"
-              spacing="12">
-            <Label text="Total"
-                   styleClass="content-description"/>
-
-            <Label fx:id="totalLabel"
-                   text="0.00"
-                   styleClass="content-title"/>
+            <VBox spacing="3" minWidth="120">
+                <Label text="Change" styleClass="muted-label"/>
+                <Label fx:id="changeLabel" text="-" styleClass="change-value"/>
+            </VBox>
 
             <Region HBox.hgrow="ALWAYS"/>
 
-            <Button text="Refresh"
-                    styleClass="module-button"
-                    onAction="#onRefresh"/>
+            <VBox spacing="1" styleClass="total-box">
+                <Label text="ORDER TOTAL" styleClass="total-caption"/>
+                <Label fx:id="totalLabel" text="0.00" styleClass="total-value"/>
+            </VBox>
 
-            <Button text="Complete order"
-                    styleClass="module-button"
-                    onAction="#onFinalizeSale"/>
-            <Button text="Export last invoice" styleClass="module-secondary-button"
-                    onAction="#onExportLastInvoice"/>
+            <Button text="Refresh" styleClass="ghost-button" onAction="#onRefresh"/>
+            <Button text="Complete order" styleClass="primary-button" onAction="#onFinalizeSale"/>
+            <Button text="Export invoice" styleClass="module-button" onAction="#onExportLastInvoice"/>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="14" visible="${detailsTabButton.selected}" managed="${detailsTabButton.selected}">
+        <HBox spacing="14" alignment="TOP_LEFT">
+            <VBox spacing="9" HBox.hgrow="ALWAYS" styleClass="module-panel, soft-indigo">
+                <HBox alignment="CENTER_LEFT">
+                    <VBox spacing="2" HBox.hgrow="ALWAYS">
+                        <Label text="Recent orders" styleClass="section-label"/>
+                        <Label text="Select an order to inspect its line items." styleClass="muted-label"/>
+                    </VBox>
+                    <Button text="Export invoice" onAction="#onExportInvoice" styleClass="module-button"/>
+                </HBox>
+
+                <TableView fx:id="orderTable" prefHeight="300">
+                    <columns>
+                        <TableColumn fx:id="orderIdColumn" text="ID" prefWidth="75"/>
+                        <TableColumn fx:id="orderUserColumn" text="User ID" prefWidth="100"/>
+                        <TableColumn fx:id="orderTotalColumn" text="Total" prefWidth="130"/>
+                        <TableColumn fx:id="orderCreatedAtColumn" text="Created at" prefWidth="180"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox spacing="9" HBox.hgrow="ALWAYS" styleClass="module-panel, soft-blue">
+                <VBox spacing="2">
+                    <Label text="Order details" styleClass="section-label"/>
+                    <Label text="Products and quantities in the selected order." styleClass="muted-label"/>
+                </VBox>
+
+                <TableView fx:id="orderDetailTable" prefHeight="300">
+                    <columns>
+                        <TableColumn fx:id="detailProductColumn" text="Product" prefWidth="220"/>
+                        <TableColumn fx:id="detailSkuColumn" text="SKU" prefWidth="120"/>
+                        <TableColumn fx:id="detailQuantityColumn" text="Qty" prefWidth="70"/>
+                        <TableColumn fx:id="detailUnitPriceColumn" text="Unit price" prefWidth="115"/>
+                        <TableColumn fx:id="detailSubtotalColumn" text="Subtotal" prefWidth="125"/>
+                    </columns>
+                </TableView>
+            </VBox>
         </HBox>
 
+        <HBox alignment="CENTER_RIGHT">
+            <Button text="Refresh orders"
+                    styleClass="module-button"
+                    disable="${orderTable.disabled}"
+                    onAction="#onRefresh"/>
+        </HBox>
     </VBox>
 
-    <VBox spacing="18" visible="${detailsTabButton.selected}" managed="${detailsTabButton.selected}">
+    <Label fx:id="statusLabel" text="Ready" visible="false" managed="false" styleClass="content-description"/>
 
-        <VBox spacing="8">
-            <Button text="Export invoice" onAction="#onExportInvoice" styleClass="module-button"/>
-            <Label text="Recent orders"
-                   styleClass="content-description"/>
-
-            <TableView fx:id="orderTable"
-                       prefHeight="240">
-                <columns>
-                    <TableColumn fx:id="orderIdColumn"
-                                 text="ID"
-                                 prefWidth="80"/>
-
-                    <TableColumn fx:id="orderUserColumn"
-                                 text="User ID"
-                                 prefWidth="110"/>
-
-                    <TableColumn fx:id="orderTotalColumn"
-                                 text="Total"
-                                 prefWidth="140"/>
-
-                    <TableColumn fx:id="orderCreatedAtColumn"
-                                 text="Created at"
-                                 prefWidth="190"/>
-                </columns>
-            </TableView>
-        </VBox>
-
-        <VBox spacing="8">
-            <Label text="Order details"
-                   styleClass="content-description"/>
-
-            <TableView fx:id="orderDetailTable"
-                       prefHeight="220">
-                <columns>
-                    <TableColumn fx:id="detailProductColumn"
-                                 text="Product"
-                                 prefWidth="240"/>
-
-                    <TableColumn fx:id="detailSkuColumn"
-                                 text="SKU"
-                                 prefWidth="130"/>
-
-                    <TableColumn fx:id="detailQuantityColumn"
-                                 text="Quantity"
-                                 prefWidth="80"/>
-
-                    <TableColumn fx:id="detailUnitPriceColumn"
-                                 text="Unit price"
-                                 prefWidth="120"/>
-
-                    <TableColumn fx:id="detailSubtotalColumn"
-                                 text="Subtotal"
-                                 prefWidth="130"/>
-                </columns>
-            </TableView>
-        </VBox>
-
-        <Button text="Refresh"
-                styleClass="module-button"
-                disable="${orderTable.disabled}"
-                onAction="#onRefresh"/>
-    </VBox>
-
-    <Label fx:id="statusLabel"
-           text="Ready" visible="false" managed="false"
-           styleClass="content-description"/>
-
-    <padding>
-        <Insets top="0"
-                right="0"
-                bottom="0"
-                left="0"/>
-    </padding>
+    <padding><Insets top="0" right="0" bottom="0" left="0"/></padding>
 </VBox>

@@ -12,9 +12,10 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.attendance.view.AttendanceController"
-      spacing="18">
+      spacing="18"
+      styleClass="module-screen">
 
-    <VBox spacing="6">
+    <VBox spacing="6" styleClass="module-header">
         <Label text="Attendance"
                styleClass="content-title"/>
 
@@ -32,7 +33,7 @@
                   prefWidth="320"/>
 
         <Button fx:id="checkInButton" text="Check in"
-                styleClass="module-button"
+                styleClass="primary-button"
                 onAction="#onCheckIn"/>
 
         <Button fx:id="checkOutButton" text="Check out"
@@ -40,7 +41,7 @@
                 onAction="#onCheckOut"/>
 
         <Button fx:id="refreshButton" text="Refresh"
-                styleClass="module-button"
+                styleClass="ghost-button"
                 onAction="#onRefresh"/>
     </HBox>
 

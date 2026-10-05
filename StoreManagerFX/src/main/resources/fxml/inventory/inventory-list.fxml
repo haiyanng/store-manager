@@ -6,6 +6,8 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -14,9 +16,10 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.inventory.view.InventoryListController"
-      spacing="18">
+      spacing="18"
+      styleClass="module-screen">
 
-    <VBox spacing="6">
+    <VBox spacing="6" styleClass="module-header">
         <Label text="View Inventory"
                styleClass="content-title"/>
 
@@ -24,12 +27,13 @@
                styleClass="content-description"/>
     </VBox>
 
-    <CheckBox fx:id="lowStockOnly" text="Low stock only (quantity &lt; 10)" onAction="#onFilter"/>
-    <Button text="Refresh"
-            styleClass="module-button"
-            onAction="#onRefresh"/>
+    <HBox spacing="12" alignment="CENTER_LEFT" styleClass="action-strip">
+        <CheckBox fx:id="lowStockOnly" text="Low stock only (quantity &lt; 10)" onAction="#onFilter"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Refresh" styleClass="ghost-button" onAction="#onRefresh"/>
+    </HBox>
 
-    <VBox spacing="8">
+    <VBox spacing="10" styleClass="module-panel, soft-blue">
         <Label text="Current stock"
                styleClass="content-description"/>
 
@@ -63,7 +67,7 @@
                wrapText="true" styleClass="content-description"/>
     </VBox>
 
-    <VBox spacing="8">
+    <VBox spacing="10" styleClass="module-panel, soft-indigo">
         <Label text="Import history"
                styleClass="content-description"/>
 
@@ -73,7 +77,7 @@
             <Label text="To"/>
             <DatePicker fx:id="toDate" promptText="End date" prefWidth="170"/>
             <ComboBox fx:id="filterProduct" promptText="All products" prefWidth="240"/>
-            <Button text="Apply filters" onAction="#onFilter" styleClass="module-button"/>
+            <Button text="Apply filters" onAction="#onFilter" styleClass="primary-button"/>
             <Button text="Clear filters" onAction="#onClearFilters" styleClass="module-secondary-button"/>
         </FlowPane>
         <TableView fx:id="transactionTable"

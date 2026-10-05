@@ -5,65 +5,89 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyFormController"
-      spacing="10"
-      prefWidth="420">
+      spacing="12"
+      styleClass="anomaly-form-root">
 
-    <Label text="Anomaly detail"
-           styleClass="content-description"/>
-
-    <VBox spacing="6">
-        <Label text="ID"/>
-        <Label fx:id="anomalyIdLabel" text="-"/>
-
-        <Label text="Attendance session"/>
-        <Label fx:id="attendanceSessionIdLabel" text="-"/>
-
-        <Label text="Employee"/>
-        <Label fx:id="employeeLabel" text="-"/>
-
-        <Label text="Type"/>
-        <Label fx:id="typeLabel" text="-"/>
-
-        <Label text="Severity"/>
-        <Label fx:id="severityLabel" text="-"/>
-
-        <Label text="Status"/>
-        <Label fx:id="statusLabel" text="-"/>
-
-        <Label text="Created at"/>
-        <Label fx:id="createdAtLabel" text="-"/>
-
-        <Label text="Resolved by"/>
-        <Label fx:id="resolvedByLabel" text="-"/>
-
-        <Label text="Resolved at"/>
-        <Label fx:id="resolvedAtLabel" text="-"/>
+    <VBox spacing="3">
+        <Label text="Anomaly detail" styleClass="section-label"/>
+        <Label text="Inspect the selected anomaly and adjust attendance data if needed."
+               styleClass="muted-label"/>
     </VBox>
 
-    <TextArea fx:id="messageArea"
-              promptText="Anomaly message"
-              editable="false"
-              wrapText="true"
-              prefRowCount="4"
-              styleClass="module-input"/>
+    <HBox spacing="14" alignment="TOP_LEFT">
+        <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="detail-section">
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="ID" styleClass="detail-inline-label"/>
+                <Label fx:id="anomalyIdLabel" text="-" styleClass="detail-inline-value"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Attendance session" styleClass="detail-inline-label"/>
+                <Label fx:id="attendanceSessionIdLabel" text="-" styleClass="detail-inline-value" wrapText="true"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Employee" styleClass="detail-inline-label"/>
+                <Label fx:id="employeeLabel" text="-" styleClass="detail-inline-value" wrapText="true"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Type" styleClass="detail-inline-label"/>
+                <Label fx:id="typeLabel" text="-" styleClass="detail-inline-value" wrapText="true"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Severity" styleClass="detail-inline-label"/>
+                <Label fx:id="severityLabel" text="-" styleClass="detail-inline-value"/>
+            </HBox>
+        </VBox>
 
-    <TextArea fx:id="managerReportArea"
-              promptText="Manager report"
-              wrapText="true"
-              prefRowCount="4"
-              styleClass="module-input"/>
+        <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="detail-section">
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Status" styleClass="detail-inline-label"/>
+                <Label fx:id="statusLabel" text="-" styleClass="detail-inline-value"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Created at" styleClass="detail-inline-label"/>
+                <Label fx:id="createdAtLabel" text="-" styleClass="detail-inline-value" wrapText="true"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Resolved by" styleClass="detail-inline-label"/>
+                <Label fx:id="resolvedByLabel" text="-" styleClass="detail-inline-value" wrapText="true"/>
+            </HBox>
+            <HBox spacing="10" styleClass="detail-row">
+                <Label text="Resolved at" styleClass="detail-inline-label"/>
+                <Label fx:id="resolvedAtLabel" text="-" styleClass="detail-inline-value" wrapText="true"/>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <VBox spacing="8">
+        <Label text="Anomaly message" styleClass="record-field-label"/>
+        <TextArea fx:id="messageArea"
+                  promptText="Anomaly message"
+                  editable="false"
+                  wrapText="true"
+                  prefRowCount="4"
+                  styleClass="module-input"/>
+    </VBox>
+
+    <VBox spacing="8">
+        <Label text="Manager report" styleClass="record-field-label"/>
+        <TextArea fx:id="managerReportArea"
+                  promptText="Manager report"
+                  wrapText="true"
+                  prefRowCount="4"
+                  styleClass="module-input"/>
+    </VBox>
 
     <CheckBox fx:id="employeeNotificationCheckBox"
               text="Notify employee"/>
 
-    <VBox spacing="6">
-        <Label text="Attendance edit"
-               styleClass="content-description"/>
+    <VBox spacing="8" styleClass="soft-blue, anomaly-edit-box">
+        <Label text="Attendance edit" styleClass="section-label"/>
 
         <TextField fx:id="checkInField"
                    promptText="Check-in yyyy-MM-dd HH:mm:ss"

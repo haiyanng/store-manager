@@ -14,9 +14,10 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.importing.view.ImportController"
-      spacing="18">
+      spacing="18"
+      styleClass="module-screen">
 
-    <VBox spacing="6">
+    <VBox spacing="6" styleClass="module-header">
         <Label text="Import"
                styleClass="content-title"/>
 
@@ -24,7 +25,7 @@
                styleClass="content-description"/>
     </VBox>
 
-    <VBox spacing="14">
+    <VBox spacing="14" styleClass="module-panel, soft-indigo">
         <TextField fx:id="supplierField"
                    promptText="Supplier"
                    prefWidth="240"
@@ -45,15 +46,15 @@
                        styleClass="module-input"/>
 
             <Button text="Add item"
-                    styleClass="module-button"
+                    styleClass="primary-button"
                     onAction="#onAddItem"/>
 
             <Button text="Remove item"
-                    styleClass="module-button"
+                    styleClass="danger-button"
                     onAction="#onRemoveItem"/>
 
             <Button text="Clear items"
-                    styleClass="module-button"
+                    styleClass="ghost-button"
                     onAction="#onClearItems"/>
         </HBox>
         <HBox spacing="12" alignment="CENTER_LEFT">
@@ -63,7 +64,7 @@
         </HBox>
     </VBox>
 
-    <VBox spacing="8">
+    <VBox spacing="10" styleClass="module-panel, soft-blue">
         <Label text="Import items"
                styleClass="content-description"/>
 
@@ -106,15 +107,15 @@
         <Region HBox.hgrow="ALWAYS"/>
 
         <Button text="Refresh"
-                styleClass="module-button"
+                styleClass="ghost-button"
                 onAction="#onRefresh"/>
 
         <Button text="Complete import"
-                styleClass="module-button"
+                styleClass="primary-button"
                 onAction="#onFinalizeImport"/>
     </HBox>
 
-    <VBox spacing="8">
+    <VBox spacing="10" styleClass="module-panel, soft-green">
         <Label text="Recent import receipts"
                styleClass="content-description"/>
 

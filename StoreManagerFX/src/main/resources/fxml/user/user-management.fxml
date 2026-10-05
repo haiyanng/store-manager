@@ -15,54 +15,56 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.user.view.UserManagementController"
-      spacing="18">
+      spacing="18"
+      styleClass="module-screen">
 
-    <Label text="User Management"
-           styleClass="content-title"/>
+    <VBox spacing="5" styleClass="module-header">
+        <Label text="User Management" styleClass="content-title"/>
+        <Label text="Manage staff accounts, roles and employee links." styleClass="content-description"/>
+    </VBox>
 
-    <Label text="Manage staff accounts, roles and employee links."
-           styleClass="content-description"/>
-
-    <HBox spacing="10">
+    <HBox spacing="10" styleClass="module-panel, soft-indigo">
         <TextField fx:id="usernameField"
                    promptText="Username"
+                   styleClass="module-input"
                    HBox.hgrow="ALWAYS"/>
 
         <PasswordField fx:id="passwordField"
                        promptText="Password"
+                       styleClass="module-input"
                        HBox.hgrow="ALWAYS"/>
 
         <ComboBox fx:id="roleComboBox"
-                  prefWidth="150" promptText="Role"/>
+                  prefWidth="150" promptText="Role" styleClass="module-input"/>
 
         <ComboBox fx:id="employeeComboBox"
                   prefWidth="220"
-                  promptText="Linked employee"/>
+                  promptText="Linked employee" styleClass="module-input"/>
 
-        <Button fx:id="clearLinkButton"
+        <Button fx:id="clearLinkButton" styleClass="module-secondary-button"
                 text="Clear link"
                 onAction="#onClearEmployeeLink"/>
 
     </HBox>
 
     <HBox spacing="10">
-        <Button fx:id="refreshButton" text="Refresh" onAction="#onRefresh"/>
-        <Button fx:id="clearButton" text="Clear form" onAction="#onClear"/>
+        <Button fx:id="refreshButton" styleClass="module-secondary-button" text="Refresh" onAction="#onRefresh"/>
+        <Button fx:id="clearButton" styleClass="module-secondary-button" text="Clear form" onAction="#onClear"/>
 
-        <Button fx:id="createButton"
+        <Button fx:id="createButton" styleClass="primary-button"
                 text="Create"
                 onAction="#onCreateUser"/>
 
-        <Button fx:id="editButton"
+        <Button fx:id="editButton" styleClass="module-button"
                 text="Save changes"
                 onAction="#onEditUser"/>
 
-        <Button fx:id="deleteButton"
+        <Button fx:id="deleteButton" styleClass="danger-button"
                 text="Delete"
                 onAction="#onDeleteUser"/>
     </HBox>
 
-    <TableView fx:id="usersTable"
+    <TableView fx:id="usersTable" styleClass="analytics-table"
                VBox.vgrow="ALWAYS">
         <columns>
             <TableColumn fx:id="idColumn"

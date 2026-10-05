@@ -45,7 +45,7 @@
                     <Button fx:id="refreshButton"
                             text="Refresh"
                             onAction="#onRefresh"
-                            styleClass="module-button"/>
+                            styleClass="ghost-button"/>
                 </HBox>
 
                 <TableView fx:id="conversationTable"
@@ -105,7 +105,7 @@
                         <Button fx:id="sendButton"
                                 text="Send message"
                                 onAction="#onSendMessage"
-                                styleClass="module-button"/>
+                                styleClass="primary-button"/>
                         <Label fx:id="statusLabel"
                                text="Ready" visible="false" managed="false"
                                styleClass="content-description"/>

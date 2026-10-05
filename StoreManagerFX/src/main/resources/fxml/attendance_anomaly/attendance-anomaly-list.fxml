@@ -8,14 +8,16 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.storemanager.domain.attendance_anomaly.view.AttendanceAnomalyListController"
-      spacing="18">
+      spacing="18"
+      styleClass="module-screen, anomaly-screen">
 
-    <VBox spacing="6">
+    <VBox spacing="6" styleClass="module-header">
         <Label text="Attendance Anomalies"
                styleClass="content-title"/>
 
@@ -23,46 +25,62 @@
                styleClass="content-description"/>
     </VBox>
 
-    <VBox spacing="10">
+    <VBox spacing="12" styleClass="module-panel, soft-blue">
         <HBox spacing="10">
-            <ComboBox fx:id="statusFilterComboBox" prefWidth="150"/>
-            <ComboBox fx:id="typeFilterComboBox" prefWidth="170"/>
-            <ComboBox fx:id="severityFilterComboBox" prefWidth="150"/>
-            <ComboBox fx:id="employeeFilterComboBox" prefWidth="210"/>
+            <ComboBox fx:id="statusFilterComboBox" prefWidth="150" HBox.hgrow="ALWAYS"/>
+            <ComboBox fx:id="typeFilterComboBox" prefWidth="170" HBox.hgrow="ALWAYS"/>
+            <ComboBox fx:id="severityFilterComboBox" prefWidth="150" HBox.hgrow="ALWAYS"/>
+            <ComboBox fx:id="employeeFilterComboBox" prefWidth="210" HBox.hgrow="ALWAYS"/>
         </HBox>
 
-        <HBox spacing="10">
-            <DatePicker fx:id="fromDatePicker" promptText="From"/>
-            <DatePicker fx:id="toDatePicker" promptText="To"/>
-            <Button fx:id="applyFilterButton" text="Apply" onAction="#onApplyFilters"/>
-            <Button fx:id="clearFilterButton" text="Clear filters" onAction="#onClearFilters"/>
-            <Button fx:id="refreshButton" text="Refresh" onAction="#onRefresh"/>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <DatePicker fx:id="fromDatePicker" promptText="From" prefWidth="180"/>
+            <DatePicker fx:id="toDatePicker" promptText="To" prefWidth="180"/>
+            <Button fx:id="applyFilterButton" text="Apply" onAction="#onApplyFilters" styleClass="primary-button"/>
+            <Button fx:id="clearFilterButton" text="Clear filters" onAction="#onClearFilters" styleClass="ghost-button"/>
+            <Button fx:id="refreshButton" text="Refresh" onAction="#onRefresh" styleClass="module-button"/>
+            <Region HBox.hgrow="ALWAYS"/>
         </HBox>
     </VBox>
 
-    <HBox spacing="16" fillHeight="true">
+    <VBox spacing="10" styleClass="module-panel, soft-indigo">
+        <HBox alignment="CENTER_LEFT">
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Anomaly records" styleClass="section-label"/>
+                <Label text="The table now spans the full working area for easier scanning and filtering."
+                       styleClass="muted-label"/>
+            </VBox>
+        </HBox>
+
         <TableView fx:id="anomalyTable"
-                   prefHeight="560"
-                   prefWidth="920"
+                   prefHeight="420"
+                   prefWidth="1280"
                    VBox.vgrow="ALWAYS"
                    HBox.hgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="anomalyIdColumn" text="ID" prefWidth="70"/>
                 <TableColumn fx:id="anomalyEmployeeColumn" text="Employee" prefWidth="190"/>
-                <TableColumn fx:id="anomalyTypeColumn" text="Type" prefWidth="160"/>
-                <TableColumn fx:id="anomalySeverityColumn" text="Severity" prefWidth="90"/>
+                <TableColumn fx:id="anomalyTypeColumn" text="Type" prefWidth="190"/>
+                <TableColumn fx:id="anomalySeverityColumn" text="Severity" prefWidth="110"/>
                 <TableColumn fx:id="anomalyStatusColumn" text="Status" prefWidth="120"/>
                 <TableColumn fx:id="anomalyCreatedAtColumn" text="Created at" prefWidth="170"/>
-                <TableColumn fx:id="anomalyMessageColumn" text="Message" prefWidth="340"/>
+                <TableColumn fx:id="anomalyMessageColumn" text="Message" prefWidth="430"/>
             </columns>
         </TableView>
+    </VBox>
 
-        <VBox spacing="12"
-              prefWidth="460"
-              VBox.vgrow="ALWAYS">
-
+    <HBox spacing="16" alignment="TOP_LEFT" fillHeight="true">
+        <VBox spacing="12" HBox.hgrow="ALWAYS" styleClass="module-panel, detail-form-card">
             <fx:include fx:id="anomalyForm"
                         source="attendance-anomaly-form.fxml"/>
+        </VBox>
+
+        <VBox spacing="12" prefWidth="280" minWidth="250" maxWidth="320" styleClass="module-panel, action-card, soft-green">
+            <VBox spacing="4">
+                <Label text="Actions" styleClass="section-label"/>
+                <Label text="Run the appropriate resolution workflow for the selected anomaly."
+                       styleClass="muted-label" wrapText="true"/>
+            </VBox>
 
             <VBox fx:id="managerActionsBox" spacing="8">
                 <Button fx:id="submitReportButton"
@@ -75,13 +93,13 @@
             <VBox fx:id="adminActionsBox" spacing="8">
                 <Button fx:id="resolveButton"
                         text="Resolve"
-                        styleClass="module-button"
+                        styleClass="primary-button"
                         maxWidth="Infinity"
                         onAction="#onResolve"/>
 
                 <Button fx:id="dismissButton"
                         text="Dismiss"
-                        styleClass="module-button"
+                        styleClass="danger-button"
                         maxWidth="Infinity"
                         onAction="#onDismiss"/>
 
@@ -93,7 +111,7 @@
 
                 <Button fx:id="updateNotificationButton"
                         text="Update employee notification"
-                        styleClass="module-button"
+                        styleClass="ghost-button"
                         maxWidth="Infinity"
                         onAction="#onUpdateEmployeeNotification"/>
             </VBox>

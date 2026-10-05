@@ -270,6 +270,7 @@ public class DashboardShellController {
             button.setContentDisplay(ContentDisplay.LEFT);
             button.setGraphicTextGap(10);
             button.setGraphic(createMenuIcon(menuItem.id()));
+            button.setUserData(menuItem.id());
             button.setOnAction(event -> navigateTo(menuItem.id()));
 
             sidebarMenuBox.getChildren().add(button);
@@ -290,18 +291,18 @@ public class DashboardShellController {
     private String resolveMenuIcon(String menuItemId) {
 
         return switch (menuItemId) {
-            case DashboardMenuRegistry.DASHBOARD -> "◈";
-            case DashboardMenuRegistry.EMPLOYEE -> "👥";
+            case DashboardMenuRegistry.DASHBOARD -> "▦";
+            case DashboardMenuRegistry.EMPLOYEE -> "♙";
             case DashboardMenuRegistry.ATTENDANCE -> "◷";
             case DashboardMenuRegistry.ATTENDANCE_ANOMALIES -> "!";
             case DashboardMenuRegistry.USER_MANAGEMENT -> "⚙";
             case DashboardMenuRegistry.PRODUCT -> "▣";
             case DashboardMenuRegistry.CATEGORY -> "⌗";
             case DashboardMenuRegistry.INVENTORY -> "▤";
-            case DashboardMenuRegistry.IMPORT -> "↧";
-            case DashboardMenuRegistry.ORDER -> "◉";
-            case DashboardMenuRegistry.SYSTEM_TOOLS -> "⚒";
-            case DashboardMenuRegistry.AUDIT_LOGS -> "☑";
+            case DashboardMenuRegistry.IMPORT -> "⇩";
+            case DashboardMenuRegistry.ORDER -> "₫";
+            case DashboardMenuRegistry.SYSTEM_TOOLS -> "⌘";
+            case DashboardMenuRegistry.AUDIT_LOGS -> "✓";
             case DashboardMenuRegistry.NOTIFICATIONS -> "●";
             case DashboardMenuRegistry.MESSAGES -> "✉";
             default -> "•";
@@ -333,9 +334,26 @@ public class DashboardShellController {
 
         presenter.findAccessibleMenuItem(menuItemId)
                 .ifPresentOrElse(
-                        menuItem -> ContentManager.loadContent(menuItem.route()),
+                        menuItem -> {
+                            updateActiveNavigation(menuItemId);
+                            ContentManager.loadContent(menuItem.route());
+                        },
                         this::showAccessDenied
                 );
+    }
+
+    private void updateActiveNavigation(String menuItemId) {
+
+        for (var node : sidebarMenuBox.getChildren()) {
+            if (!(node instanceof Button button)) {
+                continue;
+            }
+
+            button.getStyleClass().remove("nav-button-active");
+            if (menuItemId.equals(button.getUserData())) {
+                button.getStyleClass().add("nav-button-active");
+            }
+        }
     }
 
     private void showAccessDenied() {

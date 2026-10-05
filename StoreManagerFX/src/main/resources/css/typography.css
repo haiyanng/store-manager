@@ -1,163 +1,33 @@
+/* Shared readable defaults. Color is intentionally left to each component's theme. */
 .app-shell,
-.login-root {
-    -fx-text-primary: rgba(15, 15, 15, 0.96);
-    -fx-text-secondary: rgba(35, 35, 35, 0.82);
-    -fx-text-muted: rgba(55, 55, 55, 0.68);
-    -fx-text-on-dark: rgba(241, 244, 247, 0.92);
-    -text-danger: #8f3737;
+.login-root,
+.dialog-pane {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
     -fx-font-smoothing-type: lcd;
 }
 
-.text-primary {
-    -fx-text-fill: -fx-text-primary;
-}
-
-.text-secondary {
-    -fx-text-fill: -fx-text-secondary;
-}
-
-.text-muted {
-    -fx-text-fill: -fx-text-muted;
-}
-
-.text-on-dark {
-    -fx-text-fill: -fx-text-on-dark;
-}
-
-.login-root .label,
-.app-shell .label,
-.dashboard-home .label {
-    -fx-text-fill: -fx-text-primary;
-}
-
-.content-title,
-.login-title,
-.sidebar-title,
-.dashboard-hero-title,
-.analytics-section-title {
-    -fx-text-fill: -fx-text-primary;
-}
-
-.content-description,
-.login-subtitle,
-.meta-label,
-.dashboard-hero-subtitle,
-.dashboard-status,
-.analytics-card-detail,
-.analytics-section-text,
-.sidebar-kicker {
-    -fx-text-fill: -fx-text-secondary;
-}
-
-.dashboard-home .content-title,
-.dashboard-home .content-description,
-.dashboard-home .analytics-section-title,
-.dashboard-home .analytics-section-text,
-.dashboard-home .analytics-card-title,
-.dashboard-home .analytics-card-detail,
-.dashboard-home .meta-label,
-.dashboard-home .meta-value {
-    -fx-font-smoothing-type: lcd;
-}
-
-.analytics-card-value,
-.meta-value {
-    -fx-text-fill: -fx-text-primary;
-}
-
-.analytics-card-title {
-    -fx-text-fill: -fx-text-secondary;
-}
-
-.analytics-table .column-header .label {
-    -fx-text-fill: -fx-text-secondary;
-}
-
-.analytics-table .table-cell {
-    -fx-text-fill: -fx-text-primary;
-}
-
-.table-view .placeholder .label {
-    -fx-text-fill: -fx-text-secondary;
-}
-
-.module-input,
-.login-input,
-.combo-box-base {
-    -fx-text-fill: -fx-text-primary;
-    -fx-prompt-text-fill: -fx-text-muted;
-}
-
+.root { -fx-font-size: 14px; }
+.label { -fx-font-smoothing-type: lcd; }
+.text-input,
+.combo-box,
+.date-picker,
 .check-box,
-.radio-button {
-    -fx-text-fill: -fx-text-secondary;
-}
+.radio-button,
+.button,
+.table-view,
+.table-cell,
+.dialog-pane { -fx-font-size: 14px; }
 
-.check-box .text,
-.radio-button .text {
-    -fx-fill: -fx-text-secondary;
-}
-
-.module-button,
-.module-secondary-button,
-.utility-button,
-.nav-button {
-    -fx-text-fill: -fx-text-primary;
-}
-
-.logout-button {
-    -fx-text-fill: -text-danger;
-}
-
-.login-button {
-    -fx-text-fill: -fx-text-on-dark;
-}
-
-.label:disabled,
-.content-title:disabled,
-.content-description:disabled,
-.meta-label:disabled,
-.meta-value:disabled,
-.analytics-card-title:disabled,
-.analytics-card-value:disabled,
-.analytics-card-detail:disabled,
-.analytics-section-title:disabled,
-.analytics-section-text:disabled,
-.sidebar-title:disabled,
-.sidebar-kicker:disabled,
-.dashboard-hero-title:disabled,
-.dashboard-hero-subtitle:disabled,
-.dashboard-status:disabled {
-    -fx-opacity: 1.0;
-    -fx-text-fill: -fx-text-muted;
-}
+.text-primary { -fx-text-fill: #1f2937; }
+.text-secondary { -fx-text-fill: #5f6b7c; }
+.text-muted { -fx-text-fill: #8a94a5; }
+.text-on-dark { -fx-text-fill: white; }
 
 .text-input:disabled,
 .text-area:disabled,
-.combo-box-base:disabled {
-    -fx-opacity: 1.0;
-    -fx-text-fill: -fx-text-secondary;
-    -fx-prompt-text-fill: -fx-text-muted;
-}
-
+.combo-box-base:disabled,
 .check-box:disabled,
 .radio-button:disabled {
-    -fx-opacity: 1.0;
-    -fx-text-fill: -fx-text-muted;
+    -fx-opacity: 0.70;
 }
-
-.button:disabled,
-.module-button:disabled,
-.module-secondary-button:disabled,
-.utility-button:disabled,
-.nav-button:disabled,
-.login-button:disabled {
-    -fx-opacity: 1.0;
-}
-
-/* Shared readable defaults for controls, tables, and dialogs. */
-.root { -fx-font-size: 15px; }
-.app-shell .table-view, .app-shell .table-cell, .app-shell .text-input,
-.app-shell .combo-box, .app-shell .date-picker, .app-shell .check-box,
-.app-shell .button, .dialog-pane { -fx-font-size: 15px; }
-.table-cell { -fx-padding: 10 12 10 12; }
+.button:disabled { -fx-opacity: 0.48; }

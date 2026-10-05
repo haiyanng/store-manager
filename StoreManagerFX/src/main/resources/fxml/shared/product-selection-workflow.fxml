@@ -14,7 +14,7 @@
 
     <VBox spacing="4">
         <Label text="Select product"
-               styleClass="analytics-section-title"/>
+               styleClass="section-label"/>
 
         <ComboBox fx:id="quickPickComboBox"
                   promptText="Choose a product"
@@ -23,7 +23,7 @@
 
     <VBox spacing="4">
         <Label text="Search"
-               styleClass="analytics-section-title"/>
+               styleClass="section-label"/>
 
         <TextField fx:id="searchField"
                    promptText="Search by name or SKU"
@@ -34,7 +34,7 @@
     <VBox spacing="6">
         <Label fx:id="resultCountLabel"
                text="0 products"
-               styleClass="analytics-section-text"/>
+               styleClass="muted-label"/>
 
         <TableView fx:id="resultTable"
                    prefHeight="220"
